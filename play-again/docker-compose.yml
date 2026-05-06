@@ -1,0 +1,33 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: playagain-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: play_again_db
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: playagain-app
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "mysql://dev_user:dev_password@db:3306/play_again_db"
+      NEXTAUTH_SECRET: "ton_secret_pour_la_securite"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  db_data:
