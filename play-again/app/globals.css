@@ -2,25 +2,24 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  
+  /* Couleurs personnalisées issues de Figma */
+  --color-brand-primary: #7D38FF; /* Violet - Primaire / Catégories */
+  --color-brand-accent: #C6FF34;  /* Vert Citron - Actions / Bordures */
+  --color-brand-black: #000000;   /* Noir profond */
+  --color-brand-white: #FFFFFF;   /* Blanc */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Typographie de Figma */
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
