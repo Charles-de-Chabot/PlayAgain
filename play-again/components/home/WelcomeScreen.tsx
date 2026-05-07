@@ -13,7 +13,7 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
       
       <div className="mb-20">
         {/* Remplacer par le logo SVG large de Figma */}
-        <img src="images/logoPlayAgain.png" alt="logoPlayAgain" />
+        <img src="/images/logoPlayAgain.png" alt="logoPlayAgain" />
       </div>
 
       <div className="flex w-full flex-col gap-12">

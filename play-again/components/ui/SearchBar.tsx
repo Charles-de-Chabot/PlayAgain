@@ -15,7 +15,7 @@ export function SearchBar({ className, placeholder = "Rechercher un équipement.
       <input
         type="text"
         placeholder={placeholder}
-        className="h-14 w-full rounded-xl border border-white/20 bg-transparent pl-12 pr-4 text-white placeholder:text-white/50 focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent"
+        className="h-14 w-full rounded-xs border-2 border-white/80 bg-transparent pl-12 pr-4 text-white placeholder:text-white/50 focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent"
       />
     </div>
   );

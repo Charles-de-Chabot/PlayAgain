@@ -7,8 +7,11 @@ export function Header() {
   return (
     <header className="flex items-center justify-between bg-white px-6 py-4">
       <Link href="/" className="flex items-center">
-        {/* Remplacer par l'image du logo plus tard */}
-        <img src="images/logoTopPlayAgain.png" alt="logoTopPlayAgain" />
+        <img 
+          src="/images/logoTopPlayAgain.png" 
+          alt="PlayAgain Logo" 
+          className="h-[49px] w-[87px]"
+        />
       </Link>
       
       <div className="flex items-center gap-4">

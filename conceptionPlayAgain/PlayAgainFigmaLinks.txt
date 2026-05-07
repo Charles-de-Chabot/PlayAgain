@@ -1,0 +1,8 @@
+Vue Telephone:
+https://www.figma.com/design/Tc8V51SCwhX6feSIZCJ65H/Untitled?node-id=0-1&p=f&t=IDCJNWYenOIUnbjQ-0
+
+Vue Tablette:
+https://www.figma.com/design/zFx0IvlBt4dCRThyxqRyjz/Untitled?node-id=1-62&t=DmExbzzvlhPsANg0-0
+
+Vue Navigateur:
+https://www.figma.com/design/vl6SryBizHaa9y8tf1mXke/Untitled?node-id=2-27&t=LsJ5zhmfJa57afg2-0

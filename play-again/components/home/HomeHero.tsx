@@ -1,3 +1,4 @@
+import { UserRound } from "lucide-react";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { CategoryGrid } from "./CategoryGrid";
 import Link from "next/link";
@@ -8,26 +9,25 @@ interface HomeHeroProps {
 
 export function HomeHero({ isAuthenticated }: HomeHeroProps) {
   return (
-    <section className="bg-black px-6 pb-12 pt-8 text-white">
+    <section className="relative bg-black px-6 pb-12 pt-8 text-white overflow-hidden">
       {!isAuthenticated && (
-        <div className="mb-8 flex items-center gap-4">
-          <div className="h-16 w-16 overflow-hidden rounded-full bg-gray-800">
-            {/* Placeholder avatar */}
-            <div className="flex h-full w-full items-center justify-center bg-brand-primary/20 text-brand-primary">
-              <span className="text-xs">User</span>
-            </div>
+        <>
+          {/* Icône en filigrane (Watermark) - Sortie de la div pour ignorer le padding */}
+          <div className="absolute -left-6 -top-6 text-brand-primary opacity-18 pointer-events-none">
+            <UserRound className="h-40 w-40" strokeWidth={1.5} />
           </div>
-          <div>
-            <div className="flex gap-1 text-sm italic text-brand-primary">
+
+          <div className="relative mb-12 flex h-20 items-end">
+            <div className="relative z-10 ml-8 flex gap-1 text-sm italic text-brand-primary">
               <Link href="/login" className="hover:underline">Se connecter</Link>
               <span>/</span>
               <Link href="/register" className="hover:underline">s'inscrire</Link>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      <SearchBar className="mb-8" />
+      <SearchBar className="mb-4" />
       
       <CategoryGrid />
 
