@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // --- Énumérations ---
@@ -76,10 +77,9 @@ model Brand {
 
 model Size {
   id          Int       @id @default(autoincrement())
-  label       String    @db.VarChar(20)
-  category_id Int
+  label       String    @unique @db.VarChar(20)
   
-  category    Category  @relation(fields: [category_id], references: [id])
+  categories  Category[]
   products    Product[]
 }
 
