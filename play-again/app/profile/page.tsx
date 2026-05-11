@@ -60,7 +60,7 @@ export default async function ProfilePage() {
   );
 
   const sidebarItems = [
-    { icon: Heart, label: "Favoris", href: "/profile/bookmarks" },
+    { icon: Heart, label: "Favoris", href: "/profile/favorites" },
     { icon: MapPin, label: "Mes adresses", href: "/profile/addresses" },
     { icon: Settings, label: "Paramètres", href: "/profile/settings" },
     { icon: HelpCircle, label: "Aide", href: "/help" },

@@ -14,86 +14,105 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
 
   return (
     <div className="w-full">
-      {/* Tab Switcher - Dark Style */}
-      <div className="flex bg-zinc-900/50 backdrop-blur-md p-1.5 rounded-4xl mb-8 border border-white/5 shadow-inner">
+      {/* Tab Switcher - Minimalist with Brand Violet & Lime */}
+      <div className="flex bg-zinc-950/50 backdrop-blur-sm p-1 rounded-full mb-10 border border-white/5 max-w-xl mx-auto md:mx-0 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
         <button
           onClick={() => setActiveTab("listings")}
-          className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-3xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all duration-300 ${
+          className={`relative flex-1 flex items-center justify-center gap-3 py-3 rounded-full font-black uppercase tracking-[0.15em] text-[10px] md:text-xs transition-all duration-500 group ${
             activeTab === "listings" 
-              ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.02]" 
-              : "text-zinc-500 hover:text-zinc-300"
+              ? "bg-zinc-900/80 text-white shadow-[0_0_20px_rgba(125,56,255,0.15)]" 
+              : "text-zinc-600 hover:text-zinc-300"
           }`}
         >
-          <Package className={`w-4 h-4 md:w-5 md:h-5 ${activeTab === "listings" ? "text-brand-primary" : ""}`} />
-          <span>Mes annonces</span>
-          <span className={`px-2 py-0.5 rounded-full text-[9px] ${
-            activeTab === "listings" ? "bg-black/5 text-black" : "bg-white/5 text-zinc-500"
+          <Package className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-colors duration-500 ${
+            activeTab === "listings" ? "text-brand-primary" : "text-zinc-700 group-hover:text-zinc-500"
+          }`} />
+          <span className="relative z-10">Annonces</span>
+          
+          {/* Compteur avec touche Lime */}
+          <span className={`text-[9px] font-bold transition-colors duration-500 ${
+            activeTab === "listings" ? "text-brand-accent" : "text-zinc-800"
           }`}>
-            {listings.length}
+            [{listings.length}]
           </span>
+
+          {/* Indicateur Violet Lumineux */}
+          {activeTab === "listings" && (
+            <div className="absolute -bottom-[2px] w-8 h-[2px] bg-brand-primary rounded-full shadow-[0_0_10px_#7D38FF]" />
+          )}
         </button>
+
         <button
           onClick={() => setActiveTab("purchases")}
-          className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-3xl font-black uppercase tracking-widest text-[10px] md:text-xs transition-all duration-300 ${
+          className={`relative flex-1 flex items-center justify-center gap-3 py-3 rounded-full font-black uppercase tracking-[0.15em] text-[10px] md:text-xs transition-all duration-500 group ${
             activeTab === "purchases" 
-              ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)] scale-[1.02]" 
-              : "text-zinc-500 hover:text-zinc-300"
+              ? "bg-zinc-900/80 text-white shadow-[0_0_20px_rgba(125,56,255,0.15)]" 
+              : "text-zinc-600 hover:text-zinc-300"
           }`}
         >
-          <ShoppingBag className={`w-4 h-4 md:w-5 md:h-5 ${activeTab === "purchases" ? "text-brand-primary" : ""}`} />
-          <span>Mes achats</span>
-          <span className={`px-2 py-0.5 rounded-full text-[9px] ${
-            activeTab === "purchases" ? "bg-black/5 text-black" : "bg-white/5 text-zinc-500"
+          <ShoppingBag className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-colors duration-500 ${
+            activeTab === "purchases" ? "text-brand-primary" : "text-zinc-700 group-hover:text-zinc-500"
+          }`} />
+          <span className="relative z-10">Achats</span>
+          
+          {/* Compteur avec touche Lime */}
+          <span className={`text-[9px] font-bold transition-colors duration-500 ${
+            activeTab === "purchases" ? "text-brand-accent" : "text-zinc-800"
           }`}>
-            {purchases.length}
+            [{purchases.length}]
           </span>
+
+          {/* Indicateur Violet Lumineux */}
+          {activeTab === "purchases" && (
+            <div className="absolute -bottom-[2px] w-8 h-[2px] bg-brand-primary rounded-full shadow-[0_0_10px_#7D38FF]" />
+          )}
         </button>
       </div>
 
-      {/* Grid Content */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 justify-items-center">
+      {/* Content Area */}
+      <div className="animate-in fade-in duration-500">
         {activeTab === "listings" ? (
           listings.length > 0 ? (
-            listings.map((product) => (
-              <ProductCard
-                key={product.id}
-                title={product.title}
-                price={Number(product.price)}
-                condition={product.state}
-                category={product.category.label}
-                image={product.media?.[0]?.url}
-              />
-            ))
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {listings.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  title={product.title}
+                  price={Number(product.price)}
+                  condition={product.state}
+                  category={product.category?.label || "Sport"}
+                  image={product.media?.[0]?.url}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="col-span-full py-20 text-center">
-              <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
-                <Package className="w-8 h-8 text-zinc-700" />
-              </div>
-              <p className="text-zinc-500 font-medium">Vous n'avez pas encore d'annonces.</p>
-              <button className="mt-4 text-brand-accent text-xs font-bold uppercase tracking-widest hover:underline">
-                Créer une annonce
+            <div className="flex flex-col items-center justify-center py-20 px-6 rounded-[2rem] bg-zinc-900/10 border border-white/5 border-dashed">
+              <Package className="w-12 h-12 text-zinc-900 mb-4" />
+              <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">Aucune annonce</p>
+              <button className="mt-6 px-6 py-3 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-brand-primary hover:text-white transition-all">
+                Vendre un article
               </button>
             </div>
           )
         ) : (
           purchases.length > 0 ? (
-            purchases.map((product) => (
-              <ProductCard
-                key={product.id}
-                title={product.title}
-                price={Number(product.price)}
-                condition={product.state}
-                category={product.category.label}
-                image={product.media?.[0]?.url}
-              />
-            ))
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {purchases.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  title={product.title}
+                  price={Number(product.price)}
+                  condition={product.state}
+                  category={product.category?.label || "Sport"}
+                  image={product.media?.[0]?.url}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="col-span-full py-20 text-center">
-              <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
-                <ShoppingBag className="w-8 h-8 text-zinc-700" />
-              </div>
-              <p className="text-zinc-500 font-medium">Vous n'avez pas encore effectué d'achats.</p>
-              <button className="mt-4 text-brand-accent text-xs font-bold uppercase tracking-widest hover:underline">
+            <div className="flex flex-col items-center justify-center py-20 px-6 rounded-[2rem] bg-zinc-900/10 border border-white/5 border-dashed">
+              <ShoppingBag className="w-12 h-12 text-zinc-900 mb-4" />
+              <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">Aucun achat</p>
+              <button className="mt-6 px-6 py-3 border border-brand-accent/20 text-brand-accent rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-brand-accent hover:text-black transition-all">
                 Explorer le shop
               </button>
             </div>
