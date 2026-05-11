@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
+import { Footer } from "@/components/layout/Footer";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -24,9 +25,12 @@ export default function RootLayout({
       lang="fr"
       className={`${montserrat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+      <body className="min-h-full flex flex-col font-sans bg-black text-white">
         <SessionProvider>
-          {children}
+          <div className="flex-1 flex flex-col">
+            {children}
+          </div>
+          <Footer />
         </SessionProvider>
       </body>
     </html>

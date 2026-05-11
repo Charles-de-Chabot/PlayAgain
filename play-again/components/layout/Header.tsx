@@ -11,6 +11,7 @@ export function Header() {
   const pathname = usePathname();
 
   const isHomePage = pathname === "/";
+  const isProfilePage = pathname === "/profile";
 
   return (
     <header className="flex items-center justify-between bg-white px-4 py-3 md:px-6 md:py-4 shadow-sm">
@@ -40,13 +41,15 @@ export function Header() {
             </Link>
           )}
 
-          {/* Icône profil */}
-          <Link 
-            href={isAuthenticated ? "/profile" : "/auth/login"} 
-            className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors"
-          >
-            <User className="h-5 w-5 md:h-6 md:w-6" />
-          </Link>
+          {/* Icône profil - Masquée si on est déjà sur le profil */}
+          {!isProfilePage && (
+            <Link 
+              href={isAuthenticated ? "/profile" : "/auth/login"} 
+              className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors"
+            >
+              <User className="h-5 w-5 md:h-6 md:w-6" />
+            </Link>
+          )}
 
           {/* Bouton déconnexion seulement si connecté */}
           {isAuthenticated && (

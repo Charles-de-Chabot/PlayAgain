@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export function MobileNavbar() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-black py-4 text-white">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex xl:hidden items-center justify-around bg-black py-4 text-white">
       <Link href="/favorites">
         <Heart className="h-7 w-7" />
       </Link>
