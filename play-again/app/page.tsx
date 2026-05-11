@@ -10,7 +10,7 @@ import { MobileNavbar } from "@/components/layout/MobileNavbar";
 
 export default function Home() {
   const { isFirstVisit, completeFirstVisit } = useFirstVisit();
-  const { isAuthenticated, loading } = useAuth();
+  const { loading } = useAuth();
 
   // On évite le flash de contenu pendant le chargement des hooks
   if (isFirstVisit === null || loading) {
@@ -27,7 +27,7 @@ export default function Home() {
     <main className="min-h-screen bg-white pb-24">
       <Header />
       
-      <HomeHero isAuthenticated={isAuthenticated} />
+      <HomeHero />
       
       <ProductGrid />
 

@@ -5,7 +5,7 @@ export function ProductGrid() {
     <section className="px-6 py-8">
       <h2 className="mb-6 text-xl font-bold uppercase">Articles Populaires</h2>
       
-      <div className="grid grid-cols-2 gap-6 md:grid-cols-3 xl:grid-cols-4">
+      <div className="flex flex-wrap justify-center gap-6">
         {/* On peut mapper sur des données réelles plus tard */}
         <ProductCard 
           title="LUNETTE DE SKI"

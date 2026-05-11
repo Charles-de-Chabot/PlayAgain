@@ -9,13 +9,13 @@ const categories = [
 
 export function CategoryGrid() {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-8 xl:grid-cols-4 xl:gap-20 justify-items-center mx-auto w-fit">
       {categories.map((cat) => (
         <Button 
           key={cat.id} 
           variant="brand" 
           size="md" 
-          className="h-12 rounded-lg text-sm font-bold uppercase"
+          className="rounded-lg text-sm font-bold uppercase w-36 h-8 md:w-40 md:h-10 "
         >
           {cat.name}
         </Button>
