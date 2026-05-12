@@ -14,9 +14,9 @@ export function Header() {
   const isProfilePage = pathname === "/profile";
 
   return (
-    <header className="flex items-center justify-between bg-white px-4 py-3 md:px-6 md:py-4 shadow-sm">
+    <header className="sticky top-0 z-50 flex items-center justify-between bg-white/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-b border-gray-100 shadow-sm">
       {/* Logo */}
-      <Link href="/" className="flex items-center shrink-0">
+      <Link href="/" className="flex items-center shrink-0 cursor-pointer">
         <img 
           src="/images/logoTopPlayAgain.png" 
           alt="PlayAgain Logo" 
@@ -36,26 +36,42 @@ export function Header() {
         <div className="flex items-center gap-1 md:gap-3">
           {/* Icône Home - Masquée si on est déjà sur l'accueil */}
           {!isHomePage && (
-            <Link href="/" className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors">
+            <Link href="/" className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors cursor-pointer">
               <Home className="h-5 w-5 md:h-6 md:w-6" />
             </Link>
           )}
 
-          {/* Icône profil - Masquée si on est déjà sur le profil */}
+          {/* Icône profil ou Liens Auth */}
           {!isProfilePage && (
-            <Link 
-              href={isAuthenticated ? "/profile" : "/auth/login"} 
-              className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors"
-            >
-              <User className="h-5 w-5 md:h-6 md:w-6" />
-            </Link>
+            isAuthenticated ? (
+              <Link 
+                href="/profile" 
+                className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors cursor-pointer"
+              >
+                <User className="h-5 w-5 md:h-6 md:w-6" />
+              </Link>
+            ) : (
+              <div className="flex items-center">
+                <Link 
+                  href="/auth/login" 
+                  className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors xl:hidden cursor-pointer"
+                >
+                  <User className="h-5 w-5 md:h-6 md:w-6" />
+                </Link>
+                <div className="hidden xl:flex items-center gap-2 text-[11px] font-black uppercase italic text-brand-primary tracking-tighter ml-4">
+                  <Link href="/auth/login" className="hover:text-black transition-colors cursor-pointer">Se connecter</Link>
+                  <span className="text-gray-300">/</span>
+                  <Link href="/auth/register" className="hover:text-black transition-colors cursor-pointer">inscription</Link>
+                </div>
+              </div>
+            )
           )}
 
           {/* Bouton déconnexion seulement si connecté */}
           {isAuthenticated && (
             <button 
               onClick={() => signOut()}
-              className="p-1.5 md:p-2 text-gray-400 hover:text-red-500 transition-colors"
+              className="p-1.5 md:p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
               title="Déconnexion"
             >
               <LogOut className="h-5 w-5 md:h-6 md:w-6" />

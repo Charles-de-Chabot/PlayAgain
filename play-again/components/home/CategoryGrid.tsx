@@ -15,7 +15,7 @@ export function CategoryGrid() {
           key={cat.id} 
           variant="brand" 
           size="md" 
-          className="rounded-lg text-sm font-bold uppercase w-36 h-8 md:w-40 md:h-10 "
+          className="rounded-none text-sm font-bold uppercase w-36 h-8 md:w-40 md:h-10 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-brand-primary/20"
         >
           {cat.name}
         </Button>

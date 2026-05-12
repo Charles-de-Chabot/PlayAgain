@@ -25,7 +25,7 @@ export default function RootLayout({
       lang="fr"
       className={`${montserrat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-black text-white">
+      <body className="min-h-full flex flex-col font-sans bg-white text-black">
         <SessionProvider>
           <div className="flex-1 flex flex-col">
             {children}

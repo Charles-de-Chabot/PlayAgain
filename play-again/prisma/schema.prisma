@@ -102,6 +102,8 @@ model Product {
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
   is_sold        Boolean      @default(false)
+  age            Int?         // Année de fabrication
+  accessory_included Boolean  @default(false)
 
   
   category       Category     @relation(fields: [category_id], references: [id])

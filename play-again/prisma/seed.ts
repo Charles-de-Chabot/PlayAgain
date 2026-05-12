@@ -12,7 +12,7 @@ async function main() {
     // --- Création des catégories ---
     const categories = [
         {id: 1, label: "randonnée"},
-        {id: 2, label: "neige"},
+        {id: 2, label: "sports d'hiver"},
         {id: 3, label: "running"},
         {id: 4, label: "vélo"},
         {id: 5, label: "escalade"},
@@ -69,12 +69,16 @@ async function main() {
         { id: 4, label: "Vêtements", category_id: 1 },
         { id: 5, label: "Équipement", category_id: 1 },
 
-        // 2 - Neige
+        // 2 - Sports d'hiver
         { id: 6, label: "Skis Alpins", category_id: 2 },
         { id: 7, label: "Snowboards", category_id: 2 },
         { id: 8, label: "Masques de ski", category_id: 2 },
         { id: 9, label: "Vêtements", category_id: 2 },
         { id: 10, label: "Équipement", category_id: 2 },
+        { id: 164, label: "Chaussures de ski", category_id: 2 },
+        { id: 165, label: "Chaussures", category_id: 2 },
+        { id: 166, label: "Gants", category_id: 2 },
+        { id: 167, label: "Raquettes", category_id: 2 },
 
         // 3 - Running
         { id: 11, label: "Chaussures de running", category_id: 3 },
@@ -358,7 +362,7 @@ async function main() {
                 data: { sizes: { connect: volume.map(label => ({ label })) } }
             });
         }
-        if (i === 2) { // Neige
+        if (i === 2) { // Sports d'hiver
             await prisma.category.update({
                 where: { id: 2 },
                 data: { sizes: { connect: skis.map(label => ({ label })) } }

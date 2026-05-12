@@ -25,7 +25,7 @@ export function Footer() {
           
           {/* Section Logo & Description - Shared row on mobile (grid-cols-3) */}
           <div className="col-span-1 xl:col-span-2 flex flex-col items-center sm:items-start justify-center text-center sm:text-left self-center sm:self-start">
-            <Link href="/" className="inline-block mb-0 sm:mb-4 transition-transform hover:scale-105">
+            <Link href="/" className="inline-block mb-0 sm:mb-4 transition-transform hover:scale-105 cursor-pointer">
               <img 
                 src="/images/logoPlayAgain.png" 
                 alt="PlayAgain Logo" 
@@ -42,19 +42,19 @@ export function Footer() {
             <h4 className="text-white font-black text-[9px] sm:text-[10px] uppercase tracking-[0.2em]">Navigation</h4>
             <ul className="space-y-3 sm:space-y-4">
               <li>
-                <Link href="/" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                <Link href="/" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                   <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="text-[11px] sm:text-sm font-semibold">Accueil</span>
                 </Link>
               </li>
               <li>
-                <Link href="/shop" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                <Link href="/shop" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                   <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="text-[11px] sm:text-sm font-semibold">Shop</span>
                 </Link>
               </li>
               <li>
-                <Link href="/help" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                <Link href="/help" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                   <HelpCircle className="h-4 w-4" />
                   <span className="text-[11px] sm:text-sm font-semibold">Aide</span>
                 </Link>
@@ -69,19 +69,19 @@ export function Footer() {
               {isAuthenticated ? (
                 <>
                   <li>
-                    <Link href="/profile" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                    <Link href="/profile" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                       <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="text-[11px] sm:text-sm font-semibold">Profil</span>
                     </Link>
                   </li>
                   <li>
-                    <Link href="/favorites" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                    <Link href="/favorites" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                       <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="text-[11px] sm:text-sm font-semibold">Favoris</span>
                     </Link>
                   </li>
                   <li>
-                    <button onClick={() => signOut()} className="text-zinc-500 hover:text-red-500 flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group w-full text-center sm:text-left">
+                    <button onClick={() => signOut()} className="text-zinc-500 hover:text-red-500 flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group w-full text-center sm:text-left cursor-pointer">
                       <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="text-[11px] sm:text-sm font-semibold">Quitter</span>
                     </button>
@@ -90,13 +90,13 @@ export function Footer() {
               ) : (
                 <>
                   <li>
-                    <Link href="/auth/login" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                    <Link href="/auth/login" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                       <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="text-sm font-semibold">Login</span>
                     </Link>
                   </li>
                   <li>
-                    <Link href="/auth/register" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group">
+                    <Link href="/auth/register" className="text-zinc-500 hover:text-brand-accent flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 transition-all group cursor-pointer">
                       <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="text-[11px] sm:text-sm font-semibold">Inscrit</span>
                     </Link>
@@ -114,9 +114,9 @@ export function Footer() {
               &copy; {new Date().getFullYear()} PlayAgain
             </p>
             <div className="flex flex-wrap justify-center gap-6 text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500">
-              <a className="hover:text-brand-accent transition-colors" href="#">Mentions</a>
-              <a className="hover:text-brand-accent transition-colors" href="#">CGU</a>
-              <a className="hover:text-brand-accent transition-colors" href="#">Privacy</a>
+              <a className="hover:text-brand-accent transition-colors cursor-pointer" href="#">Mentions</a>
+              <a className="hover:text-brand-accent transition-colors cursor-pointer" href="#">CGU</a>
+              <a className="hover:text-brand-accent transition-colors cursor-pointer" href="#">Privacy</a>
             </div>
           </div>
         </div>

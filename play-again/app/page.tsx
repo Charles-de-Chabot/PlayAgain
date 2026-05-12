@@ -31,12 +31,14 @@ export default function Home() {
 
   // Écrans 2 & 3 : Home (Connecté ou non) (Image 2)
   return (
-    <main className="min-h-screen bg-black pb-24">
+    <main className="min-h-screen bg-white">
       <Header />
       
       <HomeHero />
       
-      <ProductGrid />
+      <div className="bg-linear-to-br from-brand-primary/15 to-white pb-24">
+        <ProductGrid />
+      </div>
 
       {/* Barre de navigation mobile fixe en bas */}
       <MobileNavbar />

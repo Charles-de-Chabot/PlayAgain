@@ -23,7 +23,7 @@ export function HelpAccordion({ title, icon, items }: HelpSectionProps) {
       {/* Section Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-white/5"
+        className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-white/5 cursor-pointer"
       >
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-800 text-brand-accent shadow-inner">
@@ -47,7 +47,7 @@ export function HelpAccordion({ title, icon, items }: HelpSectionProps) {
             <div key={index} className="rounded-2xl overflow-hidden">
               <button
                 onClick={() => setOpenItemIndex(openItemIndex === index ? null : index)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-white/5 transition-colors cursor-pointer"
               >
                 <span className="font-semibold text-zinc-300">{item.title}</span>
                 <div className={`h-1.5 w-1.5 rounded-full transition-all ${openItemIndex === index ? "bg-brand-accent scale-150 shadow-[0_0_8px_#C6FF34]" : "bg-zinc-700"}`} />
