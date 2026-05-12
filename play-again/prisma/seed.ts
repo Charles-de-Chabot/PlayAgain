@@ -344,70 +344,51 @@ async function main() {
         });
     }
 
-    // 2. Connexion des tailles aux catégories
-    console.log("Association des tailles aux catégories...");
-    for (let i = 1; i <= 38; i++) {
-        // Toutes les catégories ont textile + chaussures
-        await prisma.category.update({
-            where: { id: i },
-            data: {
-                sizes: { connect: [...textile, ...chaussures].map(label => ({ label })) }
-            }
-        });
+    // 2. Connexion des tailles aux types de produits
+    console.log("Association des tailles aux types de produits...");
+    
+    // Récupération de tous les types pour l'association
+    const allTypes = await prisma.type.findMany();
 
-        // Connexions spécifiques
-        if ([1, 5, 13, 37].includes(i)) { // Rando, Escalade, Golf, Plein air
-            await prisma.category.update({
-                where: { id: i },
-                data: { sizes: { connect: volume.map(label => ({ label })) } }
-            });
+    for (const type of allTypes) {
+        let sizesToConnect: string[] = [];
+
+        // Logique d'association par mots-clés
+        const label = type.label.toLowerCase();
+
+        if (label.includes("vêtements") || label.includes("gants") || label.includes("maillot") || label.includes("short") || label.includes("baudrier")) {
+            sizesToConnect = [...textile];
+        } else if (label.includes("chaussures") || label.includes("pointes") || label.includes("chaussons") || label.includes("bottes")) {
+            sizesToConnect = [...chaussures];
+        } else if (label.includes("ski") || label.includes("snowboard") || label.includes("raquette")) {
+            sizesToConnect = [...skis];
+        } else if (label.includes("vtt") || label.includes("vélo")) {
+            sizesToConnect = [...velos];
+        } else if (label.includes("raquette") && (type.category_id === 14 || type.category_id === 36)) {
+            sizesToConnect = [...tennis];
+        } else if (label.includes("ballon") || label.includes("boule")) {
+            sizesToConnect = [...ballons];
+        } else if (label.includes("poids") || label.includes("haltère")) {
+            sizesToConnect = [...poids];
+        } else if (label.includes("gant") && type.category_id === 17) {
+            sizesToConnect = [...boxe];
+        } else if (label.includes("planche") || label.includes("plateau") || label.includes("surf")) {
+            sizesToConnect = [...planches];
+        } else if (label.includes("arc")) {
+            sizesToConnect = [...tirALarc];
+        } else if (label.includes("sac") || label.includes("volume")) {
+            sizesToConnect = [...volume];
         }
-        if (i === 2) { // Sports d'hiver
-            await prisma.category.update({
-                where: { id: 2 },
-                data: { sizes: { connect: skis.map(label => ({ label })) } }
-            });
-        }
-        if (i === 4) { // Vélo
-            await prisma.category.update({
-                where: { id: 4 },
-                data: { sizes: { connect: velos.map(label => ({ label })) } }
-            });
-        }
-        if ([6, 7, 11, 12, 25, 27].includes(i)) { // Sports de ballons
-            await prisma.category.update({
-                where: { id: i },
-                data: { sizes: { connect: ballons.map(label => ({ label })) } }
-            });
-        }
-        if ([9, 28, 29].includes(i)) { // Fitness, Crossfit, Pilates
-            await prisma.category.update({
-                where: { id: i },
-                data: { sizes: { connect: poids.map(label => ({ label })) } }
-            });
-        }
-        if (i === 17) { // Boxe
-            await prisma.category.update({
-                where: { id: 17 },
-                data: { sizes: { connect: boxe.map(label => ({ label })) } }
-            });
-        }
-        if ([19, 32, 38].includes(i)) { // Surf, Nautique, Skate
-            await prisma.category.update({
-                where: { id: i },
-                data: { sizes: { connect: planches.map(label => ({ label })) } }
-            });
-        }
-        if (i === 34) { // Tir à l'arc
-            await prisma.category.update({
-                where: { id: 34 },
-                data: { sizes: { connect: tirALarc.map(label => ({ label })) } }
-            });
-        }
-        if (i === 14 || i === 36) { // Tennis & Raquettes
-            await prisma.category.update({
-                where: { id: i },
-                data: { sizes: { connect: tennis.map(label => ({ label })) } }
+
+        // Si des tailles ont été identifiées, on les connecte
+        if (sizesToConnect.length > 0) {
+            await prisma.type.update({
+                where: { id: type.id },
+                data: {
+                    sizes: {
+                        connect: sizesToConnect.map(l => ({ label: l }))
+                    }
+                }
             });
         }
     }

@@ -54,9 +54,19 @@ export default async function ProfilePage() {
     redirect("/auth/login");
   }
 
-  // Aplatir les achats (produits achetés via les factures)
+  // Sérialisation des produits pour éviter l'erreur Decimal de Prisma
+  const serializeProduct = (p: any) => ({
+    ...p,
+    price: Number(p.price),
+    created_at: p.created_at.toISOString(),
+    updated_at: p.updated_at.toISOString(),
+  });
+
+  const serializedListings = user.products.map(serializeProduct);
+
+  // Aplatir et sérialiser les achats
   const purchasedProducts = user.invoices.flatMap(inv => 
-    inv.items.map(item => item.product)
+    inv.items.map(item => serializeProduct(item.product))
   );
 
   const sidebarItems = [
@@ -121,7 +131,7 @@ export default async function ProfilePage() {
             {/* COLONNE GAUCHE / PRINCIPALE */}
             <div className="flex-1 w-full">
               <ProfileTabs 
-                listings={user.products} 
+                listings={serializedListings} 
                 purchases={purchasedProducts} 
               />
             </div>

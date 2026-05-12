@@ -62,7 +62,6 @@ model Category {
   label    String    @db.VarChar(50)
   types    Type[]
   products Product[]
-  sizes    Size[]
 }
 
 model Type {
@@ -71,6 +70,7 @@ model Type {
   category_id Int
   category    Category  @relation(fields: [category_id], references: [id])
   products    Product[]
+  sizes       Size[]
 }
 
 model Brand {
@@ -83,7 +83,7 @@ model Size {
   id          Int       @id @default(autoincrement())
   label       String    @unique @db.VarChar(20)
   
-  categories  Category[]
+  types       Type[]
   products    Product[]
 }
 
@@ -104,6 +104,7 @@ model Product {
   is_sold        Boolean      @default(false)
   age            Int?         // Année de fabrication
   accessory_included Boolean  @default(false)
+  is_shipping    Boolean      @default(true)
 
   
   category       Category     @relation(fields: [category_id], references: [id])

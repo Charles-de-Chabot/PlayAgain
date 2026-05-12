@@ -9,17 +9,24 @@ interface ProductCardProps {
   image?: string;
 }
 
-export function ProductCard({ title, price, condition, category }: ProductCardProps) {
+export function ProductCard({ title, price, condition, category, image }: ProductCardProps) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-none bg-white border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5 w-[149px] h-[241px] md:w-[269px] md:h-[434px] cursor-pointer">
       <div className="relative -ml-px -mt-px w-[calc(100%+2px)] h-[138px] md:h-[248px] bg-gray-50 z-10 overflow-hidden">
         <div className="absolute right-2 top-2 z-20 bg-brand-primary/90 backdrop-blur-sm px-2 py-0.5 rounded-none text-[10px] font-bold text-white uppercase tracking-wider">
           {category}
         </div>
-        {/* Placeholder pour l'image avec un léger effet de zoom au hover */}
-        <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 transition-transform duration-500 group-hover:scale-110">
-          Image
-        </div>
+        {image ? (
+          <img 
+            src={image} 
+            alt={title} 
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 transition-transform duration-500 group-hover:scale-110">
+            Image
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col">

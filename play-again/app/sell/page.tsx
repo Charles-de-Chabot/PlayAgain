@@ -13,18 +13,18 @@ export default async function SellPage() {
   }
 
   // Récupération des données pour les listes déroulantes
-  // Récupération des catégories avec leurs tailles associées
+  // Récupération des catégories
   const categories = await prisma.category.findMany({
-    include: { sizes: true },
-    orderBy: { label: "asc" }
+    orderBy: { label: 'asc' }
   });
 
   const brands = await prisma.brand.findMany({
-    orderBy: { label: "asc" }
+    orderBy: { label: 'asc' }
   });
 
   const types = await prisma.type.findMany({
-    orderBy: { label: "asc" }
+    include: { sizes: true },
+    orderBy: { label: 'asc' }
   });
 
   // Récupération de l'utilisateur avec ses adresses pour la localisation

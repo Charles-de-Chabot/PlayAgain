@@ -1,24 +1,18 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { 
-  Camera, 
-  ChevronRight, 
-  Package, 
-  Tag, 
-  Info, 
-  CheckCircle2, 
-  AlertCircle,
-  Plus
-} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Autocomplete } from "@/components/ui/Autocomplete";
+import { createProduct } from "@/app/actions/product";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { X, Camera, MapPin, Plus, Minus, ChevronRight, Info, AlertCircle, CheckCircle2, Package, Tag } from "lucide-react";
 
 interface SellFormProps {
-  categories: (any & { sizes: any[] })[];
+  categories: any[];
   brands: any[];
-  types: any[];
+  types: (any & { sizes: any[] })[];
   userCity: string | null;
 }
 
@@ -43,9 +37,9 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
     ? types.filter(t => t.category_id === parseInt(formData.category_id))
     : types;
 
-  // Filtrage dynamique des tailles en fonction de la catégorie sélectionnée
-  const filteredSizes = formData.category_id
-    ? categories.find(c => c.id.toString() === formData.category_id)?.sizes || []
+  // Filtrage dynamique des tailles en fonction du type sélectionné
+  const filteredSizes = formData.type_id
+    ? types.find(t => t.id.toString() === formData.type_id)?.sizes || []
     : [];
 
   const states = [
@@ -60,8 +54,52 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   const handleToggleAccessory = () => {
     setFormData(prev => ({ ...prev, accessory_included: !prev.accessory_included }));
+  };
+
+  const handleQuantityChange = (delta: number) => {
+    setFormData(prev => ({ ...prev, quantity: Math.max(1, parseInt(prev.quantity) + delta).toString() }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation basique
+    if (images.length === 0) {
+      alert("Veuillez ajouter au moins une image");
+      return;
+    }
+
+    const submissionData = new FormData();
+    submissionData.append("title", formData.title);
+    submissionData.append("description", formData.description);
+    submissionData.append("category_id", formData.category_id);
+    submissionData.append("type_id", formData.type_id);
+    submissionData.append("brand_id", formData.brand_id);
+    submissionData.append("state", formData.state);
+    submissionData.append("size_id", formData.size_id);
+    submissionData.append("price", formData.price);
+    submissionData.append("quantity", formData.quantity);
+    submissionData.append("age", formData.age);
+    submissionData.append("accessory_included", formData.accessory_included.toString());
+    submissionData.append("is_shipping", formData.is_shipping_available.toString());
+
+    images.forEach(img => {
+      submissionData.append("images", img);
+    });
+
+    startTransition(async () => {
+      try {
+        await createProduct(submissionData);
+      } catch (error) {
+        console.error("Erreur lors de la création du produit:", error);
+        alert("Une erreur est survenue lors de la publication de l'annonce.");
+      }
+    });
   };
 
   const [images, setImages] = useState<File[]>([]);
@@ -98,7 +136,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
   };
 
   return (
-    <form className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* SECTION 1 : PHOTOS */}
       <section 
@@ -222,7 +260,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Autocomplete 
               label="Taille"
-              placeholder={formData.category_id ? "Ex: 42, L, 170cm..." : "Choisissez une catégorie"}
+              placeholder={formData.type_id ? "Ex: 42, L, 170cm..." : "Choisissez un type"}
               items={filteredSizes}
               selectedId={formData.size_id}
               onSelect={(id) => setFormData(prev => ({ ...prev, size_id: id }))}
@@ -412,12 +450,14 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
       {/* SUBMIT BUTTON */}
       <div className="pt-8">
         <Button 
+          type="submit"
           variant="secondary" 
           size="full"
-          className="h-20 text-xl font-black italic tracking-tighter uppercase shadow-[0_20px_50px_rgba(198,255,52,0.2)] hover:shadow-brand-accent/40"
+          disabled={isPending}
+          className="h-20 text-xl font-black italic tracking-tighter uppercase shadow-[0_20px_50px_rgba(198,255,52,0.2)] hover:shadow-brand-accent/40 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Publier l'annonce
-          <ChevronRight className="ml-2 w-6 h-6" />
+          {isPending ? "Publication en cours..." : "Publier l'annonce"}
+          <ChevronRight className={cn("ml-2 w-6 h-6", isPending && "animate-pulse")} />
         </Button>
       </div>
 
