@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ProductCard } from "@/components/home/ProductCard";
-import { Package, ShoppingBag } from "lucide-react";
+import { Package, ShoppingBag, Plus } from "lucide-react";
 import Link from "next/link";
 
 interface ProfileTabsProps {
@@ -73,37 +73,39 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
       {/* Content Area */}
       <div className="animate-in fade-in duration-500">
         {activeTab === "listings" ? (
-          listings.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-              {listings.map((product) => (
-                <ProductCard 
-                  key={product.id} 
-                  title={product.title}
-                  price={Number(product.price)}
-                  condition={product.state}
-                  category={product.category?.label || "Sport"}
-                  image={product.media?.[0]?.url}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 px-6 rounded-[2rem] bg-zinc-900/10 border border-white/5 border-dashed">
-              <Package className="w-12 h-12 text-zinc-800 mb-4" />
-              <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Aucune annonce</p>
-              <Link 
-                href="/sell" 
-                className="mt-6 px-6 py-3 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-brand-primary hover:text-white transition-all cursor-pointer inline-block"
-              >
+          <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,220px)] gap-x-8 gap-y-12 mt-12 justify-center">
+            {/* Carte "Ajouter une annonce" style pointillés */}
+            <Link 
+              href="/sell"
+              className="group flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-none w-full max-w-[160px] md:max-w-[220px] h-[260px] md:h-[360px] hover:border-brand-primary/50 hover:bg-brand-primary/5 transition-all duration-300 shadow-sm hover:shadow-2xl hover:shadow-brand-primary/10"
+            >
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-700 group-hover:text-brand-primary group-hover:scale-110 transition-all duration-500 shadow-2xl">
+                <Plus className="w-6 h-6 md:w-8 md:h-8" />
+              </div>
+              <span className="mt-4 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-white transition-colors italic">
                 Vendre un article
-              </Link>
-            </div>
-          )
+              </span>
+            </Link>
+
+            {listings.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                title={product.title}
+                price={Number(product.price)}
+                condition={product.state}
+                category={product.category?.label || "Sport"}
+                image={product.media?.[0]?.url}
+              />
+            ))}
+          </div>
         ) : (
           purchases.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,220px)] gap-x-8 gap-y-12 mt-12 justify-center">
               {purchases.map((product) => (
                 <ProductCard 
                   key={product.id} 
+                  id={product.id}
                   title={product.title}
                   price={Number(product.price)}
                   condition={product.state}

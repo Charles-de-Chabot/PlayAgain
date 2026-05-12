@@ -28,12 +28,14 @@ export default async function ProfilePage() {
     where: { id: userId },
     include: {
       products: {
+        orderBy: { created_at: "desc" },
         include: {
           category: true,
           media: true
         }
       },
       invoices: {
+        orderBy: { invoice_date: "desc" },
         include: {
           items: {
             include: {
@@ -126,7 +128,7 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-8 items-start">
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
             
             {/* COLONNE GAUCHE / PRINCIPALE */}
             <div className="flex-1 w-full">
@@ -137,7 +139,7 @@ export default async function ProfilePage() {
             </div>
 
             {/* COLONNE DROITE / SIDEBAR */}
-            <div className="w-full md:w-80 shrink-0 md:sticky md:top-24">
+            <div className="w-full lg:w-80 shrink-0 lg:sticky lg:top-24">
               <div className="bg-zinc-900/70 backdrop-blur-xl rounded-4xl border border-white/10 p-3 shadow-2xl">
                 <h2 className="px-5 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
                   Navigation

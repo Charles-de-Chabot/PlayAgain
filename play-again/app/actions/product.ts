@@ -1,4 +1,3 @@
-"use auth";
 "use server";
 
 import prisma from "@/lib/prisma";
@@ -9,24 +8,60 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createProduct(formData: FormData) {
+  console.log("🚀 Tentative de création de produit reçue...");
+  
   const session = await auth();
-
   if (!session?.user) {
+    console.error("❌ Erreur: Non authentifié");
     throw new Error("Vous devez être connecté pour publier une annonce");
   }
 
   const userId = parseInt(session.user.id!);
+  console.log("👤 Utilisateur ID:", userId);
 
-  // Extraction des données textuelles
+  // Extraction et validation des données
   const title = formData.get("title") as string;
   const description = formData.get("description") as string;
-  const category_id = parseInt(formData.get("category_id") as string);
-  const type_id = parseInt(formData.get("type_id") as string);
-  const brand_id = parseInt(formData.get("brand_id") as string);
+  const rawCategoryId = formData.get("category_id") as string;
+  const rawTypeId = formData.get("type_id") as string;
+  const rawBrandId = formData.get("brand_id") as string;
+  const rawPrice = formData.get("price") as string;
+
+  console.log("📝 Données reçues:", { title, rawCategoryId, rawTypeId, rawBrandId, rawPrice });
+
+  if (!title || !rawCategoryId || !rawTypeId || !rawBrandId || !rawPrice) {
+    console.error("❌ Erreur: Champs manquants");
+    throw new Error("Veuillez remplir tous les champs obligatoires");
+  }
+
+  const category_id = parseInt(rawCategoryId);
+  const type_id = parseInt(rawTypeId);
+  const price = parseFloat(rawPrice);
+  
+  // Gestion de la marque (existante ou nouvelle)
+  let brand_id: number;
+  if (rawBrandId.startsWith("NEW:")) {
+    const newBrandName = rawBrandId.replace("NEW:", "");
+    const existingBrand = await prisma.brand.findFirst({
+      where: { label: newBrandName }
+    });
+    
+    if (existingBrand) {
+      brand_id = existingBrand.id;
+    } else {
+      const newBrand = await prisma.brand.create({
+        data: { label: newBrandName }
+      });
+      brand_id = newBrand.id;
+      // TODO: Envoyer une notification à l'admin pour validation de la nouvelle marque
+    }
+  } else {
+    brand_id = parseInt(rawBrandId);
+  }
+
   const state = formData.get("state") as any;
   const size_id = formData.get("size_id") ? parseInt(formData.get("size_id") as string) : null;
-  const price = parseFloat(formData.get("price") as string);
-  const quantity = parseInt(formData.get("quantity") as string);
+  const quantity = parseInt(formData.get("quantity") as string || "1");
   const age = formData.get("age") ? parseInt(formData.get("age") as string) : null;
   const accessory_included = formData.get("accessory_included") === "true";
   const is_shipping = formData.get("is_shipping") === "true";
@@ -85,6 +120,25 @@ export async function createProduct(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/sell");
   
-  // Redirection vers la page d'accueil (ou la page du produit si elle existait)
-  redirect("/");
+  return { success: true };
 }
+
+export async function getLatestProducts() {
+  const products = await prisma.product.findMany({
+    take: 8,
+    orderBy: { created_at: "desc" },
+    include: {
+      category: true,
+      media: true,
+    },
+  });
+
+  // Sérialisation pour le passage Client/Serveur
+  return products.map(p => ({
+    ...p,
+    price: Number(p.price),
+    created_at: p.created_at.toISOString(),
+    updated_at: p.updated_at.toISOString(),
+  }));
+}
+

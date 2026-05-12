@@ -94,7 +94,11 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
 
     startTransition(async () => {
       try {
-        await createProduct(submissionData);
+        const result = await createProduct(submissionData);
+        if (result?.success) {
+          router.push("/profile");
+          router.refresh();
+        }
       } catch (error) {
         console.error("Erreur lors de la création du produit:", error);
         alert("Une erreur est survenue lors de la publication de l'annonce.");

@@ -24,7 +24,7 @@ enum stateProduct {
   NEUF
   EXCELLENT
   BON
-  MOYEN
+  SATISFAISANT
 }
 
 // --- Modèles ---

@@ -29,11 +29,11 @@ export function Footer() {
               <img 
                 src="/images/logoPlayAgain.png" 
                 alt="PlayAgain Logo" 
-                className="h-8 sm:h-10 w-auto object-contain"
+                className="h-8 sm:h-12 w-auto object-contain"
               />
             </Link>
             <p className="text-zinc-500 text-sm leading-relaxed hidden sm:block max-w-xs">
-              La référence pour l'achat et la vente d'équipements sportifs de seconde vie. 
+              La référence pour l'achat et la vente d'équipements sportifs. 
             </p>
           </div>
 

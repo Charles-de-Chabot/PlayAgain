@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Check, ChevronDown, Search, ChevronRight, X } from "lucide-react";
+import { Check, ChevronDown, Search, ChevronRight, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Item {
@@ -53,6 +53,14 @@ export function Autocomplete({ items, placeholder, label, onSelect, className, s
     setQuery("");
     setIsOpen(false);
     onSelect(item.id.toString());
+  };
+
+  const handleCreateNew = () => {
+    const newItem: Item = {
+      id: `NEW:${query}`,
+      label: query
+    };
+    handleSelect(newItem);
   };
 
   return (
@@ -118,43 +126,63 @@ export function Autocomplete({ items, placeholder, label, onSelect, className, s
       {/* Dropdown Results */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-zinc-900/95 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-h-64 overflow-y-auto rounded-none animate-in fade-in slide-in-from-top-2 duration-300 custom-scrollbar">
-          {filteredItems.length > 0 ? (
-            <div className="py-2">
-              {filteredItems.map((item) => (
+          <div className="py-2">
+            {filteredItems.length > 0 ? (
+              <>
+                {filteredItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelect(item)}
+                    className="flex items-center justify-between w-full px-5 py-3.5 text-left transition-all group relative overflow-hidden"
+                  >
+                    {/* Hover Indicator Line */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-accent scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center" />
+                    
+                    <span className={cn(
+                      "text-xs md:text-sm font-bold tracking-tight transition-colors duration-300",
+                      selectedItem?.id === item.id ? "text-brand-accent" : "text-zinc-400 group-hover:text-white"
+                    )}>
+                      {item.label}
+                    </span>
+                    
+                    {selectedItem?.id === item.id ? (
+                      <div className="bg-brand-accent/10 p-1">
+                        <Check className="w-3.5 h-3.5 text-brand-accent" />
+                      </div>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-zinc-800 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+                    )}
+                  </button>
+                ))}
+              </>
+            ) : (
+              query && (
                 <button
-                  key={item.id}
                   type="button"
-                  onClick={() => handleSelect(item)}
-                  className="flex items-center justify-between w-full px-5 py-3.5 text-left transition-all group relative overflow-hidden"
+                  onClick={handleCreateNew}
+                  className="flex items-center gap-4 w-full px-5 py-5 text-left transition-all group border-b border-white/5 bg-brand-primary/5"
                 >
-                  {/* Hover Indicator Line */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-accent scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center" />
-                  
-                  <span className={cn(
-                    "text-xs md:text-sm font-bold tracking-tight transition-colors duration-300",
-                    selectedItem?.id === item.id ? "text-brand-accent" : "text-zinc-400 group-hover:text-white"
-                  )}>
-                    {item.label}
-                  </span>
-                  
-                  {selectedItem?.id === item.id ? (
-                    <div className="bg-brand-accent/10 p-1">
-                      <Check className="w-3.5 h-3.5 text-brand-accent" />
-                    </div>
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-zinc-800 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
-                  )}
+                  <div className="w-10 h-10 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary group-hover:bg-brand-primary group-hover:text-white transition-all duration-300 shadow-lg">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-brand-primary transition-colors">Marque inconnue ?</p>
+                    <p className="text-sm font-bold text-white group-hover:text-brand-accent transition-colors">Ajouter "{query}"</p>
+                  </div>
                 </button>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center">
-              <Search className="w-8 h-8 text-zinc-800 mx-auto mb-3 opacity-50" />
-              <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">
-                Aucun résultat pour "{query}"
-              </p>
-            </div>
-          )}
+              )
+            )}
+
+            {!query && items.length === 0 && (
+              <div className="p-8 text-center">
+                <Search className="w-8 h-8 text-zinc-800 mx-auto mb-3 opacity-50" />
+                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">
+                  Aucun résultat
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
