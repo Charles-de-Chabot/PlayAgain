@@ -31,17 +31,25 @@ export default function Home() {
 
   // Écrans 2 & 3 : Home (Connecté ou non) (Image 2)
   return (
-    <main className="min-h-screen bg-white">
-      <Header />
-      
-      <HomeHero />
-      
-      <div className="bg-linear-to-br from-brand-primary/15 to-white pb-24">
-        <ProductGrid />
+    <main className="min-h-screen bg-black text-white relative overflow-hidden font-sans">
+      {/* Background Decor - Profile Style */}
+      <div className="fixed inset-0 z-0 overflow-hidden opacity-40 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] rounded-full bg-brand-primary blur-[140px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-brand-accent blur-[140px] opacity-60" />
       </div>
 
-      {/* Barre de navigation mobile fixe en bas */}
-      <MobileNavbar />
+      <div className="relative z-10">
+        <Header />
+        
+        <HomeHero />
+        
+        <div className="pb-24">
+          <ProductGrid />
+        </div>
+
+        {/* Barre de navigation mobile fixe en bas */}
+        <MobileNavbar />
+      </div>
     </main>
   );
 }

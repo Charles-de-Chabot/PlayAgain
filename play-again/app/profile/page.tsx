@@ -14,6 +14,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -25,31 +26,44 @@ export default async function ProfilePage() {
   const userId = parseInt(session.user.id);
 
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: parseInt(session.user.id!) },
     include: {
+      sportProfile: true,
       products: {
-        orderBy: { created_at: "desc" },
         include: {
           category: true,
-          media: true
-        }
+          media: true,
+        },
       },
-      invoices: {
-        orderBy: { invoice_date: "desc" },
+      basket: {
         include: {
           items: {
             include: {
               product: {
                 include: {
                   category: true,
-                  media: true
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  media: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      invoices: {
+        include: {
+          items: {
+            include: {
+              product: {
+                include: {
+                  category: true,
+                  media: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!user) {
@@ -80,10 +94,10 @@ export default async function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-black text-white pb-24 relative overflow-hidden font-sans">
-      {/* Background Decor - Minimalist Dark Style (No halos) */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(#262626_1px,transparent_1px)] bg-size-[40px_40px] opacity-25" />
-        <div className="absolute inset-0 bg-linear-to-b from-black via-zinc-950 to-black" />
+      {/* Background Decor - Login Style */}
+      <div className="fixed inset-0 z-0 overflow-hidden opacity-40">
+        <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] rounded-full bg-brand-primary blur-[140px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-brand-accent blur-[140px] opacity-60" />
       </div>
 
       <div className="relative z-10">
@@ -119,11 +133,39 @@ export default async function ProfilePage() {
                   ? `${user.firstname} ${user.lastname}` 
                   : user.username || "Utilisateur"}
               </h1>
-              <div className="flex items-center gap-2">
-                {/* <span className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-bold text-brand-accent uppercase tracking-widest border border-white/5">
-                  Compte vérifier
-                </span> */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <p className="text-zinc-400 text-sm md:text-base font-medium">{user.email}</p>
+                {/* Dynamic Sportif ID Badge */}
+                {(() => {
+                  const levelMap: Record<string, { label: string, color: string, border: string, bg: string, dot: string }> = {
+                    "BEGINNER": { label: "Novice", color: "text-zinc-400", border: "border-zinc-400/20", bg: "bg-zinc-400/5", dot: "bg-zinc-400" },
+                    "INTERMEDIATE": { label: "Intermédiaire", color: "text-indigo-400", border: "border-indigo-400/20", bg: "bg-indigo-400/5", dot: "bg-indigo-400" },
+                    "ADVANCED": { label: "Confirmé", color: "text-amber-500", border: "border-amber-500/20", bg: "bg-amber-500/5", dot: "bg-amber-500" },
+                    "PRO": { label: "Elite Pro", color: "text-rose-500", border: "border-rose-500/20", bg: "bg-rose-500/5", dot: "bg-rose-500" },
+                  };
+                  
+                  const levelData = user.sportProfile?.level ? levelMap[user.sportProfile.level] : null;
+                  
+                  return (
+                    <Link 
+                      href="/profile/sportif-id"
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 border transition-all group rounded-full",
+                        levelData 
+                          ? `${levelData.bg} ${levelData.border} ${levelData.color} hover:bg-white hover:text-black hover:border-white`
+                          : "bg-zinc-900 border-white/10 text-zinc-500 hover:border-brand-accent hover:text-brand-accent"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full animate-pulse",
+                        levelData ? levelData.dot : "bg-zinc-700"
+                      )} />
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] italic">
+                        Sportif ID {levelData && <span className="ml-1 opacity-60">• {levelData.label}</span>}
+                      </span>
+                    </Link>
+                  );
+                })()}
               </div>
             </div>
           </div>

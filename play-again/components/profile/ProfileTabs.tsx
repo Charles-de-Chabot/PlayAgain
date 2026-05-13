@@ -30,16 +30,14 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
           }`} />
           <span className="relative z-10">Annonces</span>
           
-          {/* Compteur avec touche Lime */}
           <span className={`text-[9px] font-bold transition-colors duration-500 ${
             activeTab === "listings" ? "text-brand-accent" : "text-zinc-800"
           }`}>
             [{listings.length}]
           </span>
 
-          {/* Indicateur Violet Lumineux */}
           {activeTab === "listings" && (
-            <div className="absolute -bottom-[2px] w-8 h-[2px] bg-brand-primary rounded-full shadow-[0_0_10px_#7D38FF]" />
+            <div className="absolute bottom-[-2px] w-8 h-[2px] bg-brand-primary rounded-full shadow-[0_0_10px_#7D38FF]" />
           )}
         </button>
 
@@ -56,16 +54,14 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
           }`} />
           <span className="relative z-10">Achats</span>
           
-          {/* Compteur avec touche Lime */}
           <span className={`text-[9px] font-bold transition-colors duration-500 ${
             activeTab === "purchases" ? "text-brand-accent" : "text-zinc-800"
           }`}>
             [{purchases.length}]
           </span>
 
-          {/* Indicateur Violet Lumineux */}
           {activeTab === "purchases" && (
-            <div className="absolute -bottom-[2px] w-8 h-[2px] bg-brand-primary rounded-full shadow-[0_0_10px_#7D38FF]" />
+            <div className="absolute bottom-[-2px] w-8 h-[2px] bg-brand-primary rounded-full shadow-[0_0_10px_#7D38FF]" />
           )}
         </button>
       </div>

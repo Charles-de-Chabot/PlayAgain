@@ -6,6 +6,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { calculateMatch, learnProductExpertise } from "@/lib/ai/matcher";
 
 export async function createProduct(formData: FormData) {
   console.log("🚀 Tentative de création de produit reçue...");
@@ -120,6 +121,14 @@ export async function createProduct(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/sell");
   
+  // 3. Lancement de l'apprentissage IA en arrière-plan (sans bloquer l'utilisateur)
+  // On récupère le nom de la marque pour l'IA
+  const brand = await prisma.brand.findUnique({ where: { id: brand_id } });
+  if (brand) {
+    // On lance l'apprentissage sans 'await' pour ne pas faire attendre le vendeur
+    learnProductExpertise({ ...product, brand }).catch(err => console.error("❌ [AI Learning Error]", err));
+  }
+
   return { success: true };
 }
 
@@ -140,5 +149,92 @@ export async function getLatestProducts() {
     created_at: p.created_at.toISOString(),
     updated_at: p.updated_at.toISOString(),
   }));
+}
+
+export async function getRecommendedProducts() {
+  console.log("-----------------------------------------");
+  console.log("🚀 [MATCHING ENGINE] START");
+  const session = await auth();
+  
+  // 1. Récupération des produits
+  const products = await prisma.product.findMany({
+    take: 8,
+    orderBy: { created_at: "desc" },
+    include: {
+      category: true,
+      media: true,
+      brand: true,
+    },
+  });
+
+  // 2. Si pas de session, on renvoie sans score
+  if (!session?.user?.id) {
+    console.log("⚠️ [Match] Pas de session");
+    return products.map(p => ({
+      ...p,
+      matchScore: 0,
+      price: Number(p.price),
+      created_at: p.created_at.toISOString(),
+      updated_at: p.updated_at.toISOString(),
+    }));
+  }
+
+  // 3. Récupération du profil sportif
+  // On cherche par ID d'abord, puis par email si besoin (plus robuste)
+  let sportProfile = null;
+  
+  if (session.user.id) {
+    sportProfile = await prisma.sportProfile.findUnique({
+      where: { userId: parseInt(session.user.id) }
+    });
+  }
+
+  if (!sportProfile && session.user.email) {
+    const userWithProfile = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { sportProfile: true }
+    });
+    sportProfile = userWithProfile?.sportProfile;
+  }
+
+  if (!sportProfile) {
+    console.log("⚠️ [Match] Profil non trouvé pour l'utilisateur:", session.user.email);
+    return products.map(p => ({
+      ...p,
+      matchScore: 0,
+      price: Number(p.price),
+      created_at: p.created_at.toISOString(),
+      updated_at: p.updated_at.toISOString(),
+    }));
+  }
+
+  // 4. Calcul des scores réels via l'IA
+  console.log(`🧠 [Match] Analyse IA pour ${products.length} produits...`);
+  const productsWithScores = [];
+  
+  for (const p of products) {
+    try {
+      const match = await calculateMatch(sportProfile, p);
+      console.log(`✅ [Match] #${p.id}: ${match.score}%`);
+      productsWithScores.push({
+        ...p,
+        matchScore: match.score,
+        price: Number(p.price),
+        created_at: p.created_at.toISOString(),
+        updated_at: p.updated_at.toISOString(),
+      });
+    } catch (error) {
+      console.error("❌ [Match] Erreur IA:", error);
+      productsWithScores.push({
+        ...p,
+        matchScore: 0,
+        price: Number(p.price),
+        created_at: p.created_at.toISOString(),
+        updated_at: p.updated_at.toISOString(),
+      });
+    }
+  }
+
+  return productsWithScores;
 }
 

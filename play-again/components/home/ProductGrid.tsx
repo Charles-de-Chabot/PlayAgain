@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/home/ProductCard";
-import { getLatestProducts } from "@/app/actions/product";
+import { getRecommendedProducts } from "@/app/actions/product";
 
 export function ProductGrid() {
   const [products, setProducts] = useState<any[]>([]);
@@ -11,7 +11,7 @@ export function ProductGrid() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const data = await getLatestProducts();
+        const data = await getRecommendedProducts();
         setProducts(data);
       } catch (error) {
         console.error("Erreur lors de la récupération des produits:", error);
@@ -46,6 +46,7 @@ export function ProductGrid() {
               condition={product.state}
               category={product.category?.label || "SPORT"}
               image={product.media?.[0]?.url}
+              matchScore={product.matchScore}
             />
           ))}
         </div>

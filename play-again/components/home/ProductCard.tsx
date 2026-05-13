@@ -1,6 +1,5 @@
-import Image from "next/image";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { Zap } from "lucide-react";
 
 interface ProductCardProps {
   id: number | string;
@@ -9,67 +8,88 @@ interface ProductCardProps {
   condition: string;
   category: string;
   image?: string;
+  matchScore?: number;
 }
 
-export function ProductCard({ id, title, price, condition, category, image }: ProductCardProps) {
+export function ProductCard({ id, title, price, condition, category, image, matchScore }: ProductCardProps) {
   const getStateStyles = (state: string) => {
-    const baseClass = "bg-zinc-50 border-zinc-200 transition-all duration-500";
+    const baseClass = "px-2 py-0.5 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] border italic";
     switch (state) {
       case "NEUF":
-        return `${baseClass} text-cyan-400 group-hover:bg-cyan-400 group-hover:text-zinc-900 group-hover:border-cyan-400`;
+        return `${baseClass} bg-cyan-400 text-black border-cyan-400`;
       case "EXCELLENT":
-        return `${baseClass} text-lime-400 group-hover:bg-lime-400 group-hover:text-zinc-900 group-hover:border-lime-400`;
+        return `${baseClass} bg-brand-accent text-black border-brand-accent`;
       case "BON":
-        return `${baseClass} text-yellow-300 group-hover:bg-yellow-300 group-hover:text-zinc-900 group-hover:border-yellow-300`;
+        return `${baseClass} bg-yellow-300 text-black border-yellow-300`;
       case "SATISFAISANT":
-        return `${baseClass} text-orange-400 group-hover:bg-orange-400 group-hover:text-zinc-900 group-hover:border-orange-400`;
+        return `${baseClass} bg-orange-500 text-white border-orange-500`;
       default:
-        return `${baseClass} text-zinc-400`;
+        return `${baseClass} bg-gray-200 text-gray-600 border-gray-200`;
     }
+  };
+
+  const getMatchButtonStyles = () => {
+    if (!matchScore) return "text-zinc-400 border-zinc-200";
+    if (matchScore >= 90) return "text-rose-500 bg-rose-500/5 border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.1)]";
+    if (matchScore >= 70) return "text-amber-500 bg-amber-500/5 border-amber-500/40 shadow-[0_0_15px_rgba(251,191,36,0.1)]";
+    return "text-zinc-500 bg-zinc-500/5 border-zinc-500/40";
   };
 
   return (
     <Link 
       href={`/product/${id}`}
-      className="group flex flex-col rounded-none bg-white border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5 w-full max-w-[160px] md:max-w-[220px] h-[260px] md:h-[360px] cursor-pointer relative"
+      className="group flex flex-col rounded-none bg-white border border-gray-100 shadow-sm transition-all duration-300 hover:border-brand-primary hover:shadow-[8px_8px_0px_rgba(109,40,217,0.1)] w-full max-w-[160px] md:max-w-[220px] h-[260px] md:h-[360px] cursor-pointer relative"
     >
-      {/* Badge de catégorie - Déplacé ici pour pouvoir dépasser sur le côté */}
-      <div className="absolute right-2 top-2 z-30 bg-brand-primary/90 backdrop-blur-sm px-2 py-0.5 rounded-none text-[10px] font-bold text-white uppercase tracking-wider transition-transform duration-300 group-hover:translate-x-6 shadow-lg">
+      {/* Badge de catégorie - VIOLET BRAND - Aligné par défaut, dépasse au hover */}
+      <div className="absolute right-0 top-1 z-30 bg-brand-primary px-3 py-1 text-[9px] font-black text-white uppercase tracking-[0.2em] shadow-lg transition-transform duration-300 group-hover:translate-x-3">
         {category}
       </div>
 
-      <div className="relative -ml-px -mt-px w-[calc(100%+2px)] h-[140px] md:h-[200px] bg-gray-50 z-10 overflow-hidden">
+      {/* Container Image */}
+      <div className="relative w-full h-[130px] md:h-[200px] bg-gray-50 overflow-hidden border-b border-gray-100">
         {image ? (
           <img 
             src={image} 
             alt={title} 
-            className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-out" 
+            className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">
-            Aucune image
+            <span className="text-[10px] uppercase font-bold tracking-widest italic">No Image</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
 
+      {/* Infos Produit */}
       <div className="flex flex-col flex-1 p-3 md:p-4 bg-white relative z-20">
-        <h3 className="text-[11px] md:text-sm font-bold text-gray-900 uppercase tracking-tight line-clamp-1 group-hover:text-brand-primary transition-colors duration-300">
+        <h3 className="text-[11px] md:text-[13px] font-black text-gray-900 uppercase tracking-tight line-clamp-1 group-hover:text-brand-primary transition-colors duration-300 mb-1">
           {title}
         </h3>
-        <p className="text-[12px] md:text-lg font-black text-brand-primary mt-1">
-          {price}€
-        </p>
+
+        <div className="flex items-baseline gap-1 mb-3">
+          <span className="text-[16px] md:text-2xl font-black text-brand-primary">{price}€</span>
+        </div>
         
-        <div className="mt-2 md:mt-3">
-          <span className={`px-1.5 py-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest rounded-xs italic ${getStateStyles(condition)}`}>
+        <div className="mb-4">
+          <span className={getStateStyles(condition)}>
             {condition.replace('_', ' ')}
           </span>
         </div>
 
-        <div className="mt-auto pt-3 md:pt-4 border-t border-gray-50">
-          <div className="w-full py-2 bg-brand-accent text-black text-[9px] md:text-[11px] font-black uppercase tracking-[0.15em] text-center group-hover:bg-brand-primary group-hover:text-white transition-all duration-300 shadow-sm">
-            Voir le produit
+        {/* Bouton dynamique Match / Voir le produit - Style Cyber/Sport */}
+        <div className="mt-auto">
+          <div className="w-full h-10 md:h-12 relative overflow-hidden transition-all duration-300 border-2 border-gray-900 group-hover:border-brand-accent">
+            
+            {/* Texte Match IA */}
+            <div className={`absolute inset-0 flex items-center justify-center gap-2 transition-all duration-500 font-black italic ${matchScore !== undefined ? 'group-hover:translate-x-full opacity-100 group-hover:opacity-0' : 'hidden'} ${getMatchButtonStyles()}`}>
+              <Zap className={`w-4 h-4 fill-current ${matchScore && matchScore >= 70 ? "animate-pulse" : ""}`} />
+              <span className="text-[10px] md:text-[12px] tracking-[0.1em]">MATCH : {matchScore}%</span>
+            </div>
+
+            {/* Texte Voir le produit */}
+            <div className={`flex items-center justify-center w-full h-full ${matchScore !== undefined ? '-translate-x-full group-hover:translate-x-0 opacity-0 group-hover:opacity-100' : ''} transition-all duration-500 bg-brand-accent text-black font-black text-[10px] md:text-[12px] uppercase tracking-[0.2em]`}>
+              VOIR LE PRODUIT
+            </div>
           </div>
         </div>
       </div>

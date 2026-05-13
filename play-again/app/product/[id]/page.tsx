@@ -16,6 +16,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { auth } from "@/lib/auth";
+import { calculateMatch } from "@/lib/ai/matcher";
+import { MatchBadge } from "@/components/home/MatchBadge";
+import { BrainCircuit, Info, Star } from "lucide-react";
 
 export default async function ProductDetailPage({ 
   params 
@@ -44,6 +48,24 @@ export default async function ProductDetailPage({
 
   if (!product) {
     notFound();
+  }
+
+  // 1. Calcul du matching IA
+  const session = await auth();
+  let matchData = null;
+  let sportProfile = null;
+
+  if (session?.user?.id || session?.user?.email) {
+    sportProfile = await prisma.sportProfile.findUnique({
+      where: { 
+        userId: session.user.id ? parseInt(session.user.id) : undefined,
+        user: !session.user.id ? { email: session.user.email as string } : undefined
+      }
+    });
+
+    if (sportProfile) {
+      matchData = await calculateMatch(sportProfile, product);
+    }
   }
 
   const sellerAddress = product.user.addresses?.[0];
@@ -154,6 +176,57 @@ export default async function ProductDetailPage({
                   {Number(product.price)}€
                 </p>
               </div>
+
+              {/* SECTION IA MATCHING */}
+              {matchData ? (
+                <div className="p-6 rounded-3xl bg-linear-to-br from-zinc-900/80 to-black border-2 border-brand-primary/20 backdrop-blur-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <BrainCircuit className="w-16 h-16 text-brand-primary" />
+                  </div>
+                  
+                  <div className="flex items-start gap-4 relative z-10">
+                    <div className="shrink-0">
+                      <MatchBadge score={matchData.score} showLabel={false} className="scale-125 origin-top-left" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em]">L'avis de Play Again</span>
+                        <div className="h-px flex-1 bg-brand-primary/20" />
+                      </div>
+                      <p className="text-sm font-bold text-white leading-relaxed">
+                        {matchData.explanation}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-2 gap-3 relative z-10">
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/5 space-y-1">
+                      <div className="flex items-center gap-1.5 text-brand-accent">
+                        <Star className="w-3 h-3 fill-current" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Niveau</span>
+                      </div>
+                      <p className="text-xs font-bold text-zinc-300">{matchData.detectedLevel}</p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/5 space-y-1">
+                      <div className="flex items-center gap-1.5 text-cyan-400">
+                        <Info className="w-3 h-3" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Conseil</span>
+                      </div>
+                      <p className="text-xs font-bold text-zinc-300">
+                        {matchData.score >= 80 ? "Go ! Foncé !" : matchData.score >= 50 ? "À tester" : "Attention"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : !session ? (
+                <Link href="/login" className="block p-6 rounded-3xl bg-zinc-900/30 border border-white/5 border-dashed text-center group hover:border-brand-primary/50 transition-all">
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-brand-primary transition-colors">Connecte-toi pour voir ton score de match</p>
+                </Link>
+              ) : !sportProfile && (
+                <Link href="/profile/sportif-id" className="block p-6 rounded-3xl bg-zinc-900/30 border border-white/5 border-dashed text-center group hover:border-brand-accent/50 transition-all">
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-brand-accent transition-colors">Remplis ton Sportif ID pour voir ton score</p>
+                </Link>
+              )}
 
               {/* SECTION VENDEUR */}
               <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/10 backdrop-blur-sm flex items-center justify-between group hover:bg-zinc-900/80 transition-all">

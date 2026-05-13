@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -8,6 +7,36 @@ datasource db {
 }
 
 // --- Énumérations ---
+
+enum Gender {
+  MAN
+  WOMAN
+  UNISEX
+  KIDS
+}
+
+enum SportLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  PRO
+}
+
+enum MarketPosition {
+  GENERALIST
+  TECHNICAL
+  PREMIUM
+}
+
+enum HandOrientation {
+  RIGHT
+  LEFT
+}
+
+enum BoardStance {
+  REGULAR
+  GOOFY
+}
 
 enum Role {
   USER
@@ -45,6 +74,7 @@ model User {
   is_certified    Boolean        @default(false)
   role            Role           @default(USER)
   
+  sportProfile    SportProfile?
   accounts        Account[]
   sessions        Session[]
   products        Product[]      @relation("UserProducts")
@@ -74,9 +104,10 @@ model Type {
 }
 
 model Brand {
-  id       Int       @id @default(autoincrement())
-  label    String    @db.VarChar(50)
-  products Product[]
+  id              Int            @id @default(autoincrement())
+  label           String         @db.VarChar(50)
+  marketPosition  MarketPosition @default(GENERALIST)
+  products        Product[]
 }
 
 model Size {
@@ -105,6 +136,8 @@ model Product {
   age            Int?         // Année de fabrication
   accessory_included Boolean  @default(false)
   is_shipping    Boolean      @default(true)
+  targetGender   Gender       @default(UNISEX)
+  levelCategory  SportLevel   @default(BEGINNER)
 
   
   category       Category     @relation(fields: [category_id], references: [id])
@@ -274,4 +307,37 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model SportProfile {
+  id              Int              @id @default(autoincrement())
+  userId          Int              @unique
+  user            User             @relation(fields: [userId], references: [id])
+  
+  gender          Gender?          @default(UNISEX)
+  height          Int?             // Taille en cm
+  weight          Int?             // Poids en kg
+  shoeSize        Float?           // Pointure EU
+  
+  level           SportLevel       @default(BEGINNER)
+  frequency       Int?             // Séances par semaine
+  
+  handOrientation HandOrientation? @default(RIGHT)
+  boardStance     BoardStance?     @default(REGULAR)
+  
+  interests       Json?            // ["football", "tennis"]
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model BrandExpertise {
+  id        Int      @id @default(autoincrement())
+  brandName String   @db.VarChar(50)
+  rangeName String   @db.VarChar(50)
+  level     SportLevel
+  confidence Float   @default(1.0)
+  createdAt DateTime @default(now())
+
+  @@unique([brandName, rangeName])
 }
