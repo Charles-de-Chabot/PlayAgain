@@ -69,18 +69,44 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
       {/* Content Area */}
       <div className="animate-in fade-in duration-500">
         {activeTab === "listings" ? (
-          <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,220px)] gap-x-8 gap-y-12 mt-12 justify-center">
-            {/* Carte "Ajouter une annonce" style pointillés */}
+          <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center">
+            {/* Carte "Ajouter une annonce" style ProductCard */}
             <Link 
               href="/sell"
-              className="group flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-none w-full max-w-[160px] md:max-w-[220px] h-[260px] md:h-[360px] hover:border-brand-primary/50 hover:bg-brand-primary/5 transition-all duration-300 shadow-sm hover:shadow-2xl hover:shadow-brand-primary/10"
+              className="group flex flex-col rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:bg-white/15 hover:border-white/40 w-full max-w-[160px] md:max-w-[240px] h-[320px] md:h-[420px] cursor-pointer relative overflow-hidden"
             >
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-700 group-hover:text-brand-primary group-hover:scale-110 transition-all duration-500 shadow-2xl">
-                <Plus className="w-6 h-6 md:w-8 md:h-8" />
+              {/* Image Area Replacement */}
+              <div className="relative w-full h-[140px] md:h-[220px] bg-zinc-950/40 flex items-center justify-center overflow-hidden border-b border-white/5">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 group-hover:text-brand-primary group-hover:scale-110 transition-all duration-500 shadow-2xl border border-white/5">
+                  <Plus className="w-6 h-6 md:w-8 md:h-8" />
+                </div>
+                
+                {/* Decorative Pattern / Glow */}
+                <div className="absolute inset-0 bg-linear-to-br from-brand-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </div>
-              <span className="mt-4 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-white transition-colors italic">
-                Vendre un article
-              </span>
+
+              {/* Info Area Replacement */}
+              <div className="flex flex-col flex-1 p-4 md:p-6 relative">
+                <div className="flex items-center gap-1.5 mb-3">
+                  <Plus className="w-3 h-3 md:w-4 md:h-4 text-brand-primary" />
+                  <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-brand-primary/70">
+                    Nouveau
+                  </span>
+                </div>
+
+                <h3 className="text-[12px] md:text-sm font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-white transition-colors italic leading-relaxed">
+                  Vendre un article
+                </h3>
+
+                <div className="mt-auto">
+                  <p className="text-[10px] font-bold text-zinc-600 group-hover:text-zinc-400 transition-colors uppercase tracking-widest">
+                    Créez votre annonce
+                  </p>
+                </div>
+              </div>
+
+              {/* Border Glow */}
+              <div className="absolute inset-0 rounded-[32px] border border-white/0 group-hover:border-white/40 transition-colors duration-500 pointer-events-none" />
             </Link>
 
             {listings.map((product) => (

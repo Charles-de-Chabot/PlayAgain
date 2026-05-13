@@ -103,7 +103,7 @@ export default async function ProfilePage() {
       <div className="relative z-10 pt-[64px] md:pt-[81px]">
         <Header />
 
-        <div className="max-w-6xl mx-auto px-4 pt-6 md:pt-10">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10 pt-6 md:pt-10">
           
           {/* Infos Profil - Full Width / Glass Style */}
           <div className="flex items-center gap-6 mb-10 pb-8 border-b border-white/10">
