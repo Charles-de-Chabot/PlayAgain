@@ -14,13 +14,13 @@ export function Header() {
   const isProfilePage = pathname === "/profile";
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between bg-white/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-b border-gray-100 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-white/40 backdrop-blur-xl px-4 py-3 md:px-6 md:py-4 border-b border-white/20 shadow-2xl">
       {/* Logo */}
       <Link href="/" className="flex items-center shrink-0 cursor-pointer">
         <img 
           src="/images/logoTopPlayAgain.png" 
           alt="PlayAgain Logo" 
-          className="h-[40px] w-auto md:h-[49px]"
+          className="h-[40px] w-auto md:h-[49px] brightness-110"
         />
       </Link>
       
@@ -28,16 +28,16 @@ export function Header() {
         {/* Message de bienvenue - Toujours visible */}
         {isAuthenticated && (
           <div className="mr-1 flex flex-col items-end shrink-0">
-            <span className="text-[8px] md:text-[10px] uppercase tracking-wider text-gray-400 font-bold leading-none">Bienvenue,</span>
-            <span className="text-[11px] md:text-sm font-bold text-brand-primary leading-tight">{user?.name}</span>
+            <span className="text-[8px] md:text-[10px] uppercase tracking-wider text-zinc-800 font-bold leading-none opacity-60">Bienvenue,</span>
+            <span className="text-[11px] md:text-sm font-black text-zinc-950 leading-tight">{user?.name}</span>
           </div>
         )}
 
         <div className="flex items-center gap-1 md:gap-3">
           {/* Icône Home - Masquée si on est déjà sur l'accueil */}
           {!isHomePage && (
-            <Link href="/" className="p-1.5 md:p-2 text-black hover:text-brand-primary transition-colors cursor-pointer">
-              <Home className="h-5 w-5 md:h-6 md:w-6" />
+            <Link href="/" className="p-1.5 md:p-2 text-white hover:text-brand-accent transition-colors cursor-pointer">
+              <Home className="w-5 h-5 md:w-6 md:h-6" />
             </Link>
           )}
 

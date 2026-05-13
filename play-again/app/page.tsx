@@ -31,14 +31,14 @@ export default function Home() {
 
   // Écrans 2 & 3 : Home (Connecté ou non) (Image 2)
   return (
-    <main className="min-h-screen bg-black text-white relative overflow-hidden font-sans">
+    <main className="min-h-screen bg-black text-white relative overflow-x-hidden font-sans">
       {/* Background Decor - Profile Style */}
       <div className="fixed inset-0 z-0 overflow-hidden opacity-40 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] rounded-full bg-brand-primary blur-[140px]" />
         <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-brand-accent blur-[140px] opacity-60" />
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 pt-[64px] md:pt-[81px]">
         <Header />
         
         <HomeHero />
