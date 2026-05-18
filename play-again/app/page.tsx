@@ -6,7 +6,7 @@ import { WelcomeScreen } from "@/components/home/WelcomeScreen";
 import { Header } from "@/components/layout/Header";
 import { HomeHero } from "@/components/home/HomeHero";
 import { ProductGrid } from "@/components/home/ProductGrid";
-import { MobileNavbar } from "@/components/layout/MobileNavbar";
+import { RecommendedGrid } from "@/components/home/RecommendedGrid";
 
 export default function Home() {
   const { isFirstVisit, completeFirstVisit } = useFirstVisit();
@@ -43,12 +43,10 @@ export default function Home() {
         
         <HomeHero />
         
-        <div className="pb-24">
+        <div className="pb-10">
           <ProductGrid />
+          <RecommendedGrid />
         </div>
-
-        {/* Barre de navigation mobile fixe en bas */}
-        <MobileNavbar />
       </div>
     </main>
   );

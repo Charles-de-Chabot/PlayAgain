@@ -133,6 +133,25 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function getLatestProducts() {
+  const session = await auth();
+  
+  // 1. Récupération du profil sportif
+  let sportProfile = null;
+  if (session?.user?.id) {
+    sportProfile = await prisma.sportProfile.findUnique({
+      where: { userId: parseInt(session.user.id) }
+    });
+  }
+
+  if (!sportProfile && session?.user?.email) {
+    const userWithProfile = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { sportProfile: true }
+    });
+    sportProfile = userWithProfile?.sportProfile;
+  }
+
+  // 2. Récupération de tous les derniers produits
   const products = await prisma.product.findMany({
     take: 8,
     orderBy: { created_at: "desc" },
@@ -142,12 +161,33 @@ export async function getLatestProducts() {
     },
   });
 
-  // Sérialisation pour le passage Client/Serveur
-  return products.map(p => ({
-    ...p,
-    price: Number(p.price),
-    created_at: p.created_at.toISOString(),
-    updated_at: p.updated_at.toISOString(),
+  // 3. Récupération des intérêts de l'utilisateur
+  let interests: string[] = [];
+  if (sportProfile?.interests && Array.isArray(sportProfile.interests)) {
+    interests = sportProfile.interests as string[];
+  }
+
+  // 4. Sérialisation et injection dynamique du matchScore
+  return Promise.all(products.map(async (p) => {
+    let matchScore: number | undefined = undefined;
+
+    if (sportProfile && p.category?.label && interests.includes(p.category.label)) {
+      try {
+        const match = await calculateMatch(sportProfile, p);
+        matchScore = match.score;
+      } catch (error) {
+        console.error("❌ [Latest Products Match] Erreur IA:", error);
+        matchScore = 0;
+      }
+    }
+
+    return {
+      ...p,
+      matchScore,
+      price: Number(p.price),
+      created_at: p.created_at.toISOString(),
+      updated_at: p.updated_at.toISOString(),
+    };
   }));
 }
 
@@ -156,8 +196,70 @@ export async function getRecommendedProducts() {
   console.log("🚀 [MATCHING ENGINE] START");
   const session = await auth();
   
-  // 1. Récupération des produits
+  // 1. Récupération du profil sportif
+  let sportProfile = null;
+  
+  if (session?.user?.id) {
+    sportProfile = await prisma.sportProfile.findUnique({
+      where: { userId: parseInt(session.user.id) }
+    });
+  }
+
+  if (!sportProfile && session?.user?.email) {
+    const userWithProfile = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { sportProfile: true }
+    });
+    sportProfile = userWithProfile?.sportProfile;
+  }
+
+  // 2. Si pas de profil sportif ou pas de session, on renvoie les derniers produits avec score 0 (en excluant les nôtres)
+  if (!sportProfile) {
+    console.log("⚠️ [Match] Pas de profil sportif, retour produits par défaut");
+    const products = await prisma.product.findMany({
+      where: session?.user?.id ? {
+        user_id: {
+          not: parseInt(session.user.id)
+        }
+      } : undefined,
+      take: 8,
+      orderBy: { created_at: "desc" },
+      include: {
+        category: true,
+        media: true,
+        brand: true,
+      },
+    });
+
+    return products.map(p => ({
+      ...p,
+      matchScore: 0,
+      price: Number(p.price),
+      created_at: p.created_at.toISOString(),
+      updated_at: p.updated_at.toISOString(),
+    }));
+  }
+
+  // 3. Récupération des intérêts de l'utilisateur
+  let interests: string[] = [];
+  if (sportProfile.interests && Array.isArray(sportProfile.interests)) {
+    interests = sportProfile.interests as string[];
+  }
+
+  console.log("🎯 [Match] Catégories d'intérêts :", interests);
+
+  // 4. Récupération des produits correspondant aux catégories d'intérêts (en excluant les nôtres)
   const products = await prisma.product.findMany({
+    where: {
+      category: interests.length > 0 ? {
+        label: {
+          in: interests
+        }
+      } : undefined,
+      user_id: session?.user?.id ? {
+        not: parseInt(session.user.id)
+      } : undefined
+    },
     take: 8,
     orderBy: { created_at: "desc" },
     include: {
@@ -167,49 +269,8 @@ export async function getRecommendedProducts() {
     },
   });
 
-  // 2. Si pas de session, on renvoie sans score
-  if (!session?.user?.id) {
-    console.log("⚠️ [Match] Pas de session");
-    return products.map(p => ({
-      ...p,
-      matchScore: 0,
-      price: Number(p.price),
-      created_at: p.created_at.toISOString(),
-      updated_at: p.updated_at.toISOString(),
-    }));
-  }
-
-  // 3. Récupération du profil sportif
-  // On cherche par ID d'abord, puis par email si besoin (plus robuste)
-  let sportProfile = null;
-  
-  if (session.user.id) {
-    sportProfile = await prisma.sportProfile.findUnique({
-      where: { userId: parseInt(session.user.id) }
-    });
-  }
-
-  if (!sportProfile && session.user.email) {
-    const userWithProfile = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { sportProfile: true }
-    });
-    sportProfile = userWithProfile?.sportProfile;
-  }
-
-  if (!sportProfile) {
-    console.log("⚠️ [Match] Profil non trouvé pour l'utilisateur:", session.user.email);
-    return products.map(p => ({
-      ...p,
-      matchScore: 0,
-      price: Number(p.price),
-      created_at: p.created_at.toISOString(),
-      updated_at: p.updated_at.toISOString(),
-    }));
-  }
-
-  // 4. Calcul des scores réels via l'IA
-  console.log(`🧠 [Match] Analyse IA pour ${products.length} produits...`);
+  // 5. Calcul des scores réels via l'IA
+  console.log(`🧠 [Match] Analyse IA pour ${products.length} produits filtrés...`);
   const productsWithScores = [];
   
   for (const p of products) {
@@ -234,6 +295,9 @@ export async function getRecommendedProducts() {
       });
     }
   }
+
+  // Trier par matchScore décroissant (les meilleurs % de matching en premier)
+  productsWithScores.sort((a, b) => b.matchScore - a.matchScore);
 
   return productsWithScores;
 }

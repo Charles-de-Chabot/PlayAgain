@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/home/ProductCard";
-import { getRecommendedProducts } from "@/app/actions/product";
+import { getLatestProducts } from "@/app/actions/product";
+import { useVisibleCardsCount } from "@/hooks/useVisibleCardsCount";
 
 export function ProductGrid() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const visibleCount = useVisibleCardsCount();
 
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const data = await getRecommendedProducts();
+        const data = await getLatestProducts();
         setProducts(data);
       } catch (error) {
         console.error("Erreur lors de la récupération des produits:", error);
@@ -36,8 +38,8 @@ export function ProductGrid() {
           <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : products.length > 0 ? (
-        <div className="flex flex-wrap justify-center gap-8 md:gap-12">
-          {products.map((product) => (
+        <div className="flex flex-row justify-center gap-6 md:gap-8 lg:gap-10 w-full mx-auto max-w-7xl px-2">
+          {products.slice(0, visibleCount).map((product) => (
             <ProductCard 
               key={product.id}
               id={product.id}
@@ -58,7 +60,7 @@ export function ProductGrid() {
 
       {products.length > 0 && (
         <div className="mt-12 text-center">
-          <button className="px-8 py-3 bg-zinc-900 text-white font-black uppercase italic tracking-widest text-[10px] hover:bg-brand-primary transition-all rounded-none">
+          <button className="px-8 py-3 bg-zinc-900 text-white font-black uppercase italic tracking-widest text-[10px] hover:bg-brand-primary transition-all rounded-none cursor-pointer">
             Voir Tout le Shop
           </button>
         </div>

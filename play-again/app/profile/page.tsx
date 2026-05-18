@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { Header } from "@/components/layout/Header";
-import { MobileNavbar } from "@/components/layout/MobileNavbar";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { 
   User, 
@@ -215,8 +214,6 @@ export default async function ProfilePage() {
           </div>
         </div>
       </div>
-
-      <MobileNavbar />
     </main>
   );
 }

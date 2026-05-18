@@ -10,9 +10,10 @@ interface ProductCardProps {
   category: string;
   image?: string;
   matchScore?: number;
+  className?: string;
 }
 
-export function ProductCard({ id, title, price, condition, category, image, matchScore }: ProductCardProps) {
+export function ProductCard({ id, title, price, condition, category, image, matchScore, className }: ProductCardProps) {
   // Icônes et couleurs pour l'état de l'objet (Minimaliste)
   const getConditionUI = (state: string) => {
     switch (state) {
@@ -34,7 +35,10 @@ export function ProductCard({ id, title, price, condition, category, image, matc
   return (
     <Link 
       href={`/product/${id}`}
-      className="group flex flex-col rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:bg-white/15 hover:border-white/40 w-full max-w-[160px] md:max-w-[240px] h-[320px] md:h-[420px] cursor-pointer relative overflow-visible"
+      className={cn(
+        "group flex flex-col rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:bg-white/15 hover:border-white/40 w-full max-w-[160px] md:max-w-[240px] h-[320px] md:h-[420px] cursor-pointer relative overflow-visible shrink-0",
+        className
+      )}
     >
       {/* 1. IMAGE AREA */}
       <div className="relative w-full h-[140px] md:h-[220px] rounded-t-[31px] overflow-hidden">

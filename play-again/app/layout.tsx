@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { Footer } from "@/components/layout/Footer";
+import { MobileNavbar } from "@/components/layout/MobileNavbar";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -31,6 +32,7 @@ export default function RootLayout({
             {children}
           </div>
           <Footer />
+          <MobileNavbar />
         </SessionProvider>
       </body>
     </html>

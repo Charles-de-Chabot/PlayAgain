@@ -8,16 +8,17 @@ interface MatchBadgeProps {
 }
 
 export function MatchBadge({ score, className, showLabel = true }: MatchBadgeProps) {
-  // Détermination de la couleur en fonction du score
+  // Détermination de la couleur en fonction du score (Aligné avec le code couleur des ProductCard)
   const getScoreStyles = () => {
-    if (score >= 90) return "text-rose-500 border-rose-500/30 bg-rose-500/5 shadow-rose-500/20";
-    if (score >= 70) return "text-amber-500 border-amber-500/30 bg-amber-500/5 shadow-amber-500/20";
-    return "text-zinc-500 border-zinc-500/30 bg-zinc-500/5";
+    if (score >= 90) return "bg-cyan-400 border-cyan-500/40 text-zinc-950 shadow-[0_0_15px_rgba(34,211,238,0.3)]";
+    if (score >= 70) return "bg-brand-accent border-brand-accent/40 text-zinc-950 shadow-[0_0_15px_rgba(163,230,53,0.3)]";
+    if (score >= 50) return "bg-amber-400 border-amber-500/40 text-zinc-950 shadow-[0_0_15px_rgba(251,191,36,0.3)]";
+    return "bg-white border-white/40 text-zinc-950";
   };
 
   return (
     <div className={cn(
-      "flex items-center gap-1.5 px-2.5 py-1.5 border backdrop-blur-md shadow-lg transition-all duration-500",
+      "flex items-center justify-center gap-1.5 px-3 py-1.5 border rounded-full backdrop-blur-md shadow-lg transition-all duration-500",
       getScoreStyles(),
       className
     )}>

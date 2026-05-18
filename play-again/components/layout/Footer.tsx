@@ -17,7 +17,7 @@ export function Footer() {
   const { isAuthenticated, user } = useAuth();
 
   return (
-    <footer className="bg-black border-t border-white/5 py-12 mt-auto relative z-10 font-sans">
+    <footer className="bg-black border-t border-white/5 pt-12 pb-32 xl:pb-12 mt-auto relative z-10 font-sans">
       <div className="max-w-[1440px] mx-auto px-10">
         
         {/* 5-Column Grid (2 for Brand, 1 each for others) */}
@@ -87,7 +87,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar: Copyright + Legal Links Centered */}
-        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-center items-center gap-28">
+        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-center items-center gap-10">
           <p className="text-zinc-700 text-[9px] font-bold uppercase tracking-[0.3em]">
             &copy; {new Date().getFullYear()} PlayAgain &bull; All Rights Reserved
           </p>

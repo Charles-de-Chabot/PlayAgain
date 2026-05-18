@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { Header } from "@/components/layout/Header";
-import { MobileNavbar } from "@/components/layout/MobileNavbar";
 import { SellForm } from "@/components/sell/SellForm";
 
 export default async function SellPage() {
@@ -47,7 +46,7 @@ export default async function SellPage() {
         <Header />
 
         <div className="max-w-4xl mx-auto px-4 pt-10 md:pt-16 pb-12">
-          <div className="mb-12">
+          <div className="mb-12 mt-8">
             <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">
               Vendre un <span className="text-brand-accent">article</span>
             </h1>
@@ -64,8 +63,6 @@ export default async function SellPage() {
           />
         </div>
       </div>
-
-      <MobileNavbar />
     </main>
   );
 }

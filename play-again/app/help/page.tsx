@@ -1,5 +1,4 @@
 import { Header } from "@/components/layout/Header";
-import { MobileNavbar } from "@/components/layout/MobileNavbar";
 import { HelpAccordion } from "@/components/help/HelpAccordion";
 import { 
   ShoppingBag, 
@@ -160,8 +159,6 @@ export default function HelpPage() {
           </div>
         </div>
       </div>
-
-      <MobileNavbar />
     </main>
   );
 }

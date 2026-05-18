@@ -48,3 +48,18 @@ export async function saveSportProfile(data: any) {
     return { success: false, error: "Une erreur est survenue" };
   }
 }
+
+export async function getSportProfile() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  
+  try {
+    const profile = await prisma.sportProfile.findUnique({
+      where: { userId: parseInt(session.user.id) }
+    });
+    return profile;
+  } catch (error) {
+    console.error("Erreur lors de la récupération du profil sportif:", error);
+    return null;
+  }
+}

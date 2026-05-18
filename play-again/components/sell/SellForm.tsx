@@ -140,7 +140,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <form onSubmit={handleSubmit} className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* SECTION 1 : PHOTOS */}
       <section 

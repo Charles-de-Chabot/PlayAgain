@@ -1,25 +1,25 @@
-import { Button } from "@/components/ui/Button";
+interface Category {
+  id: number;
+  name: string;
+}
 
-const categories = [
-  { id: 1, name: "SKI" },
-  { id: 2, name: "VELO" },
-  { id: 3, name: "FITNESS" },
-  { id: 4, name: "EQUITATION" },
-];
+interface CategoryGridProps {
+  categories: Category[];
+}
 
-export function CategoryGrid() {
+export function CategoryGrid({ categories }: CategoryGridProps) {
   return (
     <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4 md:gap-10 justify-items-center mx-auto w-fit">
       {categories.map((cat) => (
         <button 
           key={cat.id} 
-          className="relative group overflow-hidden border-2 border-brand-primary/50 w-32 h-9 md:w-36 md:h-11 transition-all duration-500 hover:border-brand-primary"
+          className="relative group overflow-hidden border-2 border-brand-primary/50 w-32 h-9 md:w-36 md:h-11 transition-all duration-500 hover:border-brand-primary cursor-pointer"
         >
           {/* Background fill on hover */}
           <div className="absolute inset-0 bg-brand-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
           
           {/* Text */}
-          <span className="relative z-10 text-[11px] md:text-xs font-black uppercase tracking-widest text-brand-primary group-hover:text-white transition-colors italic">
+          <span className="relative z-10 block text-[10px] md:text-[11px] font-black uppercase tracking-widest text-brand-primary group-hover:text-white transition-colors italic line-clamp-1 px-1">
             {cat.name}
           </span>
 
