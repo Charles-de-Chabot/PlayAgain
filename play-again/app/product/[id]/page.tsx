@@ -16,10 +16,12 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { auth } from "@/lib/auth";
-import { calculateMatch } from "@/lib/ai/matcher";
+import { calculateMatch, learnProductExpertise } from "@/lib/ai/matcher";
 import { MatchBadge } from "@/components/home/MatchBadge";
 import { CircuitBoard, Info, Star } from "lucide-react";
 import { ProductGallery } from "./ProductGallery";
+import { CompareButtonWrapper } from "@/components/product/CompareButtonWrapper";
+import { serializeProduct, calculateProductScore } from "@/lib/utils";
 
 export default async function ProductDetailPage({ 
   params 
@@ -28,7 +30,7 @@ export default async function ProductDetailPage({
 }) {
   const { id } = await params;
   
-  const product = await prisma.product.findUnique({
+  const rawProduct = await prisma.product.findUnique({
     where: { id: parseInt(id) },
     include: {
       user: {
@@ -46,9 +48,38 @@ export default async function ProductDetailPage({
     }
   }) as any; // Cast as any pour simplifier la gestion des relations incluses dans le template
 
-  if (!product) {
+  if (!rawProduct) {
     notFound();
   }
+
+  const detectedLevel = await learnProductExpertise(rawProduct);
+  
+  // Calcul du prix moyen de référence pour ce type et cette catégorie
+  const averages = await prisma.product.aggregate({
+    where: {
+      category_id: rawProduct.category_id,
+      type_id: rawProduct.type_id,
+      is_sold: false
+    },
+    _avg: {
+      price: true
+    }
+  });
+  const averagePrice = averages._avg.price ? Number(averages._avg.price) : 0;
+
+  const dealScore = calculateProductScore({
+    state: rawProduct.state,
+    price: Number(rawProduct.price),
+    averagePrice,
+    marketPosition: rawProduct.brand?.marketPosition || "GENERALIST",
+    accessoryIncluded: rawProduct.accessory_included,
+  });
+
+  const product = {
+    ...serializeProduct(rawProduct),
+    levelCategory: detectedLevel,
+    dealScore,
+  } as any;
 
   // 1. Calcul du matching IA
   const session = await auth();
@@ -114,21 +145,95 @@ export default async function ProductDetailPage({
             {product.brand.label}
           </span>
         )}
+        
+        {/* Badge Deal Dynamique */}
+        {product.dealScore?.score >= 75 && (
+          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md ${product.dealScore.colorClass}`}>
+            {product.dealScore.label}
+          </span>
+        )}
       </div>
 
       <h1 className="text-3xl md:text-5xl font-black text-white leading-none tracking-tight">
         {product.title}
       </h1>
 
-      <p className="text-4xl font-black text-brand-primary">
-        {Number(product.price)}€
-      </p>
+      <div className="flex items-baseline gap-3">
+        <p className={`text-4xl font-black ${product.dealScore?.glowClass || "text-brand-primary"}`}>
+          {Number(product.price)}€
+        </p>
+        {product.dealScore?.score >= 75 && (
+          <span className="text-zinc-500 text-xs font-bold">
+            (Excellent prix de gamme)
+          </span>
+        )}
+      </div>
     </div>
   );
 
   // Block 3: Play Again AI Advice (L'avis de Play Again)
   const PlayAgainBlock = (
-    <>
+    <div className="space-y-4">
+      {/* Nouveau Bloc Opportunité de Prix (Jauge Circulaire SVG) */}
+      <div className="p-6 rounded-3xl bg-zinc-900/50 border border-white/10 backdrop-blur-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Indice d'Opportunité (Deal Score)</span>
+            <h3 className={`text-lg font-black ${product.dealScore?.glowClass || "text-white"}`}>
+              {product.dealScore?.label}
+            </h3>
+          </div>
+          
+          {/* Jauge SVG Circulaire */}
+          <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle
+                cx="28"
+                cy="28"
+                r="23"
+                stroke="currentColor"
+                strokeWidth="3.5"
+                className="text-zinc-800"
+                fill="transparent"
+              />
+              <circle
+                cx="28"
+                cy="28"
+                r="23"
+                stroke="currentColor"
+                strokeWidth="3.5"
+                strokeDasharray={`${2 * Math.PI * 23}`}
+                strokeDashoffset={`${2 * Math.PI * 23 * (1 - (product.dealScore?.score || 0) / 100)}`}
+                className={product.dealScore?.score >= 90 ? "text-emerald-400" : product.dealScore?.score >= 75 ? "text-green-400" : "text-zinc-500"}
+                fill="transparent"
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute text-xs font-black text-white">
+              {product.dealScore?.score}
+            </div>
+          </div>
+        </div>
+
+        {/* Détails transparents */}
+        <div className="space-y-2 pt-2 border-t border-white/5 text-[11px] text-zinc-400">
+          <div className="flex justify-between">
+            <span>État ({product.state.replace('_', ' ')}):</span>
+            <span className="font-bold text-zinc-200">{product.dealScore?.stateScore}/100</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Rapport Qualité/Prix :</span>
+            <span className="font-bold text-zinc-200">{product.dealScore?.priceScore}/100</span>
+          </div>
+          {product.accessory_included && (
+            <div className="flex justify-between text-emerald-400 font-bold">
+              <span>Bonus accessoires inclus :</span>
+              <span>+10 pts</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {matchData ? (
         <div className="p-6 rounded-3xl bg-linear-to-br from-zinc-900/80 to-black border-2 border-brand-primary/20 backdrop-blur-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -178,7 +283,7 @@ export default async function ProductDetailPage({
           <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-brand-accent transition-colors">Remplis ton Sportif ID pour voir ton score</p>
         </Link>
       )}
-    </>
+    </div>
   );
 
   // Block 4: Description (sans bordure interne pour faciliter l'alignement responsive)
@@ -213,6 +318,8 @@ export default async function ProductDetailPage({
       <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
         Acheter maintenant
       </Button>
+      
+      <CompareButtonWrapper product={product} />
       
       <div className="grid grid-cols-3 gap-2">
         <div className="p-3 rounded-2xl bg-zinc-900/30 border border-white/5 flex flex-col items-center justify-center text-center gap-2">

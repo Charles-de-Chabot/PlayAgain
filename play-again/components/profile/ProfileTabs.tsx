@@ -118,6 +118,7 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
                 condition={product.state}
                 category={product.category?.label || "Sport"}
                 image={product.media?.[0]?.url}
+                fullProduct={product}
               />
             ))}
           </div>
@@ -133,6 +134,7 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
                   condition={product.state}
                   category={product.category?.label || "Sport"}
                   image={product.media?.[0]?.url}
+                  fullProduct={product}
                 />
               ))}
             </div>

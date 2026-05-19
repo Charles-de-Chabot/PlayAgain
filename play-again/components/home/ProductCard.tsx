@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Zap, CheckCircle2, Star, Sparkles, Shield, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCompareStore, CompareProduct } from "@/store/useCompareStore";
 
 interface ProductCardProps {
   id: number | string;
@@ -11,9 +12,10 @@ interface ProductCardProps {
   image?: string;
   matchScore?: number;
   className?: string;
+  fullProduct?: any;
 }
 
-export function ProductCard({ id, title, price, condition, category, image, matchScore, className }: ProductCardProps) {
+export function ProductCard({ id, title, price, condition, category, image, matchScore, className, fullProduct }: ProductCardProps) {
   // Icônes et couleurs pour l'état de l'objet (Minimaliste)
   const getConditionUI = (state: string) => {
     switch (state) {
@@ -32,11 +34,58 @@ export function ProductCard({ id, title, price, condition, category, image, matc
 
   const ui = getConditionUI(condition);
 
+  const { isComparingMode, productA, setProductA, setProductB } = useCompareStore();
+
+  const isCompatible = isComparingMode && productA && fullProduct && 
+    productA.categoryId === fullProduct.category_id && 
+    productA.typeId === fullProduct.type_id &&
+    productA.id !== fullProduct.id;
+
+  const isSelectedA = productA?.id === id;
+  const dimCard = isComparingMode && !isCompatible && !isSelectedA;
+  const highlightCard = isComparingMode && isCompatible;
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigating to product page
+    e.stopPropagation();
+    if (!fullProduct) return;
+    
+    const compProduct: CompareProduct = {
+      id: Number(fullProduct.id),
+      title: fullProduct.title,
+      price: Number(fullProduct.price),
+      categoryId: fullProduct.category_id,
+      typeId: fullProduct.type_id,
+      categoryLabel: fullProduct.category?.label || category,
+      typeLabel: fullProduct.type?.label || "N/A",
+      condition: fullProduct.state,
+      image: image || "",
+      brand: fullProduct.brand?.label || "N/A",
+      age: fullProduct.age,
+      accessory_included: fullProduct.accessory_included,
+      is_shipping: fullProduct.is_shipping,
+      matchScore: fullProduct.matchScore,
+      levelCategory: fullProduct.levelCategory,
+      dealScore: fullProduct.dealScore,
+    };
+
+    if (isComparingMode) {
+      if (isCompatible) {
+        setProductB(compProduct);
+      }
+    } else {
+      setProductA(compProduct);
+    }
+  };
+
   return (
     <Link 
       href={`/product/${id}`}
       className={cn(
-        "group flex flex-col rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:bg-white/15 hover:border-white/40 w-full max-w-[160px] md:max-w-[240px] h-[320px] md:h-[420px] cursor-pointer relative overflow-visible shrink-0",
+        "group flex flex-col rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 w-full max-w-[160px] md:max-w-[240px] h-[320px] md:h-[420px] cursor-pointer relative overflow-visible shrink-0",
+        dimCard ? "opacity-30 grayscale pointer-events-none" : "hover:-translate-y-3 hover:bg-white/15 hover:border-white/40",
+        highlightCard && "ring-2 ring-[#5ce1e6] ring-offset-2 ring-offset-black shadow-[0_0_20px_rgba(92,225,230,0.4)]",
+        isSelectedA && "ring-2 ring-brand-primary opacity-80",
         className
       )}
     >
@@ -46,6 +95,16 @@ export function ProductCard({ id, title, price, condition, category, image, matc
         <div className="absolute left-3 top-3 z-30 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-bold text-white/90 uppercase tracking-widest border border-white/10 shadow-lg">
           {category}
         </div>
+
+        {/* Deal Badge Dynamique */}
+        {fullProduct?.dealScore?.score >= 75 && (
+          <div className={cn(
+            "absolute right-3 top-3 z-30 px-2 py-0.5 md:px-2.5 md:py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-lg",
+            fullProduct.dealScore.colorClass
+          )}>
+            {fullProduct.dealScore.label}
+          </div>
+        )}
 
         {image ? (
           <img 
@@ -99,14 +158,36 @@ export function ProductCard({ id, title, price, condition, category, image, matc
         {/* Prix (Gras comme demandé) */}
         <div className="mt-auto flex items-center justify-between">
           <div className="flex items-baseline gap-0.5">
-            <span className="text-xl md:text-2xl font-black text-white tracking-tighter">{price}</span>
+            <span className={cn(
+              "text-xl md:text-2xl font-black tracking-tighter",
+              fullProduct?.dealScore?.glowClass || "text-white"
+            )}>{price}</span>
             <span className="text-[10px] md:text-xs font-bold text-white/40">€</span>
           </div>
 
-          {/* Bouton Voir le produit (Holographique / Sans bordure noire) */}
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-linear-to-br from-brand-primary to-brand-accent p-px opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 shadow-[0_0_20px_rgba(109,40,217,0.3)]">
-            <div className="w-full h-full rounded-[15px] bg-zinc-950 flex items-center justify-center">
-              <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 text-white" />
+          {/* Boutons actions (Comparer & Voir) */}
+          <div className="flex gap-2 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+            {/* Bouton Comparer */}
+            {fullProduct && !isSelectedA && (
+              <button 
+                onClick={handleCompareClick}
+                className={cn(
+                  "w-10 h-10 md:w-12 md:h-12 rounded-2xl p-px transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(92,225,230,0.3)]",
+                  highlightCard ? "bg-[#5ce1e6]" : "bg-white/20 hover:bg-white/40"
+                )}
+                title={highlightCard ? "Comparer avec ce produit" : "Comparer"}
+              >
+                <div className="w-full h-full rounded-[15px] bg-zinc-950 flex items-center justify-center">
+                  <span className="text-sm md:text-base">⚖️</span>
+                </div>
+              </button>
+            )}
+
+            {/* Bouton Voir le produit */}
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-linear-to-br from-brand-primary to-brand-accent p-px shadow-[0_0_20px_rgba(109,40,217,0.3)] shrink-0">
+              <div className="w-full h-full rounded-[15px] bg-zinc-950 flex items-center justify-center">
+                <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 text-white" />
+              </div>
             </div>
           </div>
         </div>

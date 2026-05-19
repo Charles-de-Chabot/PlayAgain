@@ -5,6 +5,7 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNavbar } from "@/components/layout/MobileNavbar";
 import { GlobalScrollbar } from "@/components/ui/GlobalScrollbar";
+import { CompareModal } from "@/components/ui/CompareModal";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -35,6 +36,7 @@ export default function RootLayout({
           </div>
           <Footer />
           <MobileNavbar />
+          <CompareModal />
         </SessionProvider>
       </body>
     </html>

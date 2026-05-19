@@ -8,6 +8,38 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { calculateMatch, learnProductExpertise } from "@/lib/ai/matcher";
 
+import { serializeProduct, calculateProductScore } from "@/lib/utils";
+
+/**
+ * Récupère le prix moyen pour chaque couple (category_id, type_id)
+ * sous forme de Map (clé: "category_id-type_id")
+ */
+async function getAveragePricesMap(categoryIds: number[], typeIds: number[]) {
+  if (categoryIds.length === 0 || typeIds.length === 0) {
+    return new Map<string, number>();
+  }
+
+  const averages = await prisma.product.groupBy({
+    by: ["category_id", "type_id"],
+    where: {
+      category_id: { in: categoryIds },
+      type_id: { in: typeIds },
+      is_sold: false,
+    },
+    _avg: {
+      price: true,
+    },
+  });
+
+  const averageMap = new Map<string, number>();
+  averages.forEach((item) => {
+    const avg = item._avg.price ? Number(item._avg.price) : 0;
+    averageMap.set(`${item.category_id}-${item.type_id}`, avg);
+  });
+
+  return averageMap;
+}
+
 export async function createProduct(formData: FormData) {
   console.log("🚀 Tentative de création de produit reçue...");
   
@@ -158,6 +190,8 @@ export async function getLatestProducts() {
     include: {
       category: true,
       media: true,
+      brand: true,
+      type: true,
     },
   });
 
@@ -167,7 +201,12 @@ export async function getLatestProducts() {
     interests = sportProfile.interests as string[];
   }
 
-  // 4. Sérialisation et injection dynamique du matchScore
+  // 3b. Récupération des prix moyens
+  const categoryIds = Array.from(new Set(products.map(p => p.category_id)));
+  const typeIds = Array.from(new Set(products.map(p => p.type_id)));
+  const averageMap = await getAveragePricesMap(categoryIds, typeIds);
+
+  // 4. Sérialisation et injection dynamique du matchScore et dealScore
   return Promise.all(products.map(async (p) => {
     let matchScore: number | undefined = undefined;
 
@@ -181,12 +220,22 @@ export async function getLatestProducts() {
       }
     }
 
-    return {
-      ...p,
-      matchScore,
+    const detectedLevel = await learnProductExpertise(p);
+    const serialized = serializeProduct(p);
+    const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+    const dealScore = calculateProductScore({
+      state: p.state,
       price: Number(p.price),
-      created_at: p.created_at.toISOString(),
-      updated_at: p.updated_at.toISOString(),
+      averagePrice: avgPrice,
+      marketPosition: p.brand?.marketPosition || "GENERALIST",
+      accessoryIncluded: p.accessory_included,
+    });
+
+    return {
+      ...serialized,
+      matchScore,
+      dealScore,
+      levelCategory: detectedLevel,
     };
   }));
 }
@@ -228,15 +277,31 @@ export async function getRecommendedProducts() {
         category: true,
         media: true,
         brand: true,
+        type: true,
       },
     });
 
-    return products.map(p => ({
-      ...p,
-      matchScore: 0,
-      price: Number(p.price),
-      created_at: p.created_at.toISOString(),
-      updated_at: p.updated_at.toISOString(),
+    const categoryIds = Array.from(new Set(products.map(p => p.category_id)));
+    const typeIds = Array.from(new Set(products.map(p => p.type_id)));
+    const averageMap = await getAveragePricesMap(categoryIds, typeIds);
+
+    return Promise.all(products.map(async (p) => {
+      const detectedLevel = await learnProductExpertise(p);
+      const serialized = serializeProduct(p);
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const dealScore = calculateProductScore({
+        state: p.state,
+        price: Number(p.price),
+        averagePrice: avgPrice,
+        marketPosition: p.brand?.marketPosition || "GENERALIST",
+        accessoryIncluded: p.accessory_included,
+      });
+      return {
+        ...serialized,
+        matchScore: 0,
+        dealScore,
+        levelCategory: detectedLevel,
+      };
     }));
   }
 
@@ -266,8 +331,13 @@ export async function getRecommendedProducts() {
       category: true,
       media: true,
       brand: true,
+      type: true,
     },
   });
+
+  const categoryIds = Array.from(new Set(products.map(p => p.category_id)));
+  const typeIds = Array.from(new Set(products.map(p => p.type_id)));
+  const averageMap = await getAveragePricesMap(categoryIds, typeIds);
 
   // 5. Calcul des scores réels via l'IA
   console.log(`🧠 [Match] Analyse IA pour ${products.length} produits filtrés...`);
@@ -277,21 +347,38 @@ export async function getRecommendedProducts() {
     try {
       const match = await calculateMatch(sportProfile, p);
       console.log(`✅ [Match] #${p.id}: ${match.score}%`);
-      productsWithScores.push({
-        ...p,
-        matchScore: match.score,
+      const serialized = serializeProduct(p);
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const dealScore = calculateProductScore({
+        state: p.state,
         price: Number(p.price),
-        created_at: p.created_at.toISOString(),
-        updated_at: p.updated_at.toISOString(),
+        averagePrice: avgPrice,
+        marketPosition: p.brand?.marketPosition || "GENERALIST",
+        accessoryIncluded: p.accessory_included,
+      });
+      productsWithScores.push({
+        ...serialized,
+        matchScore: match.score,
+        dealScore,
+        levelCategory: match.detectedLevel,
       });
     } catch (error) {
       console.error("❌ [Match] Erreur IA:", error);
-      productsWithScores.push({
-        ...p,
-        matchScore: 0,
+      const detectedLevel = await learnProductExpertise(p);
+      const serialized = serializeProduct(p);
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const dealScore = calculateProductScore({
+        state: p.state,
         price: Number(p.price),
-        created_at: p.created_at.toISOString(),
-        updated_at: p.updated_at.toISOString(),
+        averagePrice: avgPrice,
+        marketPosition: p.brand?.marketPosition || "GENERALIST",
+        accessoryIncluded: p.accessory_included,
+      });
+      productsWithScores.push({
+        ...serialized,
+        matchScore: 0,
+        dealScore,
+        levelCategory: detectedLevel,
       });
     }
   }
@@ -408,8 +495,13 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
         category: true,
         media: true,
         brand: true,
+        type: true,
       },
     });
+
+    const categoryIds = Array.from(new Set(products.map(p => p.category_id)));
+    const typeIds = Array.from(new Set(products.map(p => p.type_id)));
+    const averageMap = await getAveragePricesMap(categoryIds, typeIds);
 
     // 5. Calcul des scores de compatibilité IA
     let productsWithScores = await Promise.all(products.map(async (p) => {
@@ -424,12 +516,21 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
         }
       }
 
-      return {
-        ...p,
-        matchScore,
+      const detectedLevel = await learnProductExpertise(p);
+      const serialized = serializeProduct(p);
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const dealScore = calculateProductScore({
+        state: p.state,
         price: Number(p.price),
-        created_at: p.created_at.toISOString(),
-        updated_at: p.updated_at.toISOString(),
+        averagePrice: avgPrice,
+        marketPosition: p.brand?.marketPosition || "GENERALIST",
+        accessoryIncluded: p.accessory_included,
+      });
+      return {
+        ...serialized,
+        matchScore,
+        dealScore,
+        levelCategory: detectedLevel,
       };
     }));
 

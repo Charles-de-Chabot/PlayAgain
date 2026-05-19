@@ -53,6 +53,9 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
   const [onlyRecommended, setOnlyRecommended] = useState(false);
 
   // --- AUTRES ÉTATS ---
+  const activeCategoryIds = new Set(initialProducts.map(p => p.category_id));
+  const activeCategories = categories.filter(cat => activeCategoryIds.has(cat.id));
+
   const visibleCardsPerRow = useVisibleCardsCount(3);
   const [products, setProducts] = useState(initialProducts);
   const [visibleCount, setVisibleCount] = useState(12);
@@ -226,7 +229,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                       : "bg-transparent border-white/10 text-white/60 hover:text-white hover:border-white/20"
                   )}
                 >
-                  🎯 Compatibilité Sportive
+                  Compatibilité Sportive
                 </button>
               )}
               <button
@@ -238,7 +241,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                     : "bg-transparent border-white/10 text-white/60 hover:text-white hover:border-white/20"
                 )}
               >
-                ✨ Plus récents
+                Plus récents
               </button>
               <button
                 onClick={() => setSortBy("price_asc")}
@@ -249,7 +252,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                     : "bg-transparent border-white/10 text-white/60 hover:text-white hover:border-white/20"
                 )}
               >
-                📈 Prix : Croissant
+                Prix : Croissant
               </button>
               <button
                 onClick={() => setSortBy("price_desc")}
@@ -260,7 +263,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                     : "bg-transparent border-white/10 text-white/60 hover:text-white hover:border-white/20"
                 )}
               >
-                📉 Prix : Décroissant
+                Prix : Décroissant
               </button>
             </div>
           </div>
@@ -327,7 +330,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
               )}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
+              {activeCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
@@ -538,6 +541,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                     category={product.category?.label || "SPORT"}
                     image={product.media?.[0]?.url}
                     matchScore={product.matchScore > 0 ? product.matchScore : undefined}
+                    fullProduct={product}
                   />
                 ))}
               </div>
@@ -693,7 +697,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                 {isSportsOpen && (
                   <div className="px-5 pb-5 pt-1 border-t border-white/5 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      {categories.map((cat) => (
+                      {activeCategories.map((cat) => (
                         <button
                           key={cat.id}
                           onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}

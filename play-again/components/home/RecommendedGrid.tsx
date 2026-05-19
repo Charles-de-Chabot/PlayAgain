@@ -107,6 +107,7 @@ export function RecommendedGrid() {
                 category={product.category?.label || "SPORT"}
                 image={product.media?.[0]?.url}
                 matchScore={product.matchScore}
+                fullProduct={product}
               />
             ))}
           </div>
