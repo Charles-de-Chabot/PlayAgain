@@ -54,4 +54,9 @@ input[type=number] {
   appearance: none;
 }
 
+/* Cache la navbar mobile quand une modale est ouverte */
+body.modal-open nav.fixed.bottom-0 {
+  display: none !important;
+}
+
 

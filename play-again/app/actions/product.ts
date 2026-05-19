@@ -302,3 +302,152 @@ export async function getRecommendedProducts() {
   return productsWithScores;
 }
 
+export interface GetFilteredProductsParams {
+  searchQuery?: string;
+  categoryId?: number;
+  brandId?: number;
+  conditions?: string[];
+  targetGenders?: string[];
+  sportLevels?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;
+  isShipping?: boolean;
+  onlyRecommended?: boolean;
+}
+
+export async function getBrands() {
+  try {
+    const brands = await prisma.brand.findMany({
+      orderBy: { label: "asc" }
+    });
+    return brands.map(b => ({
+      id: b.id,
+      label: b.label,
+    }));
+  } catch (error) {
+    console.error("❌ Error fetching brands:", error);
+    return [];
+  }
+}
+
+export async function getFilteredProducts(filters: GetFilteredProductsParams) {
+  const session = await auth();
+
+  // 1. Récupération du profil sportif de l'utilisateur s'il est connecté
+  let sportProfile = null;
+  if (session?.user?.id) {
+    sportProfile = await prisma.sportProfile.findUnique({
+      where: { userId: parseInt(session.user.id) }
+    });
+  }
+
+  // 2. Construction de la clause 'where' Prisma
+  const where: any = {
+    is_sold: false, // On n'affiche que les articles non vendus
+  };
+
+  if (filters.searchQuery) {
+    where.OR = [
+      { title: { contains: filters.searchQuery } },
+      { description: { contains: filters.searchQuery } },
+      { brand: { label: { contains: filters.searchQuery } } },
+    ];
+  }
+
+  if (filters.categoryId) {
+    where.category_id = filters.categoryId;
+  }
+
+  if (filters.brandId) {
+    where.brand_id = filters.brandId;
+  }
+
+  if (filters.conditions && filters.conditions.length > 0) {
+    where.state = { in: filters.conditions };
+  }
+
+  if (filters.targetGenders && filters.targetGenders.length > 0) {
+    where.targetGender = { in: filters.targetGenders };
+  }
+
+  if (filters.sportLevels && filters.sportLevels.length > 0) {
+    where.levelCategory = { in: filters.sportLevels };
+  }
+
+  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+    where.price = {};
+    if (filters.minPrice !== undefined) {
+      where.price.gte = filters.minPrice;
+    }
+    if (filters.maxPrice !== undefined) {
+      where.price.lte = filters.maxPrice;
+    }
+  }
+
+  if (filters.isShipping) {
+    where.is_shipping = true;
+  }
+
+  // 3. Tri côté base de données (si ce n'est pas par pertinence d'IA)
+  let orderBy: any = { created_at: "desc" };
+  if (filters.sortBy === "price_asc") {
+    orderBy = { price: "asc" };
+  } else if (filters.sortBy === "price_desc") {
+    orderBy = { price: "desc" };
+  } else if (filters.sortBy === "recent") {
+    orderBy = { created_at: "desc" };
+  }
+
+  try {
+    // 4. Exécution de la requête Prisma
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: filters.sortBy === "match" ? undefined : orderBy,
+      include: {
+        category: true,
+        media: true,
+        brand: true,
+      },
+    });
+
+    // 5. Calcul des scores de compatibilité IA
+    let productsWithScores = await Promise.all(products.map(async (p) => {
+      let matchScore = 0;
+
+      if (sportProfile) {
+        try {
+          const match = await calculateMatch(sportProfile, p);
+          matchScore = match.score;
+        } catch (error) {
+          console.error(`❌ [Filtered Products Match] Erreur IA pour #${p.id}:`, error);
+        }
+      }
+
+      return {
+        ...p,
+        matchScore,
+        price: Number(p.price),
+        created_at: p.created_at.toISOString(),
+        updated_at: p.updated_at.toISOString(),
+      };
+    }));
+
+    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= 60%)
+    if (filters.onlyRecommended && sportProfile) {
+      productsWithScores = productsWithScores.filter(p => p.matchScore >= 60);
+    }
+
+    // 7. Tri par pertinence d'IA si sélectionné
+    if (filters.sortBy === "match" && sportProfile) {
+      productsWithScores.sort((a, b) => b.matchScore - a.matchScore);
+    }
+
+    return productsWithScores;
+  } catch (error) {
+    console.error("❌ Erreur getFilteredProducts:", error);
+    return [];
+  }
+}
+
+

@@ -140,9 +140,9 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
             <div className="flex flex-col items-center justify-center py-20 px-6 rounded-[2rem] bg-zinc-900/10 border border-white/5 border-dashed">
               <ShoppingBag className="w-12 h-12 text-zinc-800 mb-4" />
               <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Aucun achat</p>
-              <button className="mt-6 px-6 py-3 border border-brand-accent/20 text-brand-accent rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-brand-accent hover:text-black transition-all cursor-pointer">
+              <Link href="/shop" className="inline-block mt-6 px-6 py-3 border border-brand-accent/20 text-brand-accent rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-brand-accent hover:text-black transition-all cursor-pointer">
                 Explorer le shop
-              </button>
+              </Link>
             </div>
           )
         )}

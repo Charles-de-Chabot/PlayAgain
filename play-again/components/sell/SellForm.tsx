@@ -144,7 +144,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
       
       {/* SECTION 1 : PHOTOS */}
       <section 
-        className="relative z-40 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-none p-6 md:p-8"
+        className="relative z-40 bg-zinc-900/60 backdrop-blur-3xl border-2 border-white/10 rounded-none p-6 md:p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)]"
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
@@ -204,7 +204,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
       </section>
 
       {/* SECTION 2 : L'ESSENTIEL */}
-      <section className="relative z-30 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-none p-6 md:p-8">
+      <section className="relative z-30 bg-zinc-900/60 backdrop-blur-3xl border-2 border-white/10 rounded-none p-6 md:p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
         <div className="flex items-center gap-4 mb-8">
           <div className="h-10 w-10 bg-brand-primary/10 rounded-none flex items-center justify-center text-brand-primary">
             <Package className="w-5 h-5" />
@@ -312,7 +312,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
       </section>
 
       {/* SECTION 3 : ÉTAT & EXPÉDITION */}
-      <section className="relative z-20 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-none p-6 md:p-8">
+      <section className="relative z-20 bg-zinc-900/60 backdrop-blur-3xl border-2 border-white/10 rounded-none p-6 md:p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 bg-brand-primary/10 rounded-none flex items-center justify-center text-brand-primary">
@@ -426,7 +426,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
       </section>
 
       {/* SECTION 4 : PRIX */}
-      <section className="relative z-10 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-none p-6 md:p-8">
+      <section className="relative z-10 bg-zinc-900/60 backdrop-blur-3xl border-2 border-white/10 rounded-none p-6 md:p-8 shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
         <div className="flex items-center gap-4 mb-8">
           <div className="h-10 w-10 bg-brand-primary/10 rounded-none flex items-center justify-center text-brand-primary">
             <Tag className="w-5 h-5" />

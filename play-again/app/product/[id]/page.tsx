@@ -19,6 +19,7 @@ import { auth } from "@/lib/auth";
 import { calculateMatch } from "@/lib/ai/matcher";
 import { MatchBadge } from "@/components/home/MatchBadge";
 import { CircuitBoard, Info, Star } from "lucide-react";
+import { ProductGallery } from "./ProductGallery";
 
 export default async function ProductDetailPage({ 
   params 
@@ -94,30 +95,11 @@ export default async function ProductDetailPage({
 
   // Block 1: Galerie d'images
   const GalleryBlock = (
-    <div className="space-y-4 w-full">
-      <div className="relative aspect-square rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 shadow-2xl">
-        <img 
-          src={mainImage} 
-          alt={product.title}
-          className="w-full h-full object-cover"
-        />
-        {/* Badge Catégorie */}
-        <div className="absolute top-6 left-6 px-4 py-2 bg-brand-primary/90 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-lg">
-          {product.category.label}
-        </div>
-      </div>
-
-      {/* Thumbnails si plusieurs images */}
-      {product.media.length > 1 && (
-        <div className="grid grid-cols-4 gap-4">
-          {product.media.map((m: any, i: number) => (
-            <div key={m.id} className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${i === 0 ? 'border-brand-primary' : 'border-transparent opacity-50 hover:opacity-100'}`}>
-              <img src={m.url} alt="" className="w-full h-full object-cover" />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <ProductGallery
+      media={product.media}
+      productTitle={product.title}
+      categoryLabel={product.category.label}
+    />
   );
 
   // Block 2: Titre & Prix

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ProductCard } from "@/components/home/ProductCard";
 import { getLatestProducts } from "@/app/actions/product";
 import { useVisibleCardsCount } from "@/hooks/useVisibleCardsCount";
@@ -60,9 +61,9 @@ export function ProductGrid() {
 
       {products.length > 0 && (
         <div className="mt-12 text-center">
-          <button className="px-8 py-3 bg-zinc-900 text-white font-black uppercase italic tracking-widest text-[10px] hover:bg-brand-primary transition-all rounded-none cursor-pointer">
+          <Link href="/shop" className="inline-block px-8 py-3 bg-zinc-900 text-white font-black uppercase italic tracking-widest text-[10px] hover:bg-brand-primary transition-all rounded-none cursor-pointer">
             Voir Tout le Shop
-          </button>
+          </Link>
         </div>
       )}
     </section>
