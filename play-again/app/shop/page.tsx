@@ -16,7 +16,7 @@ export default async function ShopPage() {
   return (
     <main className="min-h-screen bg-black text-white relative overflow-x-hidden font-sans">
       {/* Background Decor - Cohérence de la charte graphique PlayAgain */}
-      <div className="fixed inset-0 z-0 overflow-hidden opacity-40 pointer-events-none">
+      <div className="fixed top-0 left-0 w-screen h-screen z-0 overflow-hidden opacity-40 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] rounded-full bg-brand-primary blur-[140px]" />
         <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-brand-accent blur-[140px] opacity-60" />
       </div>

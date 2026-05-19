@@ -11,6 +11,7 @@ import { ProductCard } from "@/components/home/ProductCard";
 import { getFilteredProducts } from "@/app/actions/product";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibleCardsCount } from "@/hooks/useVisibleCardsCount";
+import { ScrollArea } from "@/components/ui/ScrollArea";
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -179,7 +180,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-6 text-white relative">
+    <div className="w-full max-w-8xl mx-auto px-4 md:px-16 py-6 text-white relative">
       {/* 1. EN-TÊTE DYNAMIQUE */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-white/10 gap-4">
         <div>
@@ -203,10 +204,10 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
       </div>
 
       {/* 2. LAYOUT DE COLONNES */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         
         {/* COLONNE FILTRES (DESKTOP) */}
-        <aside className="hidden lg:flex flex-col gap-6 sticky top-24 self-start max-h-[85vh] overflow-y-auto pr-2 custom-scrollbar">
+        <aside className="hidden lg:flex flex-col gap-6 w-72 shrink-0 top-24 self-start">
           
           {/* Section: Tri */}
           <div className="bg-white/5 border border-white/10 rounded-[24px] p-5 backdrop-blur-xl">
@@ -291,7 +292,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                 <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-brand-accent animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-accent">PlayMatch IA</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-accent">PlayMatch</span>
                   </div>
                   <span className="text-[11px] font-medium text-white/80">Pour mon profil</span>
                 </div>
@@ -515,7 +516,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
         </aside>
 
         {/* 3. GRILLE DE PRODUITS (DROITE) */}
-        <main className="col-span-1 lg:col-span-3 flex flex-col justify-between min-h-[500px]">
+        <main className="flex-1 w-full flex flex-col justify-between min-h-[500px]">
           
           {/* État de chargement global */}
           {isPending && products.length === 0 ? (
@@ -598,7 +599,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
             </div>
 
             {/* Contenu défilant */}
-            <div className="p-6 overflow-y-auto flex flex-col gap-4 pb-6 custom-scrollbar">
+            <ScrollArea className="p-6 flex flex-col gap-4 pb-6">
               
               {/* Carte 1 : Recherche & Tri */}
               <div className="bg-white/5 border border-white/10 rounded-[20px] p-4 flex flex-col gap-4 shrink-0">
@@ -946,7 +947,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                 )}
               </div>
 
-            </div>
+            </ScrollArea>
 
             {/* Actions persistantes figées (Sticky Footer Actions) */}
             <div className="p-5 bg-zinc-950 border-t border-white/10 grid grid-cols-2 gap-4 shrink-0 z-20 pb-8 rounded-b-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">

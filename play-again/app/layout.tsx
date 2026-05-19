@@ -4,6 +4,7 @@ import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNavbar } from "@/components/layout/MobileNavbar";
+import { GlobalScrollbar } from "@/components/ui/GlobalScrollbar";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -26,8 +27,9 @@ export default function RootLayout({
       lang="fr"
       className={`${montserrat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-white text-black">
+      <body className="min-h-full flex flex-col font-sans bg-black text-white">
         <SessionProvider>
+          <GlobalScrollbar />
           <div className="flex-1 flex flex-col">
             {children}
           </div>

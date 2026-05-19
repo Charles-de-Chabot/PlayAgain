@@ -14,7 +14,7 @@ export function Header() {
   const isProfilePage = pathname === "/profile";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-white/40 backdrop-blur-xl px-4 py-3 md:px-6 md:py-4 border-b border-white/20 shadow-2xl">
+    <header className="fixed top-0 left-0 w-screen z-50 flex items-center justify-between bg-white/40 backdrop-blur-xl px-4 py-3 md:px-6 md:py-4 border-b border-white/20 shadow-2xl">
       {/* Logo */}
       <Link href="/" className="flex items-center shrink-0 cursor-pointer">
         <img 
