@@ -19,7 +19,21 @@ async function getAveragePricesMap(categoryIds: number[], typeIds: number[]) {
     return new Map<string, number>();
   }
 
+  // 1. Récupération des moyennes par catégorie, type ET niveau technique
   const averages = await prisma.product.groupBy({
+    by: ["category_id", "type_id", "levelCategory"],
+    where: {
+      category_id: { in: categoryIds },
+      type_id: { in: typeIds },
+      is_sold: false,
+    },
+    _avg: {
+      price: true,
+    },
+  });
+
+  // 2. Récupération des moyennes globales de catégorie/type pour le repli de sécurité (fallback)
+  const globalAverages = await prisma.product.groupBy({
     by: ["category_id", "type_id"],
     where: {
       category_id: { in: categoryIds },
@@ -32,9 +46,17 @@ async function getAveragePricesMap(categoryIds: number[], typeIds: number[]) {
   });
 
   const averageMap = new Map<string, number>();
-  averages.forEach((item) => {
+  
+  // Remplissage des replis par défaut (category-type)
+  globalAverages.forEach((item) => {
     const avg = item._avg.price ? Number(item._avg.price) : 0;
     averageMap.set(`${item.category_id}-${item.type_id}`, avg);
+  });
+
+  // Remplissage des prix spécifiques par niveau (category-type-level)
+  averages.forEach((item) => {
+    const avg = item._avg.price ? Number(item._avg.price) : 0;
+    averageMap.set(`${item.category_id}-${item.type_id}-${item.levelCategory}`, avg);
   });
 
   return averageMap;
@@ -98,6 +120,7 @@ export async function createProduct(formData: FormData) {
   const age = formData.get("age") ? parseInt(formData.get("age") as string) : null;
   const accessory_included = formData.get("accessory_included") === "true";
   const is_shipping = formData.get("is_shipping") === "true";
+  const targetGender = (formData.get("targetGender") as any) || "UNISEX";
 
   // Récupération des images
   const images = formData.getAll("images") as File[];
@@ -118,6 +141,7 @@ export async function createProduct(formData: FormData) {
       age,
       accessory_included,
       is_shipping,
+      targetGender,
     },
   });
 
@@ -222,7 +246,7 @@ export async function getLatestProducts() {
 
     const detectedLevel = await learnProductExpertise(p);
     const serialized = serializeProduct(p);
-    const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+    const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}-${detectedLevel}`) ?? averageMap.get(`${p.category_id}-${p.type_id}`) ?? 0;
     const dealScore = calculateProductScore({
       state: p.state,
       price: Number(p.price),
@@ -288,7 +312,7 @@ export async function getRecommendedProducts() {
     return Promise.all(products.map(async (p) => {
       const detectedLevel = await learnProductExpertise(p);
       const serialized = serializeProduct(p);
-      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}-${detectedLevel}`) ?? averageMap.get(`${p.category_id}-${p.type_id}`) ?? 0;
       const dealScore = calculateProductScore({
         state: p.state,
         price: Number(p.price),
@@ -348,7 +372,7 @@ export async function getRecommendedProducts() {
       const match = await calculateMatch(sportProfile, p);
       console.log(`✅ [Match] #${p.id}: ${match.score}%`);
       const serialized = serializeProduct(p);
-      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}-${match.detectedLevel}`) ?? averageMap.get(`${p.category_id}-${p.type_id}`) ?? 0;
       const dealScore = calculateProductScore({
         state: p.state,
         price: Number(p.price),
@@ -366,7 +390,7 @@ export async function getRecommendedProducts() {
       console.error("❌ [Match] Erreur IA:", error);
       const detectedLevel = await learnProductExpertise(p);
       const serialized = serializeProduct(p);
-      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}-${detectedLevel}`) ?? averageMap.get(`${p.category_id}-${p.type_id}`) ?? 0;
       const dealScore = calculateProductScore({
         state: p.state,
         price: Number(p.price),
@@ -518,7 +542,7 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
 
       const detectedLevel = await learnProductExpertise(p);
       const serialized = serializeProduct(p);
-      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}`) || 0;
+      const avgPrice = averageMap.get(`${p.category_id}-${p.type_id}-${detectedLevel}`) ?? averageMap.get(`${p.category_id}-${p.type_id}`) ?? 0;
       const dealScore = calculateProductScore({
         state: p.state,
         price: Number(p.price),
@@ -534,9 +558,22 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
       };
     }));
 
-    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= 60%)
+    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= 60% + Sports Favoris)
     if (filters.onlyRecommended && sportProfile) {
-      productsWithScores = productsWithScores.filter(p => p.matchScore >= 60);
+      const userInterests = Array.isArray(sportProfile.interests)
+        ? (sportProfile.interests as string[]).map(i => i.toLowerCase().trim())
+        : [];
+
+      productsWithScores = productsWithScores.filter(p => {
+        // Doit correspondre au niveau (score >= 60)
+        const matchesLevel = p.matchScore >= 60;
+        
+        // Doit correspondre à un sport/catégorie favori de l'utilisateur
+        const productCategory = p.category?.label?.toLowerCase().trim();
+        const matchesInterest = userInterests.length === 0 || (productCategory && userInterests.includes(productCategory));
+        
+        return matchesLevel && matchesInterest;
+      });
     }
 
     // 7. Tri par pertinence d'IA si sélectionné

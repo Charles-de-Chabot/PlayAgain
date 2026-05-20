@@ -115,7 +115,7 @@ export function RecommendedGrid() {
           {products.length > visibleCount && (
             <div className="mt-12 text-center animate-fade-in">
               <Link 
-                href="/shop" 
+                href="/shop?playmatch=true" 
                 className="px-8 py-3 bg-zinc-900 text-white font-black uppercase italic tracking-widest text-[10px] hover:bg-brand-accent hover:text-black transition-all rounded-none cursor-pointer inline-block"
               >
                 voir +

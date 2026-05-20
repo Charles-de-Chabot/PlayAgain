@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 interface Category {
   id: number;
   name: string;
+  productCount?: number;
 }
 
 interface Brand {
@@ -28,12 +29,33 @@ interface ShopCatalogProps {
   initialProducts: any[];
   categories: Category[];
   brands: Brand[];
+  initialPlayMatch?: boolean;
+  initialCategory?: number | null;
+  initialSearchQuery?: string | null;
 }
 
-export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalogProps) {
+const hasSavedFilters = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    return !!sessionStorage.getItem("playagain_shop_filters");
+  } catch {
+    return false;
+  }
+};
+
+export function ShopCatalog({ 
+  initialProducts, 
+  categories, 
+  brands, 
+  initialPlayMatch = false,
+  initialCategory = null,
+  initialSearchQuery = null
+}: ShopCatalogProps) {
   const { isAuthenticated } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+  const [isRestoringFilters, setIsRestoringFilters] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -50,11 +72,97 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
   const [maxPrice, setMaxPrice] = useState<number | "">("");
   const [sortBy, setSortBy] = useState<string>(isAuthenticated ? "match" : "recent");
   const [isShipping, setIsShipping] = useState(false);
-  const [onlyRecommended, setOnlyRecommended] = useState(false);
+  const [onlyRecommended, setOnlyRecommended] = useState(initialPlayMatch);
+
+  // 1. Charger les filtres depuis sessionStorage au montage (côté client uniquement)
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("playagain_shop_filters");
+      if (saved) {
+        // Des filtres existent ! On masque la grille initiale pour éviter le flash
+        setIsRestoringFilters(true);
+        
+        const filters = JSON.parse(saved);
+        
+        // Priorité absolue à la requête de recherche de l'URL (initialSearchQuery)
+        if (initialSearchQuery !== undefined && initialSearchQuery !== null) {
+          setSearchQuery(initialSearchQuery);
+        } else if (filters.searchQuery !== undefined) {
+          setSearchQuery(filters.searchQuery);
+        }
+        
+        // Priorité absolue à la catégorie passée en paramètre d'URL (initialCategory)
+        if (initialCategory !== undefined && initialCategory !== null) {
+          setSelectedCategory(initialCategory);
+        } else if (filters.selectedCategory !== undefined) {
+          setSelectedCategory(filters.selectedCategory);
+        }
+        
+        if (filters.selectedBrand !== undefined) setSelectedBrand(filters.selectedBrand);
+        if (filters.selectedConditions !== undefined) setSelectedConditions(filters.selectedConditions);
+        if (filters.selectedGenders !== undefined) setSelectedGenders(filters.selectedGenders);
+        if (filters.selectedLevels !== undefined) setSelectedLevels(filters.selectedLevels);
+        if (filters.minPrice !== undefined) setMinPrice(filters.minPrice);
+        if (filters.maxPrice !== undefined) setMaxPrice(filters.maxPrice);
+        if (filters.sortBy !== undefined) setSortBy(filters.sortBy);
+        if (filters.isShipping !== undefined) setIsShipping(filters.isShipping);
+        
+        // Si playmatch=true est forcé dans l'URL, on le garde actif
+        if (initialPlayMatch) {
+          setOnlyRecommended(true);
+        } else if (filters.onlyRecommended !== undefined) {
+          setOnlyRecommended(filters.onlyRecommended);
+        }
+      } else {
+        // Pas de filtres enregistrés, on applique les props initiales
+        if (initialCategory !== undefined && initialCategory !== null) {
+          setSelectedCategory(initialCategory);
+        }
+        if (initialSearchQuery !== undefined && initialSearchQuery !== null) {
+          setSearchQuery(initialSearchQuery);
+        }
+        if (initialPlayMatch) {
+          setIsRestoringFilters(true);
+          setOnlyRecommended(true);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load filters from sessionStorage:", e);
+    } finally {
+      setFiltersLoaded(true);
+    }
+  }, [initialPlayMatch, initialCategory, initialSearchQuery]);
+
+  // 2. Enregistrer les filtres dans sessionStorage à chaque modification
+  useEffect(() => {
+    if (!filtersLoaded) return;
+
+    const filters = {
+      searchQuery,
+      selectedCategory,
+      selectedBrand,
+      selectedConditions,
+      selectedGenders,
+      selectedLevels,
+      minPrice,
+      maxPrice,
+      sortBy,
+      isShipping,
+      onlyRecommended,
+    };
+    try {
+      sessionStorage.setItem("playagain_shop_filters", JSON.stringify(filters));
+    } catch (e) {
+      console.error("Failed to save filters to sessionStorage:", e);
+    }
+  }, [
+    filtersLoaded, searchQuery, selectedCategory, selectedBrand, selectedConditions,
+    selectedGenders, selectedLevels, minPrice, maxPrice, sortBy,
+    isShipping, onlyRecommended
+  ]);
 
   // --- AUTRES ÉTATS ---
-  const activeCategoryIds = new Set(initialProducts.map(p => p.category_id));
-  const activeCategories = categories.filter(cat => activeCategoryIds.has(cat.id));
+  const activeCategories = categories.filter(cat => cat.productCount && cat.productCount > 0);
 
   const visibleCardsPerRow = useVisibleCardsCount(3);
   const [products, setProducts] = useState(initialProducts);
@@ -119,19 +227,23 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
         setVisibleCount(visibleCardsPerRow * 4); // Reset visible count on filter
       } catch (error) {
         console.error("Erreur de filtrage :", error);
+      } finally {
+        setIsRestoringFilters(false);
       }
     });
   };
 
   // Déclencher le filtrage automatique sur changement des filtres (sauf recherche textuelle brute immédiate)
   useEffect(() => {
+    if (!filtersLoaded) return;
+
     const delayDebounceFn = setTimeout(() => {
       handleApplyFilters();
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [
-    searchQuery, selectedCategory, selectedBrand, selectedConditions, 
+    filtersLoaded, searchQuery, selectedCategory, selectedBrand, selectedConditions, 
     selectedGenders, selectedLevels, minPrice, maxPrice, sortBy, 
     isShipping, onlyRecommended
   ]);
@@ -316,7 +428,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
               </div>
               <p className="text-[9px] text-white/50 mt-3 leading-relaxed flex items-start gap-1">
                 <Info className="w-3 h-3 shrink-0 text-brand-accent mt-0.5" />
-                Masque tous les articles qui ne matchent pas avec votre niveau sportif actuel.
+                Affiche seulement les articles de vos sports favoris correspondant à votre niveau.
               </p>
             </div>
           )}
@@ -522,7 +634,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
         <main className="flex-1 w-full flex flex-col justify-between min-h-[500px]">
           
           {/* État de chargement global */}
-          {isPending && products.length === 0 ? (
+          {(!filtersLoaded && hasSavedFilters()) || isRestoringFilters || (isPending && products.length === 0) ? (
             <div className="flex flex-col items-center justify-center flex-1 py-32">
               <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
               <span className="text-xs uppercase font-black italic tracking-widest text-zinc-500">Mise à jour du catalogue...</span>
@@ -671,7 +783,7 @@ export function ShopCatalog({ initialProducts, categories, brands }: ShopCatalog
                   </div>
                   <p className="text-[8.5px] text-white/40 mt-2.5 leading-relaxed flex items-start gap-1">
                     <Info className="w-3 h-3 shrink-0 text-brand-accent mt-0.5" />
-                    Masque tous les articles inadaptés à vos caractéristiques ou votre niveau de sport.
+                    Masque tous les articles inadaptés à vos sports favoris ou votre niveau de sport.
                   </p>
                 </div>
               )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, User, LogOut } from "lucide-react";
@@ -10,17 +11,28 @@ export function Header() {
   const { isAuthenticated, user } = useAuth();
   const pathname = usePathname();
 
+  // Nettoyage intelligent des filtres du shop quand on change d'univers (accueil, profil, etc.)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isShop = pathname === "/shop";
+      const isProduct = pathname.startsWith("/product/");
+      if (!isShop && !isProduct) {
+        sessionStorage.removeItem("playagain_shop_filters");
+      }
+    }
+  }, [pathname]);
+
   const isHomePage = pathname === "/";
   const isProfilePage = pathname === "/profile";
 
   return (
-    <header className="fixed top-0 left-0 w-screen z-50 flex items-center justify-between bg-white/40 backdrop-blur-xl px-4 py-3 md:px-6 md:py-4 border-b border-white/20 shadow-2xl">
+    <header className="fixed top-0 left-0 w-screen z-50 flex items-center justify-between bg-white/40 backdrop-blur-xl px-4 py-1.5 md:px-6 md:py-2 border-b border-white/20 shadow-2xl">
       {/* Logo */}
       <Link href="/" className="flex items-center shrink-0 cursor-pointer">
         <img 
           src="/images/logoTopPlayAgain.png" 
           alt="PlayAgain Logo" 
-          className="h-[40px] w-auto md:h-[49px] brightness-110"
+          className="h-[30px] w-auto md:h-[38px] brightness-110"
         />
       </Link>
       

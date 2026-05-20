@@ -1,11 +1,19 @@
 "use client";
 
 import { useCompareStore } from "@/store/useCompareStore";
-import { X, HelpCircle } from "lucide-react";
+import { X, HelpCircle, CheckCircle2, AlertTriangle, ArrowUpCircle } from "lucide-react";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MatchBadge } from "@/components/home/MatchBadge";
 import { cn } from "@/lib/utils";
+import { getSportProfile } from "@/app/actions/sport-profile";
+
+const LEVEL_VALUES: Record<string, number> = {
+  BEGINNER: 1,
+  INTERMEDIATE: 2,
+  ADVANCED: 3,
+  PRO: 4,
+};
 
 const getLevelLabel = (level?: string | null) => {
   if (!level) return null;
@@ -21,6 +29,14 @@ const getLevelLabel = (level?: string | null) => {
     default:
       return level;
   }
+};
+
+const getLevelDifference = (userLevel?: string | null, productLevel?: string | null) => {
+  if (!userLevel || !productLevel) return null;
+  const userVal = LEVEL_VALUES[userLevel];
+  const prodVal = LEVEL_VALUES[productLevel];
+  if (!userVal || !prodVal) return null;
+  return prodVal - userVal;
 };
 
 const getLevelStyles = (level?: string | null) => {
@@ -41,14 +57,23 @@ const getLevelStyles = (level?: string | null) => {
 
 export function CompareModal() {
   const { productA, productB, isComparingMode, clearComparison } = useCompareStore();
+  const [userLevel, setUserLevel] = useState<string | null>(null);
 
   const isOpen = productA !== null && productB !== null;
   const showBanner = isComparingMode && productA !== null && productB === null;
 
-  // Prevent scrolling when modal is open
+  // Prevent scrolling and fetch sport profile level when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      // Fetch user sport profile to get their level
+      getSportProfile().then((profile) => {
+        if (profile && profile.level) {
+          setUserLevel(profile.level);
+        }
+      }).catch((err) => {
+        console.error("Failed to load user level", err);
+      });
     } else {
       document.body.style.overflow = "unset";
     }
@@ -58,6 +83,135 @@ export function CompareModal() {
   }, [isOpen]);
 
   if (!isOpen && !showBanner) return null;
+
+  const renderLevelMatch = (productLevel?: string | null) => {
+    const prodLabel = getLevelLabel(productLevel) || "Tous niveaux";
+    if (!userLevel) {
+      return <span className="text-white/80">{prodLabel}</span>;
+    }
+    
+    // If product has no level restriction (e.g. generalist product), it fits all levels perfectly
+    if (!productLevel) {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="text-white/80 font-medium">{prodLabel}</span>
+          <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold w-fit">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Adapté à tous !
+          </span>
+        </div>
+      );
+    }
+
+    const diff = getLevelDifference(userLevel, productLevel);
+    if (diff === null) {
+      return <span className="text-white/80">{prodLabel}</span>;
+    }
+
+    if (diff === 0) {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="text-white font-semibold">{prodLabel}</span>
+          <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold w-fit animate-pulse">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Match parfait !
+          </span>
+        </div>
+      );
+    } else if (diff < 0) {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="text-white/85 font-medium">{prodLabel}</span>
+          <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded bg-zinc-500/10 border border-zinc-500/30 text-zinc-400 font-bold w-fit">
+            <ArrowUpCircle className="w-3.5 h-3.5 shrink-0 rotate-180" /> En dessous (facile)
+          </span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="text-white font-semibold">{prodLabel}</span>
+          <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold w-fit">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Exigeant (au-dessus)
+          </span>
+        </div>
+      );
+    }
+  };
+
+  const getLevelAdvice = () => {
+    if (!userLevel || !productA || !productB) return null;
+    const userLabel = getLevelLabel(userLevel);
+    const diffA = productA.levelCategory ? (getLevelDifference(userLevel, productA.levelCategory) ?? 0) : 0;
+    const diffB = productB.levelCategory ? (getLevelDifference(userLevel, productB.levelCategory) ?? 0) : 0;
+
+    // If neither has a restriction, they both match
+    if (productA.levelCategory === null && productB.levelCategory === null) {
+      return (
+        <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+          <strong>Côté niveau :</strong> Ces deux articles conviennent parfaitement à tout le monde, y compris à votre profil de sportif <strong>{userLabel}</strong>. Vous pouvez faire votre choix sereinement selon le prix ou l'état.
+        </p>
+      );
+    }
+
+    // Case 1: Both match perfectly
+    if (diffA === 0 && diffB === 0) {
+      return (
+        <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+          <strong>Côté niveau :</strong> Les deux articles sont parfaitement adaptés à votre profil <strong>{userLabel}</strong>. C'est un match parfait pour votre pratique !
+        </p>
+      );
+    }
+
+    // Case 2: Product A matches perfectly, Product B does not
+    if (diffA === 0 && diffB !== 0) {
+      const detailB = diffB > 0 
+        ? `exige un niveau plus technique et rigoureux (${getLevelLabel(productB.levelCategory)})`
+        : `est plutôt destiné à un niveau inférieur (${getLevelLabel(productB.levelCategory)})`;
+      return (
+        <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+          <strong>Côté niveau :</strong> L'article <strong>{productA.title}</strong> est idéalement adapté à votre profil <strong>{userLabel}</strong> (Match Parfait), tandis que <strong>{productB.title}</strong> {detailB}.
+        </p>
+      );
+    }
+
+    // Case 3: Product B matches perfectly, Product A does not
+    if (diffB === 0 && diffA !== 0) {
+      const detailA = diffA > 0 
+        ? `exige un niveau plus technique et rigoureux (${getLevelLabel(productA.levelCategory)})`
+        : `est plutôt destiné à un niveau inférieur (${getLevelLabel(productA.levelCategory)})`;
+      return (
+        <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+          <strong>Côté niveau :</strong> L'article <strong>{productB.title}</strong> est idéalement adapté à votre profil <strong>{userLabel}</strong> (Match Parfait), tandis que <strong>{productA.title}</strong> {detailA}.
+        </p>
+      );
+    }
+
+    // Case 4: Both are demanding (higher level)
+    if (diffA > 0 && diffB > 0) {
+      return (
+        <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+          <strong>Côté niveau :</strong> Attention, ces deux articles ({getLevelLabel(productA.levelCategory)} & {getLevelLabel(productB.levelCategory)}) sont très techniques et exigeants pour votre niveau actuel de <strong>{userLabel}</strong>. Ils pourraient s'avérer difficiles à maîtriser ou fatigants lors de vos sessions.
+        </p>
+      );
+    }
+
+    // Case 5: Both are lower level
+    if (diffA < 0 && diffB < 0) {
+      return (
+        <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+          <strong>Côté niveau :</strong> Ces deux modèles sont destinés à un niveau inférieur à votre profil <strong>{userLabel}</strong>. Ils risquent de freiner votre progression technique ou de manquer de réactivité sous vos pieds/dans vos mains.
+        </p>
+      );
+    }
+
+    // Case 6: Divergent (one lower, one higher)
+    const higherProduct = diffA > 0 ? productA : productB;
+    const lowerProduct = diffA < 0 ? productA : productB;
+    return (
+      <p className="text-white/85 text-xs sm:text-sm mt-3 pt-3 border-t border-white/10">
+        <strong>Côté niveau :</strong> <strong>{lowerProduct.title}</strong> sera plus accessible et tolérant pour votre niveau <strong>{userLabel}</strong>, alors que <strong>{higherProduct.title}</strong> sera plus exigeant mais offrira une marge de progression stimulante.
+      </p>
+    );
+  };
 
   return (
     <>
@@ -82,7 +236,7 @@ export function CompareModal() {
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto global-scrollbar relative shadow-2xl animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b bg-[#111111]/95 backdrop-blur-md border-white/10">
+            <div className="sticky top-0 z-30 flex items-center justify-between p-4 sm:p-6 border-b bg-[#111111]/95 backdrop-blur-md border-white/10">
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Comparaison</h2>
                 <p className="text-white/60 text-xs sm:text-sm mt-1">
@@ -177,7 +331,7 @@ export function CompareModal() {
                       className="h-8 md:h-10 w-auto object-contain shrink-0 brightness-110"
                       />
                    </div>
-                   <div>
+                   <div className="w-full">
                       <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
                         {productA.dealScore && productB.dealScore ? (
                           <>
@@ -201,14 +355,18 @@ export function CompareModal() {
                           </>
                         )}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-[#5ce1e6] mt-2 flex items-center gap-1">
-                        <HelpCircle className="w-3 h-3" /> Note: Cette recommandation intelligente croise l'état physique de l'objet, le positionnement de marque et les accessoires inclus.
+
+                      {/* Diagnostic personnalisé selon le niveau sportif de l'utilisateur */}
+                      {getLevelAdvice()}
+
+                      <p className="text-[10px] sm:text-xs text-[#5ce1e6] mt-2.5 flex items-center gap-1">
+                        <HelpCircle className="w-3.5 h-3.5 shrink-0" /> Note: Cette recommandation intelligente croise l'état physique de l'objet, le niveau d'usage requis, le positionnement de marque et les accessoires inclus.
                       </p>
                    </div>
                 </div>
               </div>
 
-              <div className="mt-6 sm:mt-8 border border-white/10 rounded-xl overflow-hidden">
+              <div className="mt-6 sm:mt-8 border border-white/10 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
                 {/* Rows of comparison */}
                 {productA.dealScore && productB.dealScore && (
                   <ComparisonRow 
@@ -229,7 +387,22 @@ export function CompareModal() {
                 )}
                 <ComparisonRow label="État" valA={productA.condition.replace('_', ' ')} valB={productB.condition.replace('_', ' ')} />
                 <ComparisonRow label="Marque" valA={productA.brand} valB={productB.brand} />
-                <ComparisonRow label="Niveau requis" valA={getLevelLabel(productA.levelCategory) || "Tous niveaux"} valB={getLevelLabel(productB.levelCategory) || "Tous niveaux"} />
+                
+                <ComparisonRow 
+                  label={
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold">Niveau requis</span>
+                      {userLevel && (
+                        <span className="text-[9px] text-[#5ce1e6] font-extrabold uppercase tracking-wide bg-[#5ce1e6]/10 px-2 py-0.5 rounded border border-[#5ce1e6]/25 w-fit">
+                          Votre profil : {getLevelLabel(userLevel)}
+                        </span>
+                      )}
+                    </div>
+                  } 
+                  valA={renderLevelMatch(productA.levelCategory)} 
+                  valB={renderLevelMatch(productB.levelCategory)} 
+                />
+
                 {productA.matchScore !== undefined && productA.matchScore !== null && productA.matchScore > 0 && productB.matchScore !== undefined && productB.matchScore !== null && productB.matchScore > 0 && (
                   <ComparisonRow 
                     label="Compatibilité" 
@@ -249,9 +422,9 @@ export function CompareModal() {
   );
 }
 
-function ComparisonRow({ label, valA, valB }: { label: string; valA: React.ReactNode; valB: React.ReactNode }) {
+function ComparisonRow({ label, valA, valB }: { label: React.ReactNode; valA: React.ReactNode; valB: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[100px_1fr_1fr] sm:grid-cols-[150px_1fr_1fr] border-b border-white/10 last:border-0">
+    <div className="grid grid-cols-[100px_1fr_1fr] sm:grid-cols-[150px_1fr_1fr] border-b border-white/10 last:border-0 hover:bg-white/[0.01] transition-colors">
       <div className="p-3 sm:p-4 bg-white/5 font-medium text-white/60 text-xs sm:text-sm flex items-center">
         {label}
       </div>

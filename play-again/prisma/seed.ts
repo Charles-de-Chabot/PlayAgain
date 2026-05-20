@@ -622,11 +622,60 @@ async function main() {
         {id: 225, label: "Theragun"},
     ]
 
+    // Listes de classification pour le peuplement propre
+    const premiumLabels = [
+        "Arc'teryx", "Patagonia", "Lululemon", "Alo Yoga", "Gratz", "Balanced Body",
+        "Lacoste", "Hermes", "Antarès", "Horse Pilot", "La Martina", "Cassablanca",
+        "Stubben", "Prestige", "Stephen's", "CWD", "Pinarello", "Eleiko", "Technogym", "Specialized"
+    ].map(l => l.toUpperCase());
+
+    const technicalLabels = [
+        "Salomon", "Columbia", "The North Face", "Merrell", "Rossignol", "Burton", "Head",
+        "Atomic", "Petzl", "Black Diamond", "La Sportiva", "Mammut", "Millet", "Helly Hansen",
+        "Nike", "Asics", "Adidas", "Brooks", "Hoka", "New Balance", "Saucony", "Trek",
+        "Scott", "Giant", "Canyon", "Shimano", "Under Armour", "Manduka", "Prana", "Gymshark",
+        "Nobull", "Rogue Fitness", "Spalding", "Wilson", "Canterbury", "Gilbert", "Mikasa",
+        "Mizuno", "Kempa", "Hummel", "Select", "Bauer", "CCM", "Warrior", "Grays", "Ritual",
+        "Babolat", "Yonex", "Butterfly", "Cornilleau", "Stiga", "Joola", "Technifibre", "Bullpadel",
+        "Venum", "Hayabusa", "Everlast", "Title", "Cleto Reyes", "Hoyt", "Mathews", "Easton",
+        "Win&Win", "Speedo", "Arena", "TYR", "Quiksilver", "Roxy", "Billabong", "O'Neill",
+        "Rip Curl", "Mares", "Cressi", "Scubapro", "Aqualung", "Pyranha", "Perception", "Tahe",
+        "Musto", "Gill", "Jobe", "O'Brien", "Yamaha", "Edea", "Risport", "Riedell", "Rollerblade",
+        "Powerslide", "Roces", "Repetto", "Bloch", "Capezio", "Sansha", "Pikeur", "Santa Cruz",
+        "Element", "Leki", "Osprey", "Deuter", "Komperdell", "Oakley", "Smith", "Fischer", "K2",
+        "Union", "Beal", "Edelrid", "Grivel", "Camp", "Garmin", "Polar", "Camelbak", "Coros",
+        "Look", "Giro", "Campagnolo", "Continental", "Life Fitness", "Concept2", "Assault Fitness",
+        "Xenios", "Molten", "Goalrilla", "SKLZ", "Steeden", "Senoh", "STX", "Malmsten", "Turbo",
+        "Luxilon", "Lobster", "Donic", "Tibhar", "DHS", "Nox", "StarVie", "Ashaway", "Beiter",
+        "Shibuya", "FINIS", "FCS", "Dakine", "Firewire", "Suunto", "Apeks", "Tusa", "Werner",
+        "Palm", "Hiko", "Harken", "Ronstan", "North Sails", "Liquid Force", "Hyperlite", "Ronix",
+        "Bont", "Seba", "Bones", "Freejump", "Gill Athletics", "Nordic Sport", "Independent",
+        "Spitfire", "Powell-Peralta", "SRAM", "Wahoo", "Zipp", "Bowtech", "PSE Archery", "Nelo",
+        "Tatami Fightwear", "Theragun"
+    ].map(l => l.toUpperCase());
+
+    console.log("Enrichissement des positions de marché des marques...");
+    const enrichedMarques = marques.map(m => {
+        const labelUpper = m.label.toUpperCase();
+        let marketPosition: "GENERALIST" | "TECHNICAL" | "PREMIUM" = "GENERALIST";
+
+        if (premiumLabels.includes(labelUpper)) {
+            marketPosition = "PREMIUM";
+        } else if (technicalLabels.includes(labelUpper)) {
+            marketPosition = "TECHNICAL";
+        }
+
+        return {
+            ...m,
+            marketPosition
+        };
+    });
+
     console.log("Insertion des marques...");
-    for(const marque of marques) {
+    for(const marque of enrichedMarques) {
         await prisma.brand.upsert({
             where: {id: marque.id},
-            update:{ label: marque.label },
+            update:{ label: marque.label, marketPosition: marque.marketPosition },
             create: marque,
         })
     }

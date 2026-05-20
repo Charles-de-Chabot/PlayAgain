@@ -27,6 +27,7 @@ export async function getCategories() {
     return sortedCategories.map(c => ({
       id: c.id,
       name: c.label,
+      productCount: c._count.products,
     }));
   } catch (error) {
     console.error("❌ Error fetching and sorting categories from database:", error);

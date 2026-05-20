@@ -106,8 +106,8 @@ export function calculateProductScore({
   // 2. Facteur d'ajustement selon la gamme de la marque
   const brandFactors: Record<string, number> = {
     GENERALIST: 1.0,
-    TECHNICAL: 1.25,
-    PREMIUM: 1.5,
+    TECHNICAL: 1.6,
+    PREMIUM: 2.8,
   };
   const brandFactor = brandFactors[marketPosition] ?? 1.0;
 
@@ -118,19 +118,19 @@ export function calculateProductScore({
   if (averagePrice > 0) {
     const ratio = price / adjustedAveragePrice;
     if (ratio <= 1) {
-      // Prix inférieur ou égal à l'attendu -> Bonus (max 100)
-      priceScore = Math.min(100, 70 + (1 - ratio) * 50);
+      // Prix inférieur ou égal à l'attendu -> Bonus quadratique progressif (max 100)
+      priceScore = Math.min(100, Math.round(70 + 30 * Math.pow(1 - ratio, 2)));
     } else {
-      // Prix supérieur à l'attendu -> Pénalité (min 0)
-      priceScore = Math.max(0, 70 - (ratio - 1) * 50);
+      // Prix supérieur à l'attendu -> Pénalité exponentielle sévère (min 0)
+      priceScore = Math.max(0, Math.round(70 * Math.exp(-2.5 * (ratio - 1))));
     }
   }
 
   // 4. Calcul du bonus accessoires (+10 pts)
   const accessoryBonus = accessoryIncluded ? 10 : 0;
 
-  // 5. Score final pondéré
-  const finalScore = (0.6 * stateScore) + (0.4 * priceScore) + accessoryBonus;
+  // 5. Score final pondéré (50% État / 50% Prix)
+  const finalScore = (0.5 * stateScore) + (0.5 * priceScore) + accessoryBonus;
   const score = Math.max(0, Math.min(100, Math.round(finalScore)));
 
   // 6. Choix des classes de style UI/UX haut de gamme

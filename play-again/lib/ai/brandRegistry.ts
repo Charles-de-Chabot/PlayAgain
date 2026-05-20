@@ -103,15 +103,36 @@ export function getTheoreticalLevel(brandName: string, text: string): string | n
   if (!brand) return null;
 
   const upperText = text.toUpperCase();
-  
+  // Remplacement de la ponctuation courante par des espaces pour isoler les mots propres
+  const words = upperText.split(/[\s,./_#'"-]+/).filter(Boolean);
+  const wordSet = new Set(words);
+
   for (const range of brand.ranges) {
-    // Si le nom de la gamme est présent dans le texte
-    if (upperText.includes(range.name.toUpperCase())) {
-      return range.level;
+    // 1. Détection de la gamme (nom de gamme)
+    const rangeUpper = range.name.toUpperCase();
+    if (rangeUpper.includes(" ")) {
+      // Si la gamme comprend plusieurs mots (ex: "WORLD CUP")
+      if (upperText.includes(rangeUpper)) {
+        return range.level;
+      }
+    } else {
+      if (wordSet.has(rangeUpper)) {
+        return range.level;
+      }
     }
-    // Sinon on cherche les mots clés spécifiques
-    if (range.keywords.some((k: string) => upperText.includes(k.toUpperCase()))) {
-      return range.level;
+
+    // 2. Détection par mots-clés spécifiques (mots entiers uniquement)
+    for (const keyword of range.keywords) {
+      const kwUpper = keyword.toUpperCase();
+      if (kwUpper.includes(" ")) {
+        if (upperText.includes(kwUpper)) {
+          return range.level;
+        }
+      } else {
+        if (wordSet.has(kwUpper)) {
+          return range.level;
+        }
+      }
     }
   }
 

@@ -5,12 +5,31 @@ import { getBrands, getFilteredProducts } from "@/app/actions/product";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopPage() {
+export default async function ShopPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ playmatch?: string; category?: string; q?: string }> | { playmatch?: string; category?: string; q?: string };
+}) {
+  const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
+  const playMatchActive = resolvedParams?.playmatch === "true";
+  
+  // Validation de la catégorie passée en paramètre
+  const categoryParam = resolvedParams?.category;
+  const initialCategoryId = categoryParam ? parseInt(categoryParam, 10) : null;
+  const validCategoryId = (initialCategoryId && !isNaN(initialCategoryId)) ? initialCategoryId : null;
+
+  // Extraction de la requête de recherche passée en paramètre
+  const searchQueryParam = resolvedParams?.q || null;
+
   // Récupération initiale des données côté serveur pour un chargement rapide
   const [categories, brands, initialProducts] = await Promise.all([
     getCategories(),
     getBrands(),
-    getFilteredProducts({}), // Récupère tous les produits actifs par défaut triés par récents
+    getFilteredProducts({
+      onlyRecommended: playMatchActive || undefined,
+      categoryId: validCategoryId || undefined,
+      searchQuery: searchQueryParam || undefined,
+    }), // Pré-filtrage côté serveur si PlayMatch, une catégorie ou une recherche est active par défaut
   ]);
 
   return (
@@ -21,7 +40,7 @@ export default async function ShopPage() {
         <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-brand-accent blur-[140px] opacity-60" />
       </div>
 
-      <div className="relative z-10 pt-[80px] md:pt-[96px] pb-16">
+      <div className="relative z-10 pt-[76px] md:pt-[96px] pb-16">
         <Header />
         
         {/* Composant catalogue avec filtres dynamiques */}
@@ -29,6 +48,9 @@ export default async function ShopPage() {
           initialProducts={initialProducts}
           categories={categories}
           brands={brands}
+          initialPlayMatch={playMatchActive}
+          initialCategory={validCategoryId}
+          initialSearchQuery={searchQueryParam}
         />
       </div>
     </main>

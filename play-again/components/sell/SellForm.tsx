@@ -30,6 +30,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
     age: "",
     accessory_included: false,
     is_shipping_available: true,
+    targetGender: "UNISEX",
   });
 
   // Filtrage dynamique des types en fonction de la catégorie sélectionnée
@@ -47,6 +48,13 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
     { value: "EXCELLENT", label: "Très bon état" },
     { value: "BON", label: "Bon état" },
     { value: "SATISFAISANT", label: "Satisfaisant" },
+  ];
+
+  const genders = [
+    { value: "MAN", label: "Homme" },
+    { value: "WOMAN", label: "Femme" },
+    { value: "UNISEX", label: "Unisexe" },
+    { value: "KIDS", label: "Enfant" },
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -87,6 +95,7 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
     submissionData.append("age", formData.age);
     submissionData.append("accessory_included", formData.accessory_included.toString());
     submissionData.append("is_shipping", formData.is_shipping_available.toString());
+    submissionData.append("targetGender", formData.targetGender);
 
     images.forEach(img => {
       submissionData.append("images", img);
@@ -294,6 +303,32 @@ export function SellForm({ categories, brands, types, userCity }: SellFormProps)
                   +
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Public / Genre ciblé */}
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-3 italic">Genre / Public ciblé</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {genders.map((g) => (
+                <button
+                  key={g.value}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, targetGender: g.value }))}
+                  className={cn(
+                    "p-4 border text-[10px] font-black uppercase tracking-widest transition-all text-center flex flex-col items-center justify-center gap-1 group cursor-pointer relative overflow-hidden",
+                    formData.targetGender === g.value 
+                      ? "bg-brand-primary border-brand-primary text-white shadow-[0_10px_30px_rgba(125,56,255,0.2)]" 
+                      : "bg-zinc-950/50 border-white/5 text-zinc-500 hover:border-white/20"
+                  )}
+                >
+                  {g.label}
+                  <div className={cn(
+                    "h-1 w-full absolute bottom-0 left-0 transition-transform duration-300",
+                    formData.targetGender === g.value ? "bg-brand-accent scale-x-100" : "bg-white/5 scale-x-0"
+                  )} />
+                </button>
+              ))}
             </div>
           </div>
 

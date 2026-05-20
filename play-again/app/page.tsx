@@ -44,8 +44,8 @@ export default function Home() {
         <HomeHero />
         
         <div className="pb-10">
-          <ProductGrid />
           <RecommendedGrid />
+          <ProductGrid />
         </div>
       </div>
     </main>

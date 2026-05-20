@@ -45,12 +45,9 @@ export function ProductCard({ id, title, price, condition, category, image, matc
   const dimCard = isComparingMode && !isCompatible && !isSelectedA;
   const highlightCard = isComparingMode && isCompatible;
 
-  const handleCompareClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigating to product page
-    e.stopPropagation();
-    if (!fullProduct) return;
-    
-    const compProduct: CompareProduct = {
+  const getCompareProductData = (): CompareProduct | null => {
+    if (!fullProduct) return null;
+    return {
       id: Number(fullProduct.id),
       title: fullProduct.title,
       price: Number(fullProduct.price),
@@ -68,6 +65,13 @@ export function ProductCard({ id, title, price, condition, category, image, matc
       levelCategory: fullProduct.levelCategory,
       dealScore: fullProduct.dealScore,
     };
+  };
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigating to product page
+    e.stopPropagation();
+    const compProduct = getCompareProductData();
+    if (!compProduct) return;
 
     if (isComparingMode) {
       if (isCompatible) {
@@ -78,9 +82,20 @@ export function ProductCard({ id, title, price, condition, category, image, matc
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isComparingMode && isCompatible) {
+      e.preventDefault();
+      e.stopPropagation();
+      const compProduct = getCompareProductData();
+      if (!compProduct) return;
+      setProductB(compProduct);
+    }
+  };
+
   return (
     <Link 
       href={`/product/${id}`}
+      onClick={handleCardClick}
       className={cn(
         "group flex flex-col rounded-[32px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-500 w-full max-w-[160px] md:max-w-[240px] h-[320px] md:h-[420px] cursor-pointer relative overflow-visible shrink-0",
         dimCard ? "opacity-30 grayscale pointer-events-none" : "hover:-translate-y-3 hover:bg-white/15 hover:border-white/40",

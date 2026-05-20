@@ -29,6 +29,9 @@ export default async function ProfilePage() {
     include: {
       sportProfile: true,
       products: {
+        orderBy: {
+          created_at: "desc",
+        },
         include: {
           category: true,
           media: true,
@@ -49,6 +52,9 @@ export default async function ProfilePage() {
         },
       },
       invoices: {
+        orderBy: {
+          invoice_date: "desc",
+        },
         include: {
           items: {
             include: {
