@@ -21,7 +21,7 @@ export async function saveSportProfile(data: any) {
         height: data.height ? parseInt(data.height) : null,
         weight: data.weight ? parseInt(data.weight) : null,
         shoeSize: data.shoeSize ? parseFloat(data.shoeSize) : null,
-        level: data.level,
+        level: data.level || "BEGINNER", // Garder un niveau de repli
         frequency: data.frequency ? parseInt(data.frequency) : null,
         handOrientation: data.handOrientation,
         boardStance: data.boardStance,
@@ -33,13 +33,49 @@ export async function saveSportProfile(data: any) {
         height: data.height ? parseInt(data.height) : null,
         weight: data.weight ? parseInt(data.weight) : null,
         shoeSize: data.shoeSize ? parseFloat(data.shoeSize) : null,
-        level: data.level,
+        level: data.level || "BEGINNER",
         frequency: data.frequency ? parseInt(data.frequency) : null,
         handOrientation: data.handOrientation,
         boardStance: data.boardStance,
         interests: data.interests,
       },
     });
+
+    // Mettre à jour les compétences par sport (SportSkill)
+    if (data.skills && Array.isArray(data.skills)) {
+      const selectedSportNames = data.skills.map((s: any) => s.sportName.trim().toUpperCase());
+      
+      // 1. Supprimer les compétences qui ne sont plus sélectionnées
+      await prisma.sportSkill.deleteMany({
+        where: {
+          sportProfileId: profile.id,
+          sportName: { notIn: selectedSportNames },
+        },
+      });
+
+      // 2. Créer ou mettre à jour les compétences actives
+      for (const skill of data.skills) {
+        const cleanName = skill.sportName.trim().toUpperCase();
+        if (!cleanName) continue;
+
+        await prisma.sportSkill.upsert({
+          where: {
+            sportProfileId_sportName: {
+              sportProfileId: profile.id,
+              sportName: cleanName,
+            },
+          },
+          update: {
+            level: skill.level,
+          },
+          create: {
+            sportProfileId: profile.id,
+            sportName: cleanName,
+            level: skill.level,
+          },
+        });
+      }
+    }
 
     revalidatePath("/profile");
     return { success: true, profile };
@@ -55,7 +91,10 @@ export async function getSportProfile() {
   
   try {
     const profile = await prisma.sportProfile.findUnique({
-      where: { userId: parseInt(session.user.id) }
+      where: { userId: parseInt(session.user.id) },
+      include: {
+        skills: true,
+      }
     });
     return profile;
   } catch (error) {

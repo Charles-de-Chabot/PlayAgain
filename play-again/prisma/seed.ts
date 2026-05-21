@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client"
 import { PrismaMariaDb } from "@prisma/adapter-mariadb"
 import "dotenv/config"
+import bcrypt from "bcryptjs"
+import * as fs from "fs"
+import * as path from "path"
 
 const connectionString = process.env.DATABASE_URL!
 const adapter = new PrismaMariaDb(connectionString)
@@ -678,6 +681,360 @@ async function main() {
             update:{ label: marque.label, marketPosition: marque.marketPosition },
             create: marque,
         })
+    }
+
+    // --- Insertion des Utilisateurs ---
+    console.log("Création des utilisateurs de test...");
+    const hashedPassword = await bcrypt.hash("test", 10);
+    const usersToCreate = [
+        { username: "test", email: "test@test.com", password: hashedPassword },
+        { username: "test2", email: "test2@test.com", password: hashedPassword },
+        { username: "test3", email: "test3@test.comp", password: hashedPassword },
+    ];
+
+    const dbUsers: Record<string, any> = {};
+    for (const u of usersToCreate) {
+        dbUsers[u.email] = await prisma.user.upsert({
+            where: { email: u.email },
+            update: { username: u.username, password: u.password },
+            create: {
+                username: u.username,
+                email: u.email,
+                password: u.password,
+                is_active: true,
+                role: "USER"
+            }
+        });
+    }
+
+    // --- Insertion des Produits de Test avec Photos ---
+    console.log("Nettoyage des anciens articles et médias de test...");
+    await prisma.media.deleteMany({});
+    await prisma.product.deleteMany({});
+
+    const productsData = [
+        {
+            userEmail: "test@test.com",
+            category_id: 2,
+            type_id: 164,
+            brand_id: 1,
+            title: "Chaussures de Ski Salomon S/Pro 100",
+            description: "Chaussures de ski alpin confortables et précises, flex de 100, idéales pour skieurs intermédiaires sur tout type de neige.",
+            price: 180.00,
+            age: 2023,
+            accessory_included: true,
+            targetGender: "MAN",
+            levelCategory: "INTERMEDIATE",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/1_1778586044615_chaussuresSkiTest.jpg",
+                "/uploads/products/1_1778586044607_chaussuresSkiTest2.jpg"
+            ]
+        },
+        {
+            userEmail: "test2@test.com",
+            category_id: 2,
+            type_id: 164,
+            brand_id: 10,
+            title: "Chaussures de Ski Femme Atomic Hawx Prime 95 W",
+            description: "Chaussures haut de gamme légères et thermoformables pour un contrôle exceptionnel et un confort optimal.",
+            price: 220.00,
+            age: 2024,
+            accessory_included: false,
+            targetGender: "WOMAN",
+            levelCategory: "ADVANCED",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/16_1779284792436_chaussureski2.webp",
+                "/uploads/products/16_1779284792443_chaussureski2.1.webp"
+            ]
+        },
+        {
+            userEmail: "test3@test.comp",
+            category_id: 2,
+            type_id: 164,
+            brand_id: 7,
+            title: "Chaussures de Ski Enfant Rossignol Hero J4",
+            description: "Idéales pour l'apprentissage du ski. Quatre crochets pour un excellent maintien et une transmission d'appuis progressive.",
+            price: 85.00,
+            age: 2022,
+            accessory_included: false,
+            targetGender: "KIDS",
+            levelCategory: "BEGINNER",
+            state: "BON",
+            imageUrls: [
+                "/uploads/products/17_1779285022767_chaussureski3.webp",
+                "/uploads/products/17_1779285022778_chaussureski3.1.webp",
+                "/uploads/products/18_1779286688980_chaussureski3.webp",
+                "/uploads/products/18_1779286688985_chaussureski3.1.webp"
+            ]
+        },
+        {
+            userEmail: "test@test.com",
+            category_id: 2,
+            type_id: 166,
+            brand_id: 19,
+            title: "Gants de Ski Helly Hansen Swift HT",
+            description: "Gants chauds, imperméables et respirants avec membrane Helly Tech. Parfaits pour garder les mains au sec.",
+            price: 35.00,
+            age: 2024,
+            accessory_included: false,
+            targetGender: "UNISEX",
+            levelCategory: "INTERMEDIATE",
+            state: "NEUF",
+            imageUrls: [
+                "/uploads/products/3_1778589275958_gantsSkiTest.webp",
+                "/uploads/products/3_1778589275965_gantsSkiTest2.webp"
+            ]
+        },
+        {
+            userEmail: "test2@test.com",
+            category_id: 2,
+            type_id: 9,
+            brand_id: 18,
+            title: "Veste de Ski Arc'teryx Sabre SV Gore-Tex",
+            description: "Veste de protection ultime en Gore-Tex Pro triple épaisseur, imperméable et coupe-vent, conçue pour le freeride et les conditions extrêmes.",
+            price: 320.00,
+            age: 2023,
+            accessory_included: true,
+            targetGender: "MAN",
+            levelCategory: "ADVANCED",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/2_1778588911416_vesteSkiTest.webp",
+                "/uploads/products/2_1778588911407_vestSkiTest2.webp",
+                "/uploads/products/2_1778588911423_vesteSkiTest3.webp"
+            ]
+        },
+        {
+            userEmail: "test@test.com",
+            category_id: 24,
+            type_id: 102,
+            brand_id: 102,
+            title: "Dériveur Tribord 5S Gonflable",
+            description: "Dériveur compact et ultra-stable pour s'initier à la voile en famille. Facile à transporter et à gréer en 20 minutes.",
+            price: 1200.00,
+            age: 2022,
+            accessory_included: true,
+            targetGender: "UNISEX",
+            levelCategory: "BEGINNER",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/5_1778590100065_deriveurTest.webp",
+                "/uploads/products/5_1778590100070_deriveurTest2.webp"
+            ]
+        },
+        {
+            userEmail: "test3@test.comp",
+            category_id: 24,
+            type_id: 105,
+            brand_id: 195,
+            title: "Voile de Spinnaker Asymétrique North Sails",
+            description: "Spi de portant haute performance, tissu nylon ultra-léger et résistant, coupe tri-radiale pour une vitesse optimale.",
+            price: 450.00,
+            age: 2021,
+            accessory_included: true,
+            targetGender: "UNISEX",
+            levelCategory: "PRO",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/4_1778589845235_SpiTest1.jpg",
+                "/uploads/products/4_1778589845240_SpiTest2.jpg"
+            ]
+        },
+        {
+            userEmail: "test@test.com",
+            category_id: 4,
+            type_id: 15,
+            brand_id: 28,
+            title: "VTT Specialized Rockhopper Elite 29\"",
+            description: "Cadre aluminium léger, fourche à air RockShox Judy, transmission Shimano 1x11 vitesses, freins à disque hydrauliques. Prêt pour les sentiers.",
+            price: 850.00,
+            age: 2023,
+            accessory_included: true,
+            targetGender: "UNISEX",
+            levelCategory: "INTERMEDIATE",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/7_1778676167725_veloTest.jpg",
+                "/uploads/products/7_1778676167731_veloTest2.jpg"
+            ]
+        },
+        {
+            userEmail: "test@test.com",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 120,
+            title: "Veste de Concours Horse Pilot Aerotech",
+            description: "Veste de concours haut de gamme, respirante et stretch. Conçue pour offrir une liberté de mouvement totale en selle.",
+            price: 180.00,
+            age: 2023,
+            accessory_included: false,
+            targetGender: "WOMAN",
+            levelCategory: "ADVANCED",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/8_1779194008935_vestequitation1.webp",
+                "/uploads/products/8_1779194008941_vestequitation1.1.webp",
+                "/uploads/products/8_1779194008945_vestequitation1.2.webp"
+            ]
+        },
+        {
+            userEmail: "test2@test.com",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 119,
+            title: "Veste Pikeur Askan Softshell",
+            description: "Veste élégante en tissu softshell technique, hydrofuge et respirante pour les concours d'équitation.",
+            price: 160.00,
+            age: 2022,
+            accessory_included: false,
+            targetGender: "MAN",
+            levelCategory: "ADVANCED",
+            state: "BON",
+            imageUrls: [
+                "/uploads/products/9_1779194231037_vestequitation2.webp",
+                "/uploads/products/9_1779194231042_vestequitation2.1.webp",
+                "/uploads/products/9_1779194231047_vestequitation2.2.webp"
+            ]
+        },
+        {
+            userEmail: "test2@test.com",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 48,
+            title: "Veste de Concours Fouganza Enfant",
+            description: "Veste de concours classique et confortable pour jeune cavalier. Facile d'entretien et très souple.",
+            price: 40.00,
+            age: 2024,
+            accessory_included: false,
+            targetGender: "KIDS",
+            levelCategory: "BEGINNER",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/10_1779194447648_vestequitation3.avif",
+                "/uploads/products/10_1779194447653_vestequitation3.1.avif",
+                "/uploads/products/10_1779194447660_vestequitation3.2.avif"
+            ]
+        },
+        {
+            userEmail: "test2@test.com",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 118,
+            title: "Veste de Concours Antarès Sellier",
+            description: "Coupe cintrée ultra-élégante, détails en cuir véritable de la marque d'excellence Antarès Sellier.",
+            price: 240.00,
+            age: 2023,
+            accessory_included: true,
+            targetGender: "WOMAN",
+            levelCategory: "ADVANCED",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/12_1779262693098_vestequitation4.webpwebp",
+                "/uploads/products/12_1779262693108_vestequitation4.1.webp",
+                "/uploads/products/12_1779262693119_vestequitation4.2.webp"
+            ]
+        },
+        {
+            userEmail: "test3@test.comp",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 120,
+            title: "Veste de Pluie d'Équitation Horse Pilot",
+            description: "Protection imperméable totale pour monter à cheval par tous les temps. Coutures thermo-soudées.",
+            price: 140.00,
+            age: 2024,
+            accessory_included: false,
+            targetGender: "UNISEX",
+            levelCategory: "INTERMEDIATE",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/13_1779263026156_vestequitation5.webp",
+                "/uploads/products/13_1779263026163_vestequitation5.1.webp",
+                "/uploads/products/13_1779263026168_vestequitation5.2.webp"
+            ]
+        },
+        {
+            userEmail: "test3@test.comp",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 224,
+            title: "Veste de Concours CWD Prestige",
+            description: "Création exclusive en collaboration avec CWD, alliant technicité sportive et design de haute couture équestre.",
+            price: 220.00,
+            age: 2023,
+            accessory_included: true,
+            targetGender: "WOMAN",
+            levelCategory: "ADVANCED",
+            state: "EXCELLENT",
+            imageUrls: [
+                "/uploads/products/14_1779263289858_vestequitation6.jpg",
+                "/uploads/products/14_1779263289862_vestequitation6.1.jpg",
+                "/uploads/products/14_1779263289867_vesequitation6.2.jpg"
+            ]
+        },
+        {
+            userEmail: "test3@test.comp",
+            category_id: 31,
+            type_id: 133,
+            brand_id: 119,
+            title: "Veste de Concours Pikeur Skarlett",
+            description: "Veste de concours cintrée avec deux fentes arrière et poches à fermeture éclair. Style intemporel.",
+            price: 150.00,
+            age: 2022,
+            accessory_included: false,
+            targetGender: "WOMAN",
+            levelCategory: "INTERMEDIATE",
+            state: "BON",
+            imageUrls: [
+                "/uploads/products/15_1779267266106_vestequitation7.webp"
+            ]
+        }
+    ];
+
+    console.log("Insertion des articles de test...");
+    for (const p of productsData) {
+        const user = dbUsers[p.userEmail];
+        if (!user) continue;
+
+        const imageUrls = p.imageUrls;
+
+        // Trouver la première pointure ou taille associée à ce type pour ne pas avoir d'erreur SQL de contrainte
+        const typeWithSizes = await prisma.type.findUnique({
+            where: { id: p.type_id },
+            include: { sizes: true }
+        });
+        const sizeId = typeWithSizes?.sizes?.[0]?.id || null;
+
+        const createdProduct = await prisma.product.create({
+            data: {
+                title: p.title,
+                description: p.description,
+                category_id: p.category_id,
+                type_id: p.type_id,
+                brand_id: p.brand_id,
+                state: p.state as any,
+                size_id: sizeId,
+                price: p.price,
+                stock_quantity: 1,
+                user_id: user.id,
+                age: p.age,
+                accessory_included: p.accessory_included,
+                is_shipping: true,
+                targetGender: p.targetGender as any,
+                levelCategory: p.levelCategory as any,
+            }
+        });
+
+        if (imageUrls.length > 0) {
+            await prisma.media.createMany({
+                data: imageUrls.map(url => ({
+                    url,
+                    product_id: createdProduct.id
+                }))
+            });
+        }
     }
 
     console.log("✅ Seeding terminé !");

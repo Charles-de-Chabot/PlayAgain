@@ -195,14 +195,19 @@ export async function getLatestProducts() {
   let sportProfile = null;
   if (session?.user?.id) {
     sportProfile = await prisma.sportProfile.findUnique({
-      where: { userId: parseInt(session.user.id) }
+      where: { userId: parseInt(session.user.id) },
+      include: { skills: true }
     });
   }
 
   if (!sportProfile && session?.user?.email) {
     const userWithProfile = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { sportProfile: true }
+      include: {
+        sportProfile: {
+          include: { skills: true }
+        }
+      }
     });
     sportProfile = userWithProfile?.sportProfile;
   }
@@ -274,14 +279,19 @@ export async function getRecommendedProducts() {
   
   if (session?.user?.id) {
     sportProfile = await prisma.sportProfile.findUnique({
-      where: { userId: parseInt(session.user.id) }
+      where: { userId: parseInt(session.user.id) },
+      include: { skills: true }
     });
   }
 
   if (!sportProfile && session?.user?.email) {
     const userWithProfile = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { sportProfile: true }
+      include: {
+        sportProfile: {
+          include: { skills: true }
+        }
+      }
     });
     sportProfile = userWithProfile?.sportProfile;
   }
@@ -449,7 +459,8 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
   let sportProfile = null;
   if (session?.user?.id) {
     sportProfile = await prisma.sportProfile.findUnique({
-      where: { userId: parseInt(session.user.id) }
+      where: { userId: parseInt(session.user.id) },
+      include: { skills: true }
     });
   }
 

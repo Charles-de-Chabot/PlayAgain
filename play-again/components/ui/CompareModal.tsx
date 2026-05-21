@@ -19,13 +19,13 @@ const getLevelLabel = (level?: string | null) => {
   if (!level) return null;
   switch (level) {
     case "BEGINNER":
-      return "Débutant";
+      return "Novice";
     case "INTERMEDIATE":
       return "Intermédiaire";
     case "ADVANCED":
-      return "Confirmé / Avancé";
+      return "Confirmé";
     case "PRO":
-      return "Pro / Expert";
+      return "Pro";
     default:
       return level;
   }
@@ -233,8 +233,14 @@ export function CompareModal() {
 
       {/* Modale de comparaison */}
       {isOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto global-scrollbar relative shadow-2xl animate-in zoom-in-95 duration-200">
+        <div 
+          onClick={clearComparison}
+          className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto global-scrollbar relative shadow-2xl animate-in zoom-in-95 duration-200 cursor-default"
+          >
             {/* Header */}
             <div className="sticky top-0 z-30 flex items-center justify-between p-4 sm:p-6 border-b bg-[#111111]/95 backdrop-blur-md border-white/10">
               <div>

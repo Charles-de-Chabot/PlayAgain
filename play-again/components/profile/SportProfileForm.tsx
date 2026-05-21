@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { 
   ChevronRight, 
   ChevronLeft, 
@@ -82,6 +82,11 @@ const SPORTS_ICONS: Record<string, any> = {
 const HANDEDNESS_SPORTS = ["TENNIS", "GOLF", "BOXE", "PADEL", "HOCKEY", "RUGBY", "TENNIS DE TABLE"];
 const STANCE_SPORTS = ["SNOWBOARD", "SURF", "SKATEBOARD", "SKI"];
 
+interface SportSkillData {
+  sportName: string;
+  level: string;
+}
+
 interface SportFormData {
   gender: string;
   interests: string[];
@@ -92,12 +97,34 @@ interface SportFormData {
   boardStance: string;
   level: string;
   frequency: number;
+  skills: SportSkillData[];
 }
 
 export function SportProfileForm({ initialData, categories }: SportProfileFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState(1);
+  const [activeSport, setActiveSport] = useState<string>("");
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabsRef.current) {
+      const scrollAmount = 200;
+      tabsRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
+  
+  const initialSkills = initialData?.skills?.map((s: any) => ({
+    sportName: s.sportName,
+    level: s.level
+  })) || initialData?.interests?.map((sport: string) => ({
+    sportName: sport,
+    level: ""
+  })) || [];
+
   const [formData, setFormData] = useState<SportFormData>({
     gender: initialData?.gender || "",
     interests: initialData?.interests || [],
@@ -106,8 +133,9 @@ export function SportProfileForm({ initialData, categories }: SportProfileFormPr
     shoeSize: initialData?.shoeSize || null,
     handOrientation: initialData?.handOrientation || "RIGHT",
     boardStance: initialData?.boardStance || "REGULAR",
-    level: initialData?.level || "",
+    level: initialData?.level || "BEGINNER",
     frequency: initialData?.frequency || 3,
+    skills: initialSkills,
   });
 
   const needsHandedness = formData.interests.some((s: string) => HANDEDNESS_SPORTS.includes(s.toUpperCase()));
@@ -124,7 +152,7 @@ export function SportProfileForm({ initialData, categories }: SportProfileFormPr
       return shoeValid && handValid && stanceValid;
     }
     if (step === 3) {
-      return formData.level !== "" && formData.frequency > 0;
+      return formData.skills.length > 0 && formData.skills.every(s => s.level !== "") && formData.frequency > 0;
     }
     return false;
   };
@@ -133,12 +161,23 @@ export function SportProfileForm({ initialData, categories }: SportProfileFormPr
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const toggleInterest = (label: string) => {
-    setFormData(prev => ({
-      ...prev,
-      interests: prev.interests.includes(label)
+    setFormData(prev => {
+      const isSelected = prev.interests.includes(label);
+      const newInterests = isSelected
         ? prev.interests.filter((i: string) => i !== label)
-        : [...prev.interests, label]
-    }));
+        : [...prev.interests, label];
+      
+      const newSkills = newInterests.map(sport => {
+        const existing = prev.skills.find(s => s.sportName.toUpperCase() === sport.toUpperCase());
+        return existing || { sportName: sport, level: "" };
+      });
+
+      return {
+        ...prev,
+        interests: newInterests,
+        skills: newSkills
+      };
+    });
   };
 
   const handleSubmit = () => {
@@ -347,32 +386,166 @@ export function SportProfileForm({ initialData, categories }: SportProfileFormPr
             </div>
 
             <div className="space-y-6">
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Ton Niveau</label>
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { id: "BEGINNER", label: "Novice", desc: "Je débute ou pratique très occasionnellement." },
-                  { id: "INTERMEDIATE", label: "Intermédiaire", desc: "Je maîtrise les bases et pratique régulièrement." },
-                  { id: "ADVANCED", label: "Confirmé", desc: "Pratique intensive, je cherche de la performance." },
-                  { id: "PRO", label: "Expert / Pro", desc: "Niveau compétition ou professionnel." },
-                ].map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => setFormData({...formData, level: l.id})}
-                    className={cn(
-                      "p-6 border-2 transition-all flex items-center justify-between group cursor-pointer rounded-none",
-                      formData.level === l.id
-                        ? "bg-brand-primary border-brand-primary text-white" 
-                        : "bg-zinc-950/50 border-white/5 text-zinc-600 hover:border-white/10"
-                    )}
-                  >
-                    <div className="text-left">
-                      <span className="block text-[11px] font-black uppercase tracking-[0.2em] mb-1">{l.label}</span>
-                      <span className={cn("text-[11px] font-medium", formData.level === l.id ? "text-white/60" : "text-zinc-700")}>{l.desc}</span>
+              {/* Header block with label on top and a horizontal sliding carousel underneath */}
+              <div className="flex flex-col gap-3 border-b border-white/5 pb-4 w-full">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">
+                  Ton Niveau par sport
+                </label>
+
+                {/* Sport Tabs Carousel */}
+                {formData.skills.length > 0 && (
+                  <div className="flex items-center gap-2 w-full relative">
+                    {/* Left Scroll Button */}
+                    <button
+                      type="button"
+                      onClick={() => scrollTabs("left")}
+                      className="w-10 h-10 shrink-0 flex items-center justify-center border-2 border-white/5 bg-zinc-950/40 text-zinc-500 hover:text-white hover:border-white/20 transition-all rounded-none cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    {/* Scrollable container for tabs */}
+                    <div 
+                      ref={tabsRef}
+                      className="flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar select-none scroll-smooth"
+                    >
+                      {formData.skills.map((skill) => {
+                        const currentActiveSport = activeSport || formData.skills[0]?.sportName || "";
+                        const isSelected = skill.sportName === currentActiveSport;
+                        const label = skill.sportName.trim().toUpperCase();
+                        const IconComponent = SPORTS_ICONS[label] || Award;
+
+                        return (
+                          <button
+                            key={skill.sportName}
+                            type="button"
+                            onClick={(e) => {
+                              setActiveSport(skill.sportName);
+                              const container = tabsRef.current;
+                              const button = e.currentTarget;
+                              if (container && button) {
+                                const containerRect = container.getBoundingClientRect();
+                                const buttonRect = button.getBoundingClientRect();
+                                const relativeLeft = buttonRect.left - containerRect.left + container.scrollLeft;
+                                const targetScrollLeft = relativeLeft - (containerRect.width / 2) + (buttonRect.width / 2);
+                                container.scrollTo({
+                                  left: targetScrollLeft,
+                                  behavior: "smooth"
+                                });
+                              }
+                            }}
+                            className={cn(
+                              "flex items-center gap-2.5 px-4 py-2.5 rounded-none text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-2 shrink-0",
+                              isSelected
+                                ? "bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.15)]"
+                                : "bg-zinc-950/50 border-white/5 text-zinc-500 hover:text-zinc-200 hover:border-white/10"
+                            )}
+                          >
+                            <IconComponent className="w-4 h-4" />
+                            <span>{skill.sportName}</span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    {formData.level === l.id && <CheckCircle2 className="w-6 h-6 text-brand-accent" />}
-                  </button>
-                ))}
+
+                    {/* Right Scroll Button */}
+                    <button
+                      type="button"
+                      onClick={() => scrollTabs("right")}
+                      className="w-10 h-10 shrink-0 flex items-center justify-center border-2 border-white/5 bg-zinc-950/40 text-zinc-500 hover:text-white hover:border-white/20 transition-all rounded-none cursor-pointer"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {/* Stacked Level Buttons for the active sport (des niveaux affichés les uns au-dessus des autres, angles bien droits!) */}
+              {(() => {
+                const currentActiveSport = activeSport || formData.skills[0]?.sportName || "";
+                const activeSkillIndex = formData.skills.findIndex(s => s.sportName === currentActiveSport);
+                const activeSkill = formData.skills[activeSkillIndex] || { sportName: currentActiveSport, level: "BEGINNER" };
+
+                const levels = [
+                  { 
+                    id: "BEGINNER", 
+                    label: "Novice", 
+                    desc: "Découverte, apprentissage des bases, pratique de loisir ou d'initiation.",
+                    glow: "hover:shadow-[0_0_20px_rgba(161,161,170,0.05)]",
+                    activeGlow: "shadow-[0_0_30px_rgba(161,161,170,0.15)] border-zinc-400 bg-zinc-400/5 text-zinc-300"
+                  },
+                  { 
+                    id: "INTERMEDIATE", 
+                    label: "Intermédiaire", 
+                    desc: "Pratique régulière, autonomie technique, recherche de progression.",
+                    glow: "hover:shadow-[0_0_20px_rgba(129,140,248,0.05)]",
+                    activeGlow: "shadow-[0_0_30px_rgba(129,140,248,0.15)] border-indigo-500 bg-indigo-500/10 text-indigo-400"
+                  },
+                  { 
+                    id: "ADVANCED", 
+                    label: "Confirmé", 
+                    desc: "Technique maîtrisée, pratique intensive, matériel précis et performant.",
+                    glow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.05)]",
+                    activeGlow: "shadow-[0_0_30px_rgba(245,158,11,0.15)] border-amber-500 bg-amber-500/10 text-amber-500"
+                  },
+                  { 
+                    id: "PRO", 
+                    label: "Pro", 
+                    desc: "Compétition nationale/internationale, exigences maximales, niveau athlète.",
+                    glow: "hover:shadow-[0_0_20px_rgba(244,63,94,0.05)]",
+                    activeGlow: "shadow-[0_0_30px_rgba(244,63,94,0.15)] border-rose-500 bg-rose-500/5 text-rose-500"
+                  },
+                ];
+
+                return (
+                  <div className="flex flex-col gap-3 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {levels.map((l) => {
+                      const isActive = activeSkill.level === l.id;
+                      return (
+                        <button
+                          key={l.id}
+                          type="button"
+                          onClick={() => {
+                            if (activeSkillIndex !== -1) {
+                              const updatedSkills = formData.skills.map((s, idx) => 
+                                idx === activeSkillIndex ? { ...s, level: l.id } : s
+                              );
+                              setFormData({
+                                ...formData,
+                                skills: updatedSkills,
+                                level: updatedSkills[0]?.level || "BEGINNER"
+                              });
+                            }
+                          }}
+                          className={cn(
+                            "flex flex-col md:flex-row md:items-center justify-between p-5 border-2 transition-all cursor-pointer rounded-none text-left select-none relative overflow-hidden group min-h-[72px]",
+                            isActive
+                              ? l.activeGlow
+                              : "bg-zinc-950/40 border-white/5 text-zinc-500 hover:border-white/20 hover:text-zinc-300 " + l.glow
+                          )}
+                        >
+                          {isActive && (
+                            <div className="absolute inset-0 opacity-[0.03] bg-gradient-to-br from-white to-transparent" />
+                          )}
+                          
+                          <div className="flex items-center gap-4 relative z-10 shrink-0">
+                            <h3 className={cn(
+                              "text-lg font-black uppercase tracking-tighter italic",
+                              isActive ? "text-white" : "text-zinc-300 group-hover:text-white transition-colors"
+                            )}>
+                              {l.label}
+                            </h3>
+                          </div>
+
+                          <p className="text-[10px] leading-relaxed text-zinc-500 mt-2 md:mt-0 md:pl-6 max-w-xl relative z-10 font-medium group-hover:text-zinc-400 transition-colors">
+                            {l.desc}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="space-y-6">
@@ -439,6 +612,13 @@ export function SportProfileForm({ initialData, categories }: SportProfileFormPr
       </div>
 
       <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }

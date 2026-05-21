@@ -41,8 +41,8 @@ export function HomeHero() {
     <section 
       className={`relative w-full text-white group transition-all duration-500 overflow-hidden ${
         isExpanded 
-          ? "h-[520px] md:h-[620px]" 
-          : "h-[320px] md:h-[420px]"
+          ? "h-[600px] md:h-[700px]" 
+          : "h-[450px] md:h-[500px]"
       }`}
     >
       {/* Background Image with Overlay */}
@@ -67,13 +67,13 @@ export function HomeHero() {
       )}
 
       {/* Fixed layout content wrapper */}
-      <div className="absolute inset-0 z-20 flex flex-col p-6 md:p-8 h-full justify-between items-center overflow-hidden">
+      <div className="absolute inset-0 z-20 flex flex-col pt-[72px] pb-4 px-4 md:pt-[105px] md:pb-6 md:px-8 h-full justify-between items-center overflow-hidden">
         
         {/* Top & Middle: Title & Search bar */}
         <div className="w-full text-center flex flex-col items-center z-20">
           {!isAuthenticated && !isExpanded && (
-            <div className="relative mb-6 flex h-12 items-end xl:hidden z-20 justify-center">
-              <div className="flex gap-2 text-[11px] font-black uppercase italic text-brand-primary tracking-tighter">
+            <div className="relative mb-3 md:mb-6 flex h-8 md:h-12 items-end xl:hidden z-20 justify-center">
+              <div className="flex gap-2 text-[10px] md:text-[11px] font-black uppercase italic text-brand-primary tracking-tighter">
                 <Link href="/auth/login" className="hover:text-white transition-colors">Se connecter</Link>
                 <span className="text-white/20">/</span>
                 <Link href="/auth/register" className="hover:text-white transition-colors">inscription</Link>
@@ -81,17 +81,17 @@ export function HomeHero() {
             </div>
           )}
 
-          <div className={`${isExpanded ? "mb-4 space-y-2" : "mb-8 space-y-3"}`}>
-            <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter leading-none">
+          <div className={`${isExpanded ? "mb-3 md:mb-4 space-y-1.5 md:space-y-2" : "mb-5 md:mb-8 space-y-2 md:space-y-3"}`}>
+            <h1 className="text-2xl md:text-5xl font-black italic uppercase tracking-tighter leading-none">
               Donnez une <span className="text-brand-primary">seconde vie</span><br/>
               à votre passion
             </h1>
-            <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-white/40">
+            <p className="text-[9px] md:text-xs font-bold uppercase tracking-[0.25em] md:tracking-[0.3em] text-white/40">
               La marketplace élite de l'équipement sportif
             </p>
           </div>
 
-          <SearchBar className={`${isExpanded ? "mb-4" : "mb-8"} w-full max-w-2xl`} />
+          <SearchBar className={`${isExpanded ? "mb-3 md:mb-4" : "mb-5 md:mb-8"} w-full max-w-2xl`} />
         </div>
 
         {/* Scrollable Categories List container (Only this part scrolls if it overflows) */}
@@ -106,7 +106,7 @@ export function HomeHero() {
         </div>
 
         {/* Pinned Bottom Button: Always visible and static */}
-        <div className="mt-6 text-center w-full z-20">
+        <div className="mt-3 md:mt-6 text-center w-full z-20">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-[10px] font-black uppercase tracking-[0.2em] italic text-brand-primary hover:text-white transition-colors cursor-pointer"

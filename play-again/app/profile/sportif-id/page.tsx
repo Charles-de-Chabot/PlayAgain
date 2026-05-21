@@ -17,7 +17,11 @@ export default async function SportifIDPage() {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      sportProfile: true,
+      sportProfile: {
+        include: {
+          skills: true,
+        },
+      },
     },
   });
 

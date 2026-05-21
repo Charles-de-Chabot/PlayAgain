@@ -281,10 +281,10 @@ export function ShopCatalog({
   };
 
   const levelLabels: Record<string, string> = {
-    "BEGINNER": "Débutant",
+    "BEGINNER": "Novice",
     "INTERMEDIATE": "Intermédiaire",
-    "ADVANCED": "Confirmé / Avancé",
-    "PRO": "Professionnel / Expert"
+    "ADVANCED": "Confirmé",
+    "PRO": "Pro"
   };
 
   const genderLabels: Record<string, string> = {
@@ -634,7 +634,7 @@ export function ShopCatalog({
         <main className="flex-1 w-full flex flex-col justify-between min-h-[500px]">
           
           {/* État de chargement global */}
-          {(!filtersLoaded && hasSavedFilters()) || isRestoringFilters || (isPending && products.length === 0) ? (
+          {(mounted && !filtersLoaded && hasSavedFilters()) || isRestoringFilters || (isPending && products.length === 0) ? (
             <div className="flex flex-col items-center justify-center flex-1 py-32">
               <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
               <span className="text-xs uppercase font-black italic tracking-widest text-zinc-500">Mise à jour du catalogue...</span>

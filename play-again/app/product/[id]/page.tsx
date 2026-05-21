@@ -21,8 +21,15 @@ import { MatchBadge } from "@/components/home/MatchBadge";
 import { CircuitBoard, Info, Star, TrendingUp } from "lucide-react";
 import { ProductGallery } from "./ProductGallery";
 import { CompareButtonWrapper } from "@/components/product/CompareButtonWrapper";
+import { BookmarkButtonWrapper } from "@/components/product/BookmarkButtonWrapper";
 import { serializeProduct, calculateProductScore } from "@/lib/utils";
 import { BackButton } from "@/components/ui/BackButton";
+const LEVEL_LABELS: Record<string, string> = {
+  "BEGINNER": "Novice",
+  "INTERMEDIATE": "Intermédiaire",
+  "ADVANCED": "Confirmé",
+  "PRO": "Pro"
+};
 
 export default async function ProductDetailPage({ 
   params 
@@ -110,6 +117,9 @@ export default async function ProductDetailPage({
       where: { 
         userId: session.user.id ? parseInt(session.user.id) : undefined,
         user: !session.user.id ? { email: session.user.email as string } : undefined
+      },
+      include: {
+        skills: true
       }
     });
 
@@ -234,16 +244,27 @@ export default async function ProductDetailPage({
           {/* Corps avec les deux analyses séparées (Niveau et Prix) wrappées sur toute la largeur */}
           <div className="space-y-3 relative z-10 text-xs leading-relaxed mb-3.5">
             {/* Section 1 : Analyse Technique / Niveau (uniquement si le sport fait partie des favoris) */}
-            {showMatch && matchData.levelAdvice && (
+            {showMatch && matchData.levelAdvice ? (
               <div className="space-y-0.5">
                 <p className="text-[8px] font-black text-brand-accent uppercase tracking-widest">Compatibilité Technique</p>
                 <p className="font-bold text-zinc-300">{matchData.levelAdvice}</p>
+              </div>
+            ) : (
+              /* Fallback Niveau Conseillé si pas de profil */
+              <div className="space-y-0.5">
+                <p className="text-[8px] font-black text-brand-accent uppercase tracking-widest">Niveau Conseillé</p>
+                <p className="font-bold text-zinc-300">
+                  Cet équipement est idéalement adapté à un niveau{" "}
+                  <span className="text-brand-accent">
+                    {LEVEL_LABELS[product.levelCategory] || "Novice"}
+                  </span>.
+                </p>
               </div>
             )}
             
             {/* Section 2 : Analyse Financière / Prix */}
             {matchData.priceAdvice && (
-              <div className={`space-y-1.5 ${showMatch ? "border-t border-white/5 pt-2" : ""}`}>
+              <div className="space-y-1.5 border-t border-white/5 pt-2">
                 <p className="text-[8px] font-black text-cyan-400 uppercase tracking-widest">Côté Budget</p>
                 <p className="font-bold text-zinc-300">{matchData.priceAdvice}</p>
                 
@@ -293,7 +314,9 @@ export default async function ProductDetailPage({
                       <Star className="w-2 h-2 fill-current" />
                       <span className="text-[8px] font-black uppercase tracking-widest">Niveau</span>
                     </div>
-                    <p className="text-[10px] font-bold text-zinc-400">{matchData.detectedLevel}</p>
+                    <p className="text-[10px] font-bold text-zinc-400">
+                      {LEVEL_LABELS[matchData.detectedLevel] || "Novice"}
+                    </p>
                   </div>
                   {/* Badge de matching IA intégré à droite dans la carte niveau */}
                   <div className="shrink-0 scale-75 origin-right pr-0.5">
@@ -574,9 +597,7 @@ export default async function ProductDetailPage({
             <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-white/10 hover:border-brand-primary/50 transition-all text-zinc-400 hover:text-brand-primary">
               <Share2 className="w-5 h-5" />
             </button>
-            <button className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center border border-white/10 hover:border-brand-primary/50 transition-all text-zinc-400 hover:text-red-500">
-              <Heart className="w-5 h-5" />
-            </button>
+            <BookmarkButtonWrapper productId={product.id} />
           </div>
         </div>
 

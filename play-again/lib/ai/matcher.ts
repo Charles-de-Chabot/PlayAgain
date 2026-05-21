@@ -174,8 +174,18 @@ export async function calculateMatch(userProfile: any, product: any): Promise<Ma
   // On utilise notre nouvelle fonction d'apprentissage/récupération
   const finalLevel = await learnProductExpertise(product);
   
-  // 4. Comparaison avec le profil utilisateur
-  const userLevel = userProfile.level;
+  // 4. Comparaison avec le profil utilisateur (en ciblant le niveau propre au sport s'il est spécifié)
+  const productSport = product.category?.label?.trim().toUpperCase();
+  let userLevel = userProfile.level;
+
+  if (userProfile.skills && Array.isArray(userProfile.skills)) {
+    const matchingSkill = userProfile.skills.find(
+      (s: any) => s.sportName.trim().toUpperCase() === productSport
+    );
+    if (matchingSkill) {
+      userLevel = matchingSkill.level;
+    }
+  }
   
   const levelValues: Record<string, number> = { "BEGINNER": 1, "INTERMEDIATE": 2, "ADVANCED": 3, "PRO": 4 };
   const userVal = levelValues[userLevel] || 2;

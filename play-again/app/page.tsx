@@ -38,7 +38,7 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full bg-brand-accent blur-[140px] opacity-60" />
       </div>
 
-      <div className="relative z-10 pt-[64px] md:pt-[81px]">
+      <div className="relative z-10">
         <Header />
         
         <HomeHero />

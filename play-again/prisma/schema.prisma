@@ -82,7 +82,7 @@ model User {
   conversations   Conversation[] @relation("UserConversations")
   messages        Message[]      @relation("UserMessages")
   basket          Basket?
-  bookmark        Bookmark?
+  bookmarks       Bookmark[]
   invoices        Invoice[]
   notifications   Notification[]
 }
@@ -245,9 +245,12 @@ model InvoiceItem {
 
 model Bookmark {
   id         Int          @id @default(autoincrement())
-  user_id    Int          @unique
+  user_id    Int
+  name       String       @db.VarChar(100) @default("Favoris")
   user       User         @relation(fields: [user_id], references: [id])
   items      FavItem[]
+
+  @@unique([user_id, name])
 }
 
 model FavItem {
@@ -327,8 +330,24 @@ model SportProfile {
   
   interests       Json?            // ["football", "tennis"]
   
+  skills          SportSkill[]
+
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+}
+
+model SportSkill {
+  id             Int          @id @default(autoincrement())
+  sportProfileId Int
+  sportProfile   SportProfile @relation(fields: [sportProfileId], references: [id], onDelete: Cascade)
+  
+  sportName      String       @db.VarChar(50)
+  level          SportLevel   @default(BEGINNER)
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([sportProfileId, sportName])
 }
 
 model BrandExpertise {
