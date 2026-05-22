@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "next-auth/react";
 import { 
@@ -15,6 +16,12 @@ import {
 
 export function Footer() {
   const { isAuthenticated, user } = useAuth();
+  const pathname = usePathname();
+
+  // Masquer le footer sur toutes les pages de messagerie
+  if (pathname?.startsWith("/messages")) {
+    return null;
+  }
 
   return (
     <footer className="bg-black border-t border-white/5 pt-12 pb-32 xl:pb-12 mt-auto relative z-10 font-sans">

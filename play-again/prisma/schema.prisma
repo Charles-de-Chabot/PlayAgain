@@ -85,6 +85,7 @@ model User {
   bookmarks       Bookmark[]
   invoices        Invoice[]
   notifications   Notification[]
+  media           Media[]
 }
 
 model Category {
@@ -133,6 +134,7 @@ model Product {
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
   is_sold        Boolean      @default(false)
+  is_active      Boolean      @default(true)
   age            Int?         // Année de fabrication
   accessory_included Boolean  @default(false)
   is_shipping    Boolean      @default(true)
@@ -153,10 +155,13 @@ model Product {
 }
 
 model Media {
-  id         Int     @id @default(autoincrement())
-  url        String  @db.VarChar(255)
-  product_id Int
-  product    Product @relation(fields: [product_id], references: [id])
+  id         Int      @id @default(autoincrement())
+  url        String   @db.VarChar(255)
+  product_id Int?
+  user_id    Int?
+  
+  product    Product? @relation(fields: [product_id], references: [id])
+  user       User?    @relation(fields: [user_id], references: [id])
 }
 
 model Address {

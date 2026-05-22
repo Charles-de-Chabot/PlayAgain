@@ -1,0 +1,262 @@
+"use server";
+
+import prisma from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+import { join } from "path";
+import { writeFile, mkdir } from "fs/promises";
+
+/**
+ * Téléverse une image de messagerie sur le disque dur du serveur.
+ */
+export async function uploadChatImage(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Vous devez être connecté pour téléverser une image.");
+  }
+
+  const file = formData.get("file") as File;
+  if (!file || file.size === 0) {
+    throw new Error("Aucun fichier n'a été fourni.");
+  }
+
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  const uploadDir = join(process.cwd(), "public", "uploads", "chat");
+  
+  // S'assurer que le dossier existe
+  await mkdir(uploadDir, { recursive: true });
+
+  // Nom de fichier unique avec timestamp
+  const filename = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+  const path = join(uploadDir, filename);
+
+  await writeFile(path, buffer);
+
+  return { url: `/uploads/chat/${filename}` };
+}
+
+/**
+ * Récupère une conversation existante entre l'acheteur connecté et le produit,
+ * ou en crée une nouvelle si elle n'existe pas.
+ */
+export async function getOrCreateConversation(productId: number) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Vous devez être connecté pour contacter un vendeur.");
+  }
+
+  const buyerId = parseInt(session.user.id);
+
+  // 1. Récupération du produit et vérifications de sécurité
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { user_id: true, is_active: true, is_sold: true }
+  });
+
+  if (!product) {
+    throw new Error("Le produit n'existe pas.");
+  }
+
+  if (product.user_id === buyerId) {
+    throw new Error("Vous ne pouvez pas démarrer une discussion avec vous-même.");
+  }
+
+  // 2. Recherche d'une conversation existante
+  let conversation = await prisma.conversation.findFirst({
+    where: {
+      user_id: buyerId,
+      product_id: productId,
+    },
+  });
+
+  // 3. Création si inexistante
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: {
+        user_id: buyerId,
+        product_id: productId,
+      },
+    });
+  }
+
+  return { conversationId: conversation.id };
+}
+
+/**
+ * Envoie un message dans une conversation donnée.
+ * Valide en amont que le produit est actif et non vendu.
+ */
+export async function sendMessage(conversationId: number, content: string, metadata?: any) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Vous devez être connecté pour envoyer un message.");
+  }
+
+  const senderId = parseInt(session.user.id);
+
+  // 1. Charger la conversation avec le statut du produit
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    include: {
+      product: {
+        select: {
+          user_id: true,
+          is_active: true,
+          is_sold: true
+        }
+      }
+    }
+  });
+
+  if (!conversation) {
+    throw new Error("Discussion introuvable.");
+  }
+
+  // Sécurité : l'expéditeur doit être l'acheteur ou le vendeur
+  const isBuyer = conversation.user_id === senderId;
+  const isSeller = conversation.product.user_id === senderId;
+  if (!isBuyer && !isSeller) {
+    throw new Error("Vous n'êtes pas autorisé à participer à cette discussion.");
+  }
+
+  // Garde-fous de robustesse (Lecture Seule)
+  if (!conversation.product.is_active) {
+    throw new Error("Impossible d'envoyer un message : cette annonce a été supprimée par le vendeur.");
+  }
+  if (conversation.product.is_sold) {
+    throw new Error("Impossible d'envoyer un message : cet article a été vendu.");
+  }
+
+  // 2. Création du message
+  const message = await prisma.message.create({
+    data: {
+      content,
+      user_id: senderId,
+      conversation_id: conversationId,
+      metadata: metadata || null,
+    },
+  });
+
+  // Revalidation du cache Next.js
+  revalidatePath(`/messages/${conversationId}`);
+  revalidatePath(`/messages`);
+
+  return message;
+}
+
+/**
+ * Marque comme lus tous les messages reçus dans une conversation
+ * (messages envoyés par l'autre participant).
+ */
+export async function markAsRead(conversationId: number) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false };
+  }
+
+  const userId = parseInt(session.user.id);
+
+  await prisma.message.updateMany({
+    where: {
+      conversation_id: conversationId,
+      is_read: false,
+      NOT: {
+        user_id: userId,
+      },
+    },
+    data: {
+      is_read: true,
+    },
+  });
+
+  revalidatePath(`/messages/${conversationId}`);
+  revalidatePath(`/messages`);
+
+  return { success: true };
+}
+
+/**
+ * Accepte ou décline une offre de prix interactive.
+ * Seul le vendeur est autorisé à effectuer cette action.
+ */
+export async function resolveOffer(messageId: number, status: "ACCEPTED" | "DECLINED") {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Vous devez être connecté.");
+  }
+
+  const userId = parseInt(session.user.id);
+
+  // 1. Récupération de l'offre
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    include: {
+      conversation: {
+        include: {
+          product: {
+            select: {
+              user_id: true,
+              price: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!message) {
+    throw new Error("Message d'offre introuvable.");
+  }
+
+  // 2. Sécurité : Seul le vendeur du produit peut résoudre l'offre
+  if (message.conversation.product.user_id !== userId) {
+    throw new Error("Seul le vendeur de l'article peut accepter ou décliner une offre.");
+  }
+
+  const currentMetadata = message.metadata as any;
+  if (!currentMetadata || currentMetadata.type !== "OFFER") {
+    throw new Error("Ce message n'est pas une offre de prix.");
+  }
+
+  if (currentMetadata.status !== "PENDING") {
+    throw new Error("Cette offre de prix a déjà été résolue.");
+  }
+
+  // 3. Mise à jour de l'offre
+  const updatedMetadata = {
+    ...currentMetadata,
+    status: status
+  };
+
+  await prisma.message.update({
+    where: { id: messageId },
+    data: {
+      metadata: updatedMetadata
+    }
+  });
+
+  // 4. Création d'un message système dans le fil
+  const systemMessageContent = status === "ACCEPTED"
+    ? `Offre acceptée ! Vous pouvez maintenant acheter l'article pour ${currentMetadata.amount} €.`
+    : `L'offre de ${currentMetadata.amount} € a été déclinée par le vendeur.`;
+
+  await prisma.message.create({
+    data: {
+      content: systemMessageContent,
+      user_id: userId, // Enregistré sous l'auteur qui résout le statut
+      conversation_id: message.conversation_id,
+      metadata: {
+        type: "SYSTEM",
+        offerMessageId: messageId,
+        offerStatus: status
+      }
+    }
+  });
+
+  revalidatePath(`/messages/${message.conversation_id}`);
+  revalidatePath(`/messages`);
+
+  return { success: true };
+}

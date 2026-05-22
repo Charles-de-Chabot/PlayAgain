@@ -2,8 +2,16 @@
 
 import { Heart, Plus, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function MobileNavbar() {
+  const pathname = usePathname();
+
+  // Masquer sur les pages de messagerie
+  if (pathname?.startsWith("/messages")) {
+    return null;
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex xl:hidden items-center justify-around bg-black/90 backdrop-blur-lg py-4 text-white border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
       <Link href="/favorites" className="cursor-pointer">

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, CircleUserRound, LogOut, ShoppingBag } from "lucide-react";
+import { Compass, CircleUserRound, LogOut, ShoppingBag, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "next-auth/react";
 
@@ -84,6 +84,21 @@ export function Header() {
           {!isHomePage && (
             <Link href="/" className="p-1.5 md:p-2 text-zinc-300 hover:text-brand-accent hover:scale-115 transition-all cursor-pointer" title="Accueil">
               <Compass className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
+            </Link>
+          )}
+
+          {/* Icône Messagerie - Uniquement si connecté */}
+          {isAuthenticated && (
+            <Link 
+              href="/messages" 
+              className={`p-1.5 md:p-2 transition-all hover:scale-115 cursor-pointer ${
+                pathname.startsWith("/messages")
+                  ? "text-brand-accent" 
+                  : "text-zinc-300 hover:text-brand-accent"
+              }`}
+              title="Messagerie"
+            >
+              <MessageCircle className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
             </Link>
           )}
 

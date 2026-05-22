@@ -518,12 +518,42 @@ export default async function ProductDetailPage({
     </div>
   );
 
+  const isOwner = session?.user?.id ? parseInt(session.user.id) === product.user_id : false;
+
   // Block 6: Action Achat & Réassurance
   const BuyNowBlock = (
     <div className="space-y-4 pt-4">
-      <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
-        Acheter maintenant
-      </Button>
+      {!isOwner && (
+        <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
+          Acheter maintenant
+        </Button>
+      )}
+
+      {!isOwner && (
+        <form action={async () => {
+          "use server";
+          const { getOrCreateConversation } = await import("@/app/actions/message");
+          const { redirect } = await import("next/navigation");
+          let conversationId;
+          try {
+            const res = await getOrCreateConversation(product.id);
+            conversationId = res.conversationId;
+          } catch (err) {
+            console.error(err);
+            return;
+          }
+          if (conversationId) {
+            redirect(`/messages/${conversationId}`);
+          }
+        }}>
+          <Button 
+            type="submit" 
+            className="w-full h-14 rounded-2xl bg-zinc-950 border border-white/10 hover:border-brand-accent/50 text-white text-sm font-black uppercase tracking-[0.1em] shadow-lg transition-all active:scale-95"
+          >
+            💬 Contacter le vendeur
+          </Button>
+        </form>
+      )}
       
       <CompareButtonWrapper product={product} />
       
