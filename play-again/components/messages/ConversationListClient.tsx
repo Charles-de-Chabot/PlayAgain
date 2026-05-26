@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Search, MessageSquare, User } from "lucide-react";
+import { Search, MessageSquare, User, Lock } from "lucide-react";
 
 interface User {
   id: number;
@@ -137,6 +137,23 @@ export default function ConversationListClient({
                 });
               }
 
+              // Déterminer si cette conversation est en lecture seule (bloquée)
+              const isReadOnly = (() => {
+                if (!conv.product.is_active && !conv.product.is_sold) return true;
+                if (conv.product.is_sold) {
+                  const activeInvoice = conv.product.invoice_items?.[0]?.invoice;
+                  if (activeInvoice) {
+                    const isShipping = activeInvoice.address_id !== null;
+                    if (isShipping) {
+                      return ["SHIPPED", "DELIVERED", "COMPLETED"].includes(activeInvoice.status);
+                    } else {
+                      return activeInvoice.status === "COMPLETED";
+                    }
+                  }
+                }
+                return false;
+              })();
+
               return (
                 <Link
                   key={conv.id}
@@ -145,7 +162,7 @@ export default function ConversationListClient({
                     isSelected
                       ? "bg-white/10 border-brand-accent"
                       : "bg-transparent border-transparent hover:bg-white/5 hover:border-white/10"
-                  }`}
+                  } ${isReadOnly ? "opacity-55 saturate-[0.6] hover:opacity-85 hover:saturate-100" : ""}`}
                 >
                   {/* Avatar de l'interlocuteur */}
                   <div className="relative flex-shrink-0">
@@ -168,9 +185,14 @@ export default function ConversationListClient({
                   {/* Infos principales */}
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                     <div className="flex items-baseline justify-between gap-1">
-                      <h2 className="text-sm font-bold text-white truncate group-hover:text-brand-accent transition-colors">
-                        {partnerName}
-                      </h2>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <h2 className="text-sm font-bold text-white truncate group-hover:text-brand-accent transition-colors">
+                          {partnerName}
+                        </h2>
+                        {isReadOnly && (
+                          <Lock className="h-3 w-3 text-zinc-500 shrink-0" />
+                        )}
+                      </div>
                       <span className="text-[10px] text-white/40 flex-shrink-0">
                         {relativeDate}
                       </span>

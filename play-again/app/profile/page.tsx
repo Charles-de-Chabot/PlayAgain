@@ -10,7 +10,8 @@ import {
   MapPin, 
   ChevronRight,
   ShieldCheck,
-  HelpCircle
+  HelpCircle,
+  DollarSign
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ export default async function ProfilePage() {
   });
 
   const serializedListings = user.products.map(serializeProduct);
+  const soldCount = user.products.filter((p: any) => p.is_sold).length;
 
   // Aplatir et sérialiser les achats
   const purchasedProducts = user.invoices.flatMap(inv => 
@@ -106,6 +108,7 @@ export default async function ProfilePage() {
 
   const sidebarItems = [
     { icon: Heart, label: "Favoris", href: "/profile/favorites", count: defaultFavoritesCount },
+    { icon: DollarSign, label: "Mes ventes", href: "/profile/sales" },
     { icon: MapPin, label: "Mes adresses", href: "/profile/addresses" },
     { icon: Settings, label: "Paramètres", href: "/profile/settings" },
     { icon: HelpCircle, label: "Aide", href: "/help" },
@@ -156,6 +159,14 @@ export default async function ProfilePage() {
                         ? `${user.firstname} ${user.lastname}` 
                         : user.username || "Utilisateur"}
                     </h1>
+
+                    {/* Badge Ventes Réussies (Preuve Sociale Compacte) */}
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-brand-accent/30 bg-zinc-950/80 hover:bg-zinc-900/50 transition-all select-none group w-fit cursor-default shrink-0 shadow-[0_0_10px_rgba(198,255,52,0.05)] hover:shadow-[0_0_15px_rgba(198,255,52,0.15)] hover:border-brand-accent/50 duration-300">
+                      <span className="text-[10px] animate-pulse">⚡</span>
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] italic text-brand-accent">
+                        {soldCount} {soldCount > 1 ? "équipements vendus" : "équipement vendu"}
+                      </span>
+                    </div>
                     
                     {/* Dedicated Premium Sportif ID Badge */}
                     {user.sportProfile ? (

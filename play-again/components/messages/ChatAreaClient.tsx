@@ -544,6 +544,7 @@ export default function ChatAreaClient({
   const partnerName = partner.username || partner.firstname || "Utilisateur";
   const partnerImage = partner.profile_picture || "/uploads/avatars/default.png";
   const productMedia = product.media[0]?.url;
+  const partnerSoldCount = (partner as any).products?.length || 0;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-transparent relative">
@@ -569,8 +570,16 @@ export default function ChatAreaClient({
             </div>
           )}
 
-          <div className="min-w-0 flex-1 text-left flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div className="min-w-0 flex-1 text-left flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <h2 className="text-sm sm:text-base font-black text-white truncate leading-none">{partnerName}</h2>
+
+            {/* Badge Ventes Réussies (Preuve Sociale Compacte) */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-brand-accent/30 bg-zinc-950/80 hover:bg-zinc-900/50 transition-all select-none group w-fit cursor-default shrink-0 shadow-[0_0_10px_rgba(198,255,52,0.05)] hover:shadow-[0_0_15px_rgba(198,255,52,0.15)] hover:border-brand-accent/50 duration-300">
+              <span className="text-[9px] animate-pulse">⚡</span>
+              <span className="text-[8px] font-black uppercase tracking-[0.15em] italic text-brand-accent">
+                {partnerSoldCount} {partnerSoldCount > 1 ? "vendus" : "vendu"}
+              </span>
+            </div>
             
             {/* Séparateur discret */}
             <span className="text-white/20 text-xs select-none hidden sm:inline">•</span>

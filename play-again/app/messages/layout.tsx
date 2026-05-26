@@ -31,7 +31,15 @@ export default async function MessagesLayout({
           username: true,
           profile_picture: true,
           firstname: true,
-          lastname: true
+          lastname: true,
+          products: {
+            where: {
+              is_sold: true
+            },
+            select: {
+              id: true
+            }
+          }
         }
       },
       product: {
@@ -42,11 +50,36 @@ export default async function MessagesLayout({
               username: true,
               profile_picture: true,
               firstname: true,
-              lastname: true
+              lastname: true,
+              products: {
+                where: {
+                  is_sold: true
+                },
+                select: {
+                  id: true
+                }
+              }
             }
           },
           media: {
             take: 1
+          },
+          invoice_items: {
+            where: {
+              invoice: {
+                status: {
+                  not: "CANCELLED"
+                }
+              }
+            },
+            include: {
+              invoice: {
+                select: {
+                  status: true,
+                  address_id: true
+                }
+              }
+            }
           }
         }
       },
@@ -67,6 +100,10 @@ export default async function MessagesLayout({
       price: Number(conv.product.price),
       created_at: conv.product.created_at.toISOString(),
       updated_at: conv.product.updated_at.toISOString(),
+      invoice_items: (conv.product.invoice_items || []).map((item: any) => ({
+        ...item,
+        unit_price: Number(item.unit_price),
+      })),
     },
     messages: conv.messages.map((msg) => ({
       ...msg,

@@ -31,7 +31,15 @@ export default async function ConversationPage({
           username: true,
           profile_picture: true,
           firstname: true,
-          lastname: true
+          lastname: true,
+          products: {
+            where: {
+              is_sold: true
+            },
+            select: {
+              id: true
+            }
+          }
         }
       },
       product: {
@@ -42,7 +50,15 @@ export default async function ConversationPage({
               username: true,
               profile_picture: true,
               firstname: true,
-              lastname: true
+              lastname: true,
+              products: {
+                where: {
+                  is_sold: true
+                },
+                select: {
+                  id: true
+                }
+              }
             }
           },
           media: {

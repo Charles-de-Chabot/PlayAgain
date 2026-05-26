@@ -98,7 +98,7 @@ export async function POST(
       // C. Envoyer un message système pour acter la remise en main propre réussie dans le chat
       await tx.message.create({
         data: {
-          content: `🤝 La remise en main propre a été confirmée avec succès ! Les fonds d'un montant de **${item.unit_price} €** ont été débloqués et transférés vers le compte du vendeur. Merci d'avoir utilisé le tiers de confiance sécurisé PlayAgain !`,
+          content: `🤝 La remise en main propre a été confirmée avec succès !`,
           user_id: userId, // Vendeur
           conversation_id: conversation.id,
           metadata: {
