@@ -46,15 +46,24 @@ interface Product {
   category?: { label: string };
 }
 
+interface Buyer {
+  email: string;
+  firstname: string | null;
+  lastname: string | null;
+  phone: string | null;
+}
+
 interface CheckoutClientProps {
   product: Product;
   initialAddresses: Address[];
+  buyer: Buyer | null;
   stripePublishableKey: string;
 }
 
 export function CheckoutClient({
   product,
   initialAddresses,
+  buyer,
   stripePublishableKey,
 }: CheckoutClientProps) {
   const router = useRouter();
@@ -66,6 +75,14 @@ export function CheckoutClient({
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
     initialAddresses.length > 0 ? initialAddresses[0].id : null
   );
+
+  // Infos de contact (Nom complet, e-mail, téléphone)
+  const [fullName, setFullName] = useState(
+    buyer ? `${buyer.firstname || ""} ${buyer.lastname || ""}`.trim() : ""
+  );
+  const [email, setEmail] = useState(buyer?.email || "");
+  const [phone, setPhone] = useState(buyer?.phone || "");
+  const [saveContactToProfile, setSaveContactToProfile] = useState(false);
 
   // Formulaire d'adresse
   const [showNewAddressForm, setShowNewAddressForm] = useState<boolean>(
@@ -123,6 +140,13 @@ export function CheckoutClient({
       setIsInitializingPayment(true);
       setPaymentError("");
 
+      // Validation des informations de contact obligatoires
+      if (!fullName.trim() || !email.trim() || !phone.trim()) {
+        setPaymentError("Veuillez remplir toutes les informations de contact (Nom complet, e-mail et téléphone).");
+        setIsInitializingPayment(false);
+        return;
+      }
+
       let finalAddressId = selectedAddressId;
 
       // 1. Sauvegarder la nouvelle adresse d'abord si nécessaire
@@ -166,6 +190,9 @@ export function CheckoutClient({
           productId: product.id,
           addressId: isShipping ? finalAddressId : null,
           isShipping,
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          saveContactToProfile,
         }),
       });
 
@@ -289,11 +316,84 @@ export function CheckoutClient({
               </div>
             </div>
 
-            {/* B. Bloc Adresse (Visible uniquement si Mode Expédition actif) */}
+            {/* B. Informations de contact (Toujours visible pour expédition et main propre) */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest">2. Informations de contact</h3>
+              
+              <div className="p-6 rounded-2xl bg-zinc-900/30 border border-white/5 space-y-4 backdrop-blur-md">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nom complet *</label>
+                  <input
+                    type="text"
+                    placeholder="Jean Dupont"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    className="w-full h-11 bg-black/60 border border-white/10 rounded-xl px-4 text-sm text-white focus:outline-none focus:border-brand-primary transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">E-mail *</label>
+                    <input
+                      type="email"
+                      placeholder="jean.dupont@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full h-11 bg-black/60 border border-white/10 rounded-xl px-4 text-sm text-white focus:outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Téléphone *</label>
+                    <input
+                      type="tel"
+                      placeholder="06 12 34 56 78"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="w-full h-11 bg-black/60 border border-white/10 rounded-xl px-4 text-sm text-white focus:outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Raccourci Premium: Slide Toggle pour Sauvegarde BDD du profil contact */}
+                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                  <span 
+                    className={`text-xs font-black transition-all duration-300 uppercase tracking-wide select-none ${
+                      saveContactToProfile 
+                        ? "text-brand-primary drop-shadow-[0_0_6px_rgba(125,56,255,0.4)]" 
+                        : "text-zinc-500"
+                    }`}
+                    style={{
+                      textShadow: saveContactToProfile ? "0 0 8px rgba(125, 56, 255, 0.4)" : "none"
+                    }}
+                  >
+                    Enregistrer ces informations dans mon profil
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSaveContactToProfile(!saveContactToProfile)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      saveContactToProfile ? "bg-brand-primary" : "bg-zinc-800"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        saveContactToProfile ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* C. Bloc Adresse (Visible uniquement si Mode Expédition actif) */}
             {isShipping ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest">2. Adresse d'expédition</h3>
+                  <h3 className="text-sm font-black text-zinc-500 uppercase tracking-widest">3. Adresse d'expédition</h3>
                   {addresses.length > 0 && (
                     <button
                       onClick={() => setShowNewAddressForm(!showNewAddressForm)}
@@ -374,7 +474,7 @@ export function CheckoutClient({
                       <span 
                         className={`text-xs font-black transition-all duration-300 uppercase tracking-wide select-none ${
                           saveAddressToProfile 
-                            ? "text-[#7D38FF] drop-shadow-[0_0_6px_rgba(125,56,255,0.4)]" 
+                            ? "text-brand-primary drop-shadow-[0_0_6px_rgba(125,56,255,0.4)]" 
                             : "text-zinc-500"
                         }`}
                         style={{
@@ -462,7 +562,7 @@ export function CheckoutClient({
               <Button
                 onClick={handleProceedToPayment}
                 disabled={isInitializingPayment || (isShipping && !selectedAddressId && showNewAddressForm && (!newStreetName || !newCity))}
-                className="w-full h-14 rounded-2xl bg-brand-primary hover:bg-brand-primary/95 text-white text-sm font-black uppercase tracking-[0.1em] shadow-lg shadow-brand-primary/10 transition-all active:scale-98 flex items-center justify-center gap-2"
+                className="w-full h-14 rounded-2xl bg-brand-primary hover:bg-brand-primary/95 text-white text-sm font-black uppercase tracking-widest shadow-lg shadow-brand-primary/10 transition-all active:scale-98 flex items-center justify-center gap-2"
               >
                 {isInitializingPayment ? (
                   <>
@@ -562,12 +662,12 @@ export function CheckoutClient({
               <span className="font-bold">
                 {isShipping ? (
                   shippingFee === 0 ? (
-                    <span className="text-[#C6FF34] uppercase tracking-wider text-xs">Gratuit</span>
+                    <span className="text-brand-accent uppercase tracking-wider text-xs">Gratuit</span>
                   ) : (
                     `${shippingFee.toFixed(2)} €`
                   )
                 ) : (
-                  <span className="text-[#C6FF34] uppercase tracking-wider text-xs">Gratuit</span>
+                  <span className="text-brand-accent uppercase tracking-wider text-xs">Gratuit</span>
                 )}
               </span>
             </div>
@@ -576,7 +676,7 @@ export function CheckoutClient({
             <div className="pt-4 border-t border-white/5 flex justify-between items-baseline">
               <span className="text-base font-black text-white uppercase tracking-wider">Total</span>
               <div className="text-right">
-                <span className="text-3xl font-black text-[#7D38FF] drop-shadow-[0_0_12px_rgba(125,56,255,0.2)]">
+                <span className="text-3xl font-black text-brand-primary drop-shadow-[0_0_12px_rgba(125,56,255,0.2)]">
                   {totalPrice.toFixed(2)} €
                 </span>
                 <p className="text-[9px] text-zinc-500 font-bold mt-1">TVA & frais de traitement inclus</p>
@@ -651,7 +751,7 @@ function PaymentForm({ totalPrice, productId, invoiceId }: PaymentFormProps) {
       <Button
         type="submit"
         disabled={isPaying || !stripe || !elements}
-        className="w-full h-14 rounded-2xl bg-brand-primary hover:bg-brand-primary/95 text-white text-sm font-black uppercase tracking-[0.1em] shadow-lg shadow-brand-primary/10 transition-all active:scale-98 flex items-center justify-center gap-2"
+        className="w-full h-14 rounded-2xl bg-brand-primary hover:bg-brand-primary/95 text-white text-sm font-black uppercase tracking-widest shadow-lg shadow-brand-primary/10 transition-all active:scale-98 flex items-center justify-center gap-2"
       >
         {isPaying ? (
           <>

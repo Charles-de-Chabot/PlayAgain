@@ -27,7 +27,14 @@ export async function POST(req: Request) {
 
     // 2. Récupération et validation des paramètres de la requête
     const body = await req.json();
-    const { productId, addressId, isShipping } = body;
+    const { 
+      productId, 
+      addressId, 
+      isShipping,
+      fullName,
+      phone,
+      saveContactToProfile,
+    } = body;
 
     if (!productId) {
       return NextResponse.json(
@@ -133,6 +140,22 @@ export async function POST(req: Request) {
 
     // 8. Enregistrement en BDD (Transaction Prisma)
     const invoice = await prisma.$transaction(async (tx) => {
+      // Optionnel : Enregistrer/Mettre à jour les coordonnées du profil de l'acheteur si coché
+      if (saveContactToProfile && fullName) {
+        const parts = fullName.trim().split(" ");
+        const firstname = parts[0] || "";
+        const lastname = parts.slice(1).join(" ") || "";
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            firstname,
+            lastname,
+            phone: phone || null,
+          },
+        });
+      }
+
       // Récupération ou création du panier de l'utilisateur (requis par la contrainte de clé étrangère d'Invoice)
       let basket = await tx.basket.findUnique({
         where: { user_id: userId },

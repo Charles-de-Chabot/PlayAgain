@@ -25,6 +25,7 @@ export async function GET(
       where: { id: conversationId },
       select: {
         user_id: true,
+        product_id: true,
         product: {
           select: {
             user_id: true,
@@ -48,7 +49,29 @@ export async function GET(
       orderBy: { created_at: "asc" },
     });
 
-    return NextResponse.json({ messages });
+    // 3. Récupération de la facture associée active
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        items: {
+          some: {
+            product_id: conversation.product_id,
+          },
+        },
+        status: {
+          not: "CANCELLED",
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        address_id: true,
+      },
+    });
+
+    return NextResponse.json({ 
+      messages,
+      invoice: invoice ? { id: invoice.id, status: invoice.status, address_id: invoice.address_id } : null
+    });
   } catch (error: any) {
     console.error("❌ [API GET MESSAGES ERROR]", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

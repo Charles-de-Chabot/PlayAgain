@@ -16,7 +16,13 @@ import {
   DollarSign,
   BarChart2,
   User,
-  X
+  X,
+  Package,
+  Download,
+  ShieldCheck,
+  QrCode,
+  MapPin,
+  AlertCircle
 } from "lucide-react";
 import { sendMessage, resolveOffer, markAsRead, uploadChatImage } from "@/app/actions/message";
 
@@ -58,8 +64,15 @@ interface Conversation {
   product: Product;
 }
 
+interface InvoiceInfo {
+  id: number;
+  status: string;
+  address_id: number | null;
+}
+
 interface ChatAreaClientProps {
   initialConversation: Conversation & { messages: Message[] };
+  initialInvoice: InvoiceInfo | null;
   currentUserId: number;
   currentUserRole: string;
   partner: User;
@@ -68,12 +81,14 @@ interface ChatAreaClientProps {
 
 export default function ChatAreaClient({
   initialConversation,
+  initialInvoice,
   currentUserId,
   currentUserRole,
   partner,
   isBuyer,
 }: ChatAreaClientProps) {
   const [messages, setMessages] = useState<Message[]>(initialConversation.messages);
+  const [invoice, setInvoice] = useState<InvoiceInfo | null>(initialInvoice);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -85,6 +100,151 @@ export default function ChatAreaClient({
   const [isMounted, setIsMounted] = useState(false);
   const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
 
+  // --- Validation de remise en main propre (Main Propre) ---
+  const [verificationCodes, setVerificationCodes] = useState<Record<number, string>>({});
+  const [verifyingInvoiceId, setVerifyingInvoiceId] = useState<number | null>(null);
+  const [verificationErrors, setVerificationErrors] = useState<Record<number, string>>({});
+  const [verifiedInvoices, setVerifiedInvoices] = useState<Record<number, boolean>>({});
+
+  const handleVerifySecurityCode = async (invoiceId: number) => {
+    const code = verificationCodes[invoiceId];
+    if (!code || !code.trim() || verifyingInvoiceId !== null) return;
+
+    setVerifyingInvoiceId(invoiceId);
+    setVerificationErrors((prev) => ({ ...prev, [invoiceId]: "" }));
+
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur de validation");
+      }
+
+      setVerifiedInvoices((prev) => ({ ...prev, [invoiceId]: true }));
+      
+      // Récupérer le fil des messages rafraîchi
+      const resMsg = await fetch(`/api/conversations/${initialConversation.id}/messages`);
+      if (resMsg.ok) {
+        const dataMsg = await resMsg.json();
+        setMessages(dataMsg.messages);
+        if (dataMsg.invoice) {
+          setInvoice(dataMsg.invoice);
+        }
+      }
+    } catch (err: any) {
+      setVerificationErrors((prev) => ({ ...prev, [invoiceId]: err.message }));
+    } finally {
+      setVerifyingInvoiceId(null);
+    }
+  };
+
+  const [shippingInvoiceId, setShippingInvoiceId] = useState<number | null>(null);
+
+  const handleMarkAsShipped = async (invoiceId: number) => {
+    if (shippingInvoiceId !== null) return;
+    setShippingInvoiceId(invoiceId);
+
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/ship`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur lors de l'expédition");
+      }
+
+      // Récupérer le fil des messages rafraîchi
+      const resMsg = await fetch(`/api/conversations/${initialConversation.id}/messages`);
+      if (resMsg.ok) {
+        const dataMsg = await resMsg.json();
+        setMessages(dataMsg.messages);
+        if (dataMsg.invoice) {
+          setInvoice(dataMsg.invoice);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || "Erreur de connexion");
+    } finally {
+      setShippingInvoiceId(null);
+    }
+  };
+
+  const [isReleasingFunds, setIsReleasingFunds] = useState(false);
+  const [isDisputing, setIsDisputing] = useState(false);
+
+  const handleReleaseFunds = async (invoiceId: number) => {
+    if (isReleasingFunds) return;
+    setIsReleasingFunds(true);
+
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/release`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur lors de la libération des fonds");
+      }
+
+      // Récupérer le fil des messages rafraîchi
+      const resMsg = await fetch(`/api/conversations/${initialConversation.id}/messages`);
+      if (resMsg.ok) {
+        const dataMsg = await resMsg.json();
+        setMessages(dataMsg.messages);
+        if (dataMsg.invoice) {
+          setInvoice(dataMsg.invoice);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || "Erreur de connexion");
+    } finally {
+      setIsReleasingFunds(false);
+    }
+  };
+
+  const handleDispute = async (invoiceId: number) => {
+    if (isDisputing) return;
+    if (!confirm("Voulez-vous vraiment déclarer un problème concernant ce colis ? Les fonds resteront gelés le temps d'analyser votre demande par notre service client.")) {
+      return;
+    }
+    setIsDisputing(true);
+
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/dispute`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur lors de l'ouverture du litige");
+      }
+
+      // Récupérer le fil des messages rafraîchi
+      const resMsg = await fetch(`/api/conversations/${initialConversation.id}/messages`);
+      if (resMsg.ok) {
+        const dataMsg = await resMsg.json();
+        setMessages(dataMsg.messages);
+        if (dataMsg.invoice) {
+          setInvoice(dataMsg.invoice);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || "Erreur de connexion");
+    } finally {
+      setIsDisputing(false);
+    }
+  };
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -94,7 +254,24 @@ export default function ChatAreaClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const product = initialConversation.product;
-  const isReadOnly = !product.is_active || product.is_sold;
+  
+  // Le chat est bloqué si :
+  // 1. L'annonce est désactivée par le vendeur (et non vendue)
+  // 2. OU si le produit est vendu ET la transaction est définitivement terminée (expédiée ou remise validée)
+  const isTransactionFinished = (() => {
+    if (!product.is_sold || !invoice) return false;
+    
+    const isShipping = invoice.address_id !== null;
+    if (isShipping) {
+      // Pour les colis : bloqué dès que c'est expédié, livré ou complété
+      return ["SHIPPED", "DELIVERED", "COMPLETED"].includes(invoice.status);
+    } else {
+      // Pour la remise en main propre : bloqué dès que c'est complété (code saisi)
+      return invoice.status === "COMPLETED";
+    }
+  })();
+
+  const isReadOnly = (!product.is_active && !product.is_sold) || isTransactionFinished;
 
   const acceptedOffer = messages.find(
     (msg) => msg.metadata && msg.metadata.type === "OFFER" && msg.metadata.status === "ACCEPTED"
@@ -128,6 +305,9 @@ export default function ChatAreaClient({
           if (data.messages && data.messages.length !== messages.length) {
             setMessages(data.messages);
             await markAsRead(initialConversation.id);
+          }
+          if (data.invoice) {
+            setInvoice(data.invoice);
           }
         }
       } catch (err) {
@@ -439,16 +619,23 @@ export default function ChatAreaClient({
       {isReadOnly && (
         <div className="bg-brand-primary/10 border-b border-brand-primary/20 p-2 text-center text-xs text-white/70 font-semibold flex items-center justify-center gap-2">
           <Lock className="h-3.5 w-3.5 text-brand-primary" />
-          {product.is_sold 
-            ? "Cet article a été vendu. La discussion est désormais en lecture seule."
-            : "Le vendeur a supprimé cette annonce. La discussion est désormais en lecture seule."
+          {!product.is_active && !product.is_sold 
+            ? "Le vendeur a supprimé cette annonce. La discussion est désormais en lecture seule."
+            : "La transaction est terminée. La discussion est désormais fermée en lecture seule."
           }
         </div>
       )}
 
       {/* 2. Fil des Messages */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 bg-transparent">
-        {messages.map((msg, index) => {
+        {messages.filter((msg) => {
+          const msgMeta = msg.metadata as any;
+          if (msgMeta && msgMeta.visibleTo) {
+            if (msgMeta.visibleTo === "seller" && isBuyer) return false;
+            if (msgMeta.visibleTo === "buyer" && !isBuyer) return false;
+          }
+          return true;
+        }).map((msg, index) => {
           const isMe = msg.user_id === currentUserId;
           const msgMeta = msg.metadata as any;
           const showTime = true; // On affiche l'heure pour chaque bulle
@@ -462,6 +649,233 @@ export default function ChatAreaClient({
 
           // Rendu des messages riches
           if (msgMeta) {
+            // 1. Bordereau d'expédition Vendeur (Privé)
+            if (msgMeta.type === "shipping_label_seller") {
+              const match = msgMeta.pdfUrl?.match(/\/api\/invoices\/(\d+)\/shipping-label/);
+              const invoiceId = match ? parseInt(match[1]) : null;
+              
+              const isShipped = invoice && (invoice.status === "SHIPPED" || invoice.status === "DELIVERED" || invoice.status === "COMPLETED");
+              const isShippingLoading = invoiceId !== null && shippingInvoiceId === invoiceId;
+
+              return (
+                <div key={msg.id} className="flex justify-start animate-fade-in-up">
+                  <div className="p-5 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 backdrop-blur-md shadow-xl flex flex-col gap-4 max-w-sm">
+                    <div className="flex items-center gap-2 text-brand-primary">
+                      <div className="p-2 rounded-xl bg-brand-primary/10">
+                        <Package className="h-5 w-5 text-brand-primary" />
+                      </div>
+                      <span className="text-xs font-black tracking-widest uppercase">Expédition Requise</span>
+                    </div>
+                    
+                    <p className="text-xs text-white/80 leading-relaxed">{msg.content}</p>
+                    
+                    <div className="flex flex-col gap-2 w-full">
+                      <a
+                        href={msgMeta.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 px-4 bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-brand-primary/10 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <Download className="h-4 w-4" />
+                        Télécharger le Bordereau (PDF)
+                      </a>
+
+                      {invoiceId !== null && (
+                        isShipped ? (
+                          <div className="w-full py-2.5 px-4 bg-brand-accent/15 border border-brand-accent/30 text-brand-accent text-center text-xs font-black rounded-xl flex items-center justify-center gap-1.5">
+                            <Check className="h-4 w-4" />
+                            Colis marqué comme expédié
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleMarkAsShipped(invoiceId)}
+                            disabled={isShippingLoading}
+                            className="w-full py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                          >
+                            {isShippingLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-white" />
+                            ) : (
+                              "Marquer le colis comme expédié"
+                            )}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // 2. Achat Confirmé Acheteur (Privé)
+            if (msgMeta.type === "purchase_confirmed_buyer") {
+              const currentStatus = invoice?.status || "PAID";
+              const isDelivered = currentStatus === "DELIVERED";
+              const isCompleted = currentStatus === "COMPLETED";
+              const isDisputed = currentStatus === "DISPUTED";
+              const isShipped = currentStatus === "SHIPPED";
+
+              return (
+                <div key={msg.id} className="flex justify-end animate-fade-in-up">
+                  <div className="p-5 rounded-2xl border border-brand-accent/30 bg-brand-accent/5 backdrop-blur-md shadow-xl flex flex-col gap-3 max-w-sm text-right w-full">
+                    <div className="flex items-center gap-2 text-brand-accent justify-end">
+                      <span className="text-xs font-black tracking-widest uppercase">Paiement Sécurisé</span>
+                      <div className="p-2 rounded-xl bg-brand-accent/10">
+                        <ShieldCheck className="h-5 w-5 text-brand-accent" />
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-white/80 leading-relaxed">{msg.content}</p>
+                    
+                    <div className="flex flex-col gap-2 w-full mt-2">
+                      <div className="flex items-center gap-1.5 justify-end text-[10px] text-zinc-400 font-bold">
+                        <span className={`h-2 w-2 rounded-full ${
+                          isCompleted ? "bg-brand-accent" :
+                          isDisputed ? "bg-red-500 animate-pulse" :
+                          isDelivered ? "bg-cyan-400 animate-pulse" :
+                          isShipped ? "bg-violet-400 animate-pulse" :
+                          "bg-brand-accent animate-pulse"
+                        }`} />
+                        Statut : {
+                          isCompleted ? "Transaction terminée" :
+                          isDisputed ? "Litige en cours" :
+                          isDelivered ? "Colis livré (48h)" :
+                          isShipped ? "Colis en cours de livraison" : "En attente d'expédition"
+                        }
+                      </div>
+
+                      {/* Si le colis est livré : Offrir à l'acheteur les boutons "Tout est OK" et "Déclarer un problème" */}
+                      {isDelivered && invoice && (
+                        <div className="flex flex-col gap-2 mt-2 w-full">
+                          <button
+                            onClick={() => handleReleaseFunds(invoice.id)}
+                            disabled={isReleasingFunds}
+                            className="w-full py-2.5 px-4 bg-brand-accent hover:bg-brand-accent/90 text-black text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                          >
+                            {isReleasingFunds ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-black" />
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4" />
+                                Tout est OK
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDispute(invoice.id)}
+                            disabled={isDisputing}
+                            className="w-full py-2 px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                          >
+                            {isDisputing ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-red-400" />
+                            ) : (
+                              <>
+                                <AlertCircle className="h-4 w-4" />
+                                Déclarer un problème
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // 3. Remise en Main Propre Acheteur (Privé + Code de Sécurité)
+            if (msgMeta.type === "hand_delivery_buyer") {
+              return (
+                <div key={msg.id} className="flex justify-end animate-fade-in-up">
+                  <div className="p-5 rounded-2xl border border-brand-accent/30 bg-zinc-950/80 backdrop-blur-md shadow-xl flex flex-col gap-4 max-w-sm">
+                    <div className="flex items-center gap-2 text-brand-accent justify-end">
+                      <span className="text-xs font-black tracking-widest uppercase">Remise en main propre</span>
+                      <div className="p-2 rounded-xl bg-brand-accent/10">
+                        <MapPin className="h-5 w-5 text-brand-accent" />
+                      </div>
+                    </div>
+                    <p className="text-xs text-white/80 leading-relaxed text-right">{msg.content}</p>
+                    
+                    <div className="p-4 rounded-xl bg-black border border-white/5 flex flex-col items-center justify-center gap-1.5">
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Code de validation</span>
+                      <span className="text-3xl font-black text-brand-accent font-mono tracking-widest select-all drop-shadow-[0_0_10px_rgba(198,255,52,0.4)]">
+                        {msgMeta.securityCode}
+                      </span>
+                      <span className="text-[9px] text-zinc-500 font-bold text-center mt-1">
+                        À présenter de vive voix au vendeur au moment de la rencontre.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // 4. Remise en Main Propre Vendeur (Privé + Saisie du Code de Validation)
+            if (msgMeta.type === "hand_delivery_seller") {
+              const invoiceId = msgMeta.invoiceId;
+              const isVerified = verifiedInvoices[invoiceId] || false;
+              const enteredCode = verificationCodes[invoiceId] || "";
+              const error = verificationErrors[invoiceId] || "";
+              const isLoading = verifyingInvoiceId === invoiceId;
+
+              return (
+                <div key={msg.id} className="flex justify-start animate-fade-in-up">
+                  <div className="p-5 rounded-2xl border border-brand-primary/20 bg-zinc-950/80 backdrop-blur-md shadow-xl flex flex-col gap-4 max-w-sm">
+                    <div className="flex items-center gap-2 text-brand-primary">
+                      <div className="p-2 rounded-xl bg-brand-primary/10">
+                        <QrCode className="h-5 w-5 text-brand-primary" />
+                      </div>
+                      <span className="text-xs font-black tracking-widest uppercase">Rencontre & Validation</span>
+                    </div>
+                    
+                    <p className="text-xs text-white/80 leading-relaxed">{msg.content}</p>
+
+                    {isVerified ? (
+                      <div className="p-4 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex flex-col items-center justify-center gap-1 text-center w-full">
+                        <CheckCheck className="h-6 w-6 text-brand-accent" />
+                        <span className="text-xs font-black text-brand-accent uppercase tracking-wider">Remise Validée !</span>
+                        <span className="text-[10px] text-zinc-400 font-bold mt-1">
+                          Les fonds ont été libérés avec succès.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 w-full">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            maxLength={9}
+                            value={enteredCode}
+                            onChange={(e) => setVerificationCodes(prev => ({ ...prev, [invoiceId]: e.target.value.toUpperCase() }))}
+                            placeholder="PA-XXXXXX"
+                            disabled={isLoading}
+                            className="w-full bg-black/60 border border-white/10 rounded-xl px-4 text-center font-mono font-black text-sm text-white focus:outline-none focus:border-brand-primary transition-all disabled:opacity-50"
+                          />
+                          <button
+                            onClick={() => handleVerifySecurityCode(invoiceId)}
+                            disabled={isLoading || !enteredCode.trim()}
+                            className="bg-brand-primary hover:bg-brand-primary/95 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Valider"
+                            )}
+                          </button>
+                        </div>
+
+                        {error && (
+                          <div className="text-[10px] font-bold text-red-400 flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span>{error}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
             // A. Type IMAGE
             if (msgMeta.type === "IMAGE") {
               return (

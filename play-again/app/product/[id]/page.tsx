@@ -564,15 +564,20 @@ export default async function ProductDetailPage({
           <Truck className="w-5 h-5 text-zinc-500" />
           <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">Envoi Rapide</span>
         </div>
-        <div className="p-3 rounded-2xl bg-zinc-900/30 border border-white/5 flex flex-col items-center justify-center text-center gap-2">
-          <RotateCcw className="w-5 h-5 text-zinc-500" />
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">14j Retours</span>
+        <div className="p-3 rounded-2xl bg-zinc-900/30 border border-brand-accent/20 flex flex-col items-center justify-center text-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-brand-accent" />
+          <span className="text-[9px] font-black text-brand-accent uppercase tracking-tighter">48h retour</span>
         </div>
         <div className="p-3 rounded-2xl bg-zinc-900/30 border border-white/5 flex flex-col items-center justify-center text-center gap-2">
           <Shield className="w-5 h-5 text-zinc-500" />
-          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">Paiement Sécurisé</span>
+          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">Tiers Confiance</span>
         </div>
       </div>
+
+      <p className="text-[10px] text-zinc-500 font-bold text-center leading-relaxed flex items-center justify-center gap-1.5">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
+        Protection de 48h après livraison en cas de non-conformité.
+      </p>
     </div>
   );
 

@@ -78,6 +78,31 @@ export default async function ConversationPage({
   });
   const userRole = currentUser?.role || "USER";
 
+  // 4. Récupération de la facture associée active
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      items: {
+        some: {
+          product_id: conversation.product_id,
+        },
+      },
+      status: {
+        not: "CANCELLED",
+      },
+    },
+    select: {
+      id: true,
+      status: true,
+      address_id: true,
+    },
+  });
+
+  const serializedInvoice = invoice ? {
+    id: invoice.id,
+    status: invoice.status,
+    address_id: invoice.address_id,
+  } : null;
+
   // Sérialisation des objets Decimal de Prisma pour éviter l'erreur de transfert RSC -> Client Component
   const serializedConversation = {
     ...conversation,
@@ -97,6 +122,7 @@ export default async function ConversationPage({
   return (
     <ChatAreaClient 
       initialConversation={serializedConversation}
+      initialInvoice={serializedInvoice}
       currentUserId={userId}
       currentUserRole={userRole}
       partner={partner}

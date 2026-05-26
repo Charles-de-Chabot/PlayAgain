@@ -48,9 +48,21 @@ export default async function CheckoutPage({
     orderBy: { created_at: "desc" },
   });
 
+  // Récupération des informations de profil de l'acheteur (email, nom, prénom, téléphone)
+  const rawBuyer = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      firstname: true,
+      lastname: true,
+      phone: true,
+    },
+  });
+
   // Sérialisation des données pour éviter les problèmes d'objets complexes (Decimal, Date)
   const product = JSON.parse(JSON.stringify(rawProduct));
   const addresses = JSON.parse(JSON.stringify(userAddresses));
+  const buyer = rawBuyer ? JSON.parse(JSON.stringify(rawBuyer)) : null;
 
   return (
     <main className="min-h-screen bg-black text-white pb-24 relative overflow-x-hidden font-sans">
@@ -74,6 +86,7 @@ export default async function CheckoutPage({
           <CheckoutClient
             product={product}
             initialAddresses={addresses}
+            buyer={buyer}
             stripePublishableKey={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}
           />
         </div>

@@ -44,6 +44,10 @@ export default function HelpPage() {
         {
           title: "Quelles sont les garanties d'achat ?",
           content: "Sécurité totale : lorsque vous achetez, l'argent n'est pas versé directement au vendeur. Il est bloqué sur un compte de tiers de confiance. Il n'est libéré que lorsque le transporteur confirme la livraison et que vous validez la conformité."
+        },
+        {
+          title: "Politique de retour et cadre légal (Droit de rétractation)",
+          content: "PlayAgain est une plateforme d'occasion entre particuliers (C2C). Conformément à la législation en vigueur, le droit de rétractation légal de 14 jours (Loi Hamon) ne s'applique pas à ces transactions. Cependant, vous bénéficiez de notre Protection Acheteur : si votre équipement de sport est cassé ou non conforme, vous disposez de 48 heures après sa livraison pour déclarer un litige depuis le chat de votre transaction afin de suspendre le paiement, d'obtenir un retour gratuit et d'être intégralement remboursé."
         }
       ]
     },
