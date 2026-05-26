@@ -47,6 +47,10 @@ enum InvoiceStatus {
   PAID
   CANCELLED
   PENDING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  DISPUTED
 }
 
 enum stateProduct {
@@ -176,6 +180,7 @@ model Address {
   updated_at    DateTime @updatedAt
   
   user          User     @relation(fields: [user_id], references: [id])
+  invoices      Invoice[]
 }
 
 model Conversation {
@@ -225,16 +230,25 @@ model BasketItem {
 }
 
 model Invoice {
-  id           Int           @id @default(autoincrement())
-  user_id      Int
-  basket_id    Int
-  total_price  Decimal       @db.Decimal(10, 2)
-  invoice_date DateTime      @default(now())
-  status       InvoiceStatus @default(PENDING)
+  id                  Int           @id @default(autoincrement())
+  user_id             Int
+  basket_id           Int
+  total_price         Decimal       @db.Decimal(10, 2)
+  commission          Decimal?      @db.Decimal(10, 2)
+  shipping_fee        Decimal?      @db.Decimal(10, 2)
+  payment_intent_id   String?       @unique
+  is_disputed         Boolean       @default(false)
+  buyer_security_code String?
+  address_id          Int?
+  invoice_date        DateTime      @default(now())
+  status              InvoiceStatus @default(PENDING)
+  tracking_number     String?       @unique
+  delivered_at        DateTime?
   
-  user         User          @relation(fields: [user_id], references: [id])
-  basket       Basket        @relation(fields: [basket_id], references: [id])
-  items        InvoiceItem[]
+  user                User          @relation(fields: [user_id], references: [id])
+  basket              Basket        @relation(fields: [basket_id], references: [id])
+  address             Address?      @relation(fields: [address_id], references: [id])
+  items               InvoiceItem[]
 }
 
 model InvoiceItem {
