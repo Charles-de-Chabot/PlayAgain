@@ -149,12 +149,12 @@ export async function POST(req: Request) {
         data: {
           user_id: userId,
           basket_id: basket.id,
-          total_price: totalPrice,
-          commission: commission,
-          shipping_fee: shippingFee,
+          total_price: totalPrice.toFixed(2),
+          commission: commission.toFixed(2),
+          shipping_fee: shippingFee.toFixed(2),
           payment_intent_id: paymentIntent.id,
           status: "PENDING",
-          address_id: finalIsShipping ? parseInt(addressId) : null,
+          address_id: finalIsShipping ? Number(addressId) : null,
           buyer_security_code: buyerSecurityCode,
         },
       });

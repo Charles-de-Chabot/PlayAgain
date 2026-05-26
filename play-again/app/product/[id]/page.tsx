@@ -524,9 +524,11 @@ export default async function ProductDetailPage({
   const BuyNowBlock = (
     <div className="space-y-4 pt-4">
       {!isOwner && (
-        <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
-          Acheter maintenant
-        </Button>
+        <Link href={`/product/${product.id}/checkout`} className="block w-full">
+          <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
+            Acheter maintenant
+          </Button>
+        </Link>
       )}
 
       {!isOwner && (
