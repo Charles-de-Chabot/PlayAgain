@@ -708,7 +708,12 @@ async function main() {
     }
 
     // --- Insertion des Produits de Test avec Photos ---
-    console.log("Nettoyage des anciens articles et médias de test...");
+    await prisma.message.deleteMany({});
+    await prisma.conversation.deleteMany({});
+    await prisma.invoiceItem.deleteMany({});
+    await prisma.invoice.deleteMany({});
+    await prisma.basketItem.deleteMany({});
+    await prisma.favItem.deleteMany({});
     await prisma.media.deleteMany({});
     await prisma.product.deleteMany({});
 

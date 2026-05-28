@@ -214,6 +214,15 @@ export async function getLatestProducts() {
 
   // 2. Récupération de tous les derniers produits
   const products = await prisma.product.findMany({
+    where: {
+      is_sold: false,
+      is_active: true,
+      user: {
+        stripeConnectId: {
+          not: null,
+        },
+      },
+    },
     take: 8,
     orderBy: { created_at: "desc" },
     include: {
@@ -300,11 +309,18 @@ export async function getRecommendedProducts() {
   if (!sportProfile) {
     console.log("⚠️ [Match] Pas de profil sportif, retour produits par défaut");
     const products = await prisma.product.findMany({
-      where: session?.user?.id ? {
-        user_id: {
-          not: parseInt(session.user.id)
-        }
-      } : undefined,
+      where: {
+        is_sold: false,
+        is_active: true,
+        user: {
+          stripeConnectId: {
+            not: null,
+          },
+          id: session?.user?.id ? {
+            not: parseInt(session.user.id),
+          } : undefined,
+        },
+      },
       take: 8,
       orderBy: { created_at: "desc" },
       include: {
@@ -350,14 +366,21 @@ export async function getRecommendedProducts() {
   // 4. Récupération des produits correspondant aux catégories d'intérêts (en excluant les nôtres)
   const products = await prisma.product.findMany({
     where: {
+      is_sold: false,
+      is_active: true,
       category: interests.length > 0 ? {
         label: {
           in: interests
         }
       } : undefined,
-      user_id: session?.user?.id ? {
-        not: parseInt(session.user.id)
-      } : undefined
+      user: {
+        stripeConnectId: {
+          not: null
+        },
+        id: session?.user?.id ? {
+          not: parseInt(session.user.id)
+        } : undefined
+      }
     },
     take: 8,
     orderBy: { created_at: "desc" },
@@ -467,6 +490,12 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
   // 2. Construction de la clause 'where' Prisma
   const where: any = {
     is_sold: false, // On n'affiche que les articles non vendus
+    is_active: true, // On n'affiche que les articles actifs
+    user: {
+      stripeConnectId: {
+        not: null
+      }
+    }
   };
 
   if (filters.searchQuery) {

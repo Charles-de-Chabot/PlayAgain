@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 export async function POST(
   req: Request,
@@ -56,6 +59,29 @@ export async function POST(
         where: { id: invoiceId },
         data: { status: "COMPLETED" },
       });
+
+      // Trouver le stripeConnectId du vendeur de l'article
+      const seller = await tx.user.findUnique({
+        where: { id: item.product.user_id },
+        select: { stripeConnectId: true },
+      });
+
+      if (seller?.stripeConnectId) {
+        if (!process.env.STRIPE_SECRET_KEY) {
+          throw new Error("STRIPE_SECRET_KEY n'est pas configuré pour le transfert des fonds.");
+        }
+
+        const amountInCents = Math.round(Number(item.unit_price) * 100);
+
+        // Effectuer le virement depuis la plateforme vers le compte Express du vendeur
+        await stripe.transfers.create({
+          amount: amountInCents,
+          currency: "eur",
+          destination: seller.stripeConnectId,
+          description: `Libération de séquestre - Facture #${invoiceId} - Produit ${item.product.title}`,
+          source_transaction: invoice.payment_intent_id || undefined,
+        });
+      }
 
       // Trouver la conversation de transaction
       let conversation = await tx.conversation.findFirst({

@@ -93,4 +93,21 @@ body.modal-open nav.fixed.bottom-0 {
   display: none !important;
 }
 
+/* Animation de pulsation douce avec Glow Violet pour l'activation Stripe Connect */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(125, 56, 255, 0.2);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(125, 56, 255, 0.55);
+  }
+}
+
+.animate-pulse-stripe {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+
 

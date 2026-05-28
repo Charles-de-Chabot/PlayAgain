@@ -25,6 +25,8 @@ services:
     environment:
       DATABASE_URL: "mysql://dev_user:dev_password@db:3306/play_again_db"
       NEXTAUTH_SECRET: "ton_secret_pour_la_securite"
+    env_file:
+      - .env
     volumes:
       - .:/app
       - /app/node_modules

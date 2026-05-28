@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import Stripe from "stripe";
 import { Header } from "@/components/layout/Header";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { StripePayoutButton } from "@/components/profile/StripePayoutButton";
 import { 
   User, 
   Settings, 
@@ -114,6 +116,21 @@ export default async function ProfilePage() {
     { icon: HelpCircle, label: "Aide", href: "/help" },
   ];
 
+  let isStripeActive = false;
+  if (user.stripeConnectId) {
+    try {
+      if (process.env.STRIPE_SECRET_KEY) {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        const account = await stripe.accounts.retrieve(user.stripeConnectId);
+        isStripeActive = account.details_submitted;
+      }
+    } catch (err) {
+      console.error("Erreur de récupération du compte Stripe Connect au profil:", err);
+    }
+  }
+
+  const hasHiddenProducts = user.products.some((p: any) => !p.is_sold) && !isStripeActive;
+
   return (
     <main className="min-h-screen bg-black text-white pb-24 relative overflow-x-hidden font-sans">
       {/* Background Decor - Login Style */}
@@ -126,6 +143,31 @@ export default async function ProfilePage() {
         <Header />
 
         <div className="max-w-[1440px] mx-auto px-6 md:px-10 pt-6 md:pt-10">
+          {hasHiddenProducts && (
+            <div className="mb-8 w-full p-4 rounded-3xl bg-zinc-950/80 border border-brand-primary/30 backdrop-blur-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[0_0_30px_rgba(125,56,255,0.15)]">
+              {/* Glow effect internally */}
+              <div className="absolute top-0 left-0 w-24 h-24 rounded-full bg-brand-primary blur-[40px] opacity-20 pointer-events-none" />
+              
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-10 h-10 rounded-full bg-brand-primary/20 border border-brand-primary/30 flex items-center justify-center text-brand-primary shrink-0">
+                  ⚡
+                </div>
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-white italic">
+                    Action requise : activez vos ventes
+                  </h3>
+                  <p className="text-xs text-zinc-400 font-bold">
+                    Vos articles mis en vente ne sont pas visibles sur la boutique tant que vous n'avez pas configuré votre IBAN.
+                  </p>
+                </div>
+              </div>
+              <div className="relative z-10 self-end md:self-center shrink-0">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] italic text-brand-accent">
+                  En attente de compte Stripe Connect
+                </span>
+              </div>
+            </div>
+          )}
           {/* Infos Profil - Full Width / Glass Style */}
           <div className="mb-10 pb-8 border-b border-white/10 w-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
@@ -287,7 +329,12 @@ export default async function ProfilePage() {
                   ))}
                 </div>
                 
-                <div className="mt-5 p-2 relative z-10 border-t border-white/5 pt-5">
+                <div className="mt-5 p-2 relative z-10 border-t border-white/5 pt-5 space-y-4">
+                  <StripePayoutButton 
+                    stripeConnectId={user.stripeConnectId} 
+                    shouldPulse={hasHiddenProducts}
+                  />
+                  
                   <button className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-zinc-400 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 hover:shadow-[0_0_20px_rgba(239,68,68,0.1)] transition-all">
                     Déconnexion
                   </button>

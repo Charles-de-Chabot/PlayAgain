@@ -78,6 +78,7 @@ model User {
   is_active       Boolean        @default(true)
   is_certified    Boolean        @default(false)
   role            Role           @default(USER)
+  stripeConnectId String?        @unique
   
   sportProfile    SportProfile?
   accounts        Account[]
