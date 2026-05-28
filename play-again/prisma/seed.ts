@@ -689,7 +689,7 @@ async function main() {
     const usersToCreate = [
         { username: "test", email: "test@test.com", password: hashedPassword },
         { username: "test2", email: "test2@test.com", password: hashedPassword },
-        { username: "test3", email: "test3@test.comp", password: hashedPassword },
+        { username: "test3", email: "test3@test.com", password: hashedPassword },
     ];
 
     const dbUsers: Record<string, any> = {};
