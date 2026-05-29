@@ -56,7 +56,9 @@ export default async function CheckoutSuccessPage({
       </div>
 
       <div className="relative z-10">
-        <Header />
+        <div className="print:hidden">
+          <Header />
+        </div>
         
         <div className="max-w-3xl mx-auto px-4 pt-24 md:pt-32">
           <SuccessClient invoice={invoice} />

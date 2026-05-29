@@ -615,7 +615,7 @@ export default function ChatAreaClient({
           )}
           {isBuyer && !isReadOnly && (
             <Link
-              href={`/product/${product.id}`}
+              href={acceptedOffer ? `/product/${product.id}/checkout` : `/product/${product.id}`}
               className="bg-brand-primary text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-brand-primary/80 border border-brand-primary/20 transition-all shadow-md"
             >
               Acheter

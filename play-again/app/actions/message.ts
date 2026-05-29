@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { join } from "path";
 import { writeFile, mkdir } from "fs/promises";
+import { createNotification } from "@/app/actions/notification";
 
 /**
  * Téléverse une image de messagerie sur le disque dur du serveur.
@@ -137,6 +138,29 @@ export async function sendMessage(conversationId: number, content: string, metad
       conversation_id: conversationId,
       metadata: metadata || null,
     },
+  });
+
+  // 3. Récupérer les détails de l'expéditeur pour la notification
+  const sender = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { username: true, profile_picture: true }
+  });
+
+  // Déterminer le destinataire
+  const targetUserId = conversation.user_id === senderId ? conversation.product.user_id : conversation.user_id;
+
+  // Déclencher la notification in-app en direct
+  await createNotification({
+    userId: targetUserId,
+    type: "MESSAGE",
+    message: `✉️ Nouveau message de ${sender?.username || "un membre"} : "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`,
+    metadata: {
+      redirectUrl: `/messages?conversationId=${conversationId}`,
+      conversationId,
+      senderName: sender?.username || "un membre",
+      senderAvatarUrl: sender?.profile_picture || null,
+      messageSnippet: content.substring(0, 40) + (content.length > 40 ? '...' : ''),
+    }
   });
 
   // Revalidation du cache Next.js

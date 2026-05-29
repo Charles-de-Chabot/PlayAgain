@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Stripe from "stripe";
+import { createNotification } from "@/app/actions/notification";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -29,7 +30,11 @@ export async function POST(
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                media: true, // Récupère l'image de l'annonce
+              },
+            },
           },
         },
       },
@@ -111,6 +116,20 @@ export async function POST(
           },
         },
       });
+    });
+
+    // 4. Déclencher la notification post-commit pour le vendeur
+    const productImageUrl = item.product.media?.[0]?.url || item.product.media?.[0]?.src || null;
+    await createNotification({
+      userId: item.product.user_id, // Le vendeur
+      type: "TRANSACTION",
+      message: `🛡️ L'acheteur a validé la réception. Les fonds de ${item.unit_price} € ont été débloqués et versés sur votre banque !`,
+      metadata: {
+        redirectUrl: `/profile`,
+        invoiceId: invoice.id,
+        productId: item.product.id,
+        productImageUrl,
+      }
     });
 
     return NextResponse.json({ success: true });

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/app/actions/notification";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
               product: {
                 include: {
                   user: true,
+                  media: true, // Récupère les photos de l'annonce
                 },
               },
             },
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
             },
           });
 
-          return { refund: true };
+          return { refund: true, conversationId: conversation.id };
         }
 
         // Cas Nominal : Le produit est disponible, validation de la transaction !
@@ -219,8 +221,52 @@ export async function POST(req: Request) {
           });
         }
 
-        return { refund: false };
+        return { refund: false, conversationId: conversation.id };
       });
+
+      // 4. Déclencher les notifications adaptées après validation SQL (Post-Commit)
+      const productImageUrl = product.media?.[0]?.url || product.media?.[0]?.src || null;
+
+      if (result.refund) {
+        // Double achat concurrent : l'acheteur est remboursé
+        await createNotification({
+          userId: buyerId,
+          type: "TRANSACTION",
+          message: `⚠️ Désolé, l'article "${product.title}" a été acheté simultanément par un autre membre. Votre paiement a été intégralement remboursé.`,
+          metadata: {
+            redirectUrl: `/profile`,
+            productId: product.id,
+            productImageUrl,
+          }
+        });
+      } else {
+        // Achat nominal réussi
+        // A. Notifier l'acheteur
+        await createNotification({
+          userId: buyerId,
+          type: "TRANSACTION",
+          message: `🎉 Votre achat pour l'article "${product.title}" est validé ! Le vendeur prépare votre colis.`,
+          metadata: {
+            redirectUrl: `/profile`,
+            invoiceId: invoice.id,
+            productId: product.id,
+            productImageUrl,
+          }
+        });
+
+        // B. Notifier le vendeur
+        await createNotification({
+          userId: sellerId,
+          type: "TRANSACTION",
+          message: `📦 Bonne nouvelle ! Votre article "${product.title}" a été acheté par ${invoice.user.username || 'un membre'}.`,
+          metadata: {
+            redirectUrl: `/messages?conversationId=${result.conversationId}`,
+            invoiceId: invoice.id,
+            productId: product.id,
+            productImageUrl,
+          }
+        });
+      }
 
       console.log(`[Stripe Webhook] PaymentIntent ${paymentIntentId} traité avec succès. Remboursement : ${result.refund}`);
     } catch (dbErr: any) {

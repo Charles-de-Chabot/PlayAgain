@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Compass, CircleUserRound, LogOut, ShoppingBag, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "next-auth/react";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function Header() {
   const { isAuthenticated, user } = useAuth();
@@ -101,6 +102,9 @@ export function Header() {
               <MessageCircle className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
             </Link>
           )}
+
+          {/* Cloche de notifications temps réel - Uniquement si connecté */}
+          {isAuthenticated && <NotificationBell />}
 
           {/* Icône Shop (Mobile uniquement) */}
           <Link 

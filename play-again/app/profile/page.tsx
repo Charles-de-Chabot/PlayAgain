@@ -7,13 +7,13 @@ import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { StripePayoutButton } from "@/components/profile/StripePayoutButton";
 import { 
   User, 
-  Settings, 
   Heart, 
   MapPin, 
   ChevronRight,
   ShieldCheck,
   HelpCircle,
-  DollarSign
+  DollarSign,
+  Bell
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -95,7 +95,10 @@ export default async function ProfilePage() {
 
   // Aplatir et sérialiser les achats
   const purchasedProducts = user.invoices.flatMap(inv => 
-    inv.items.map(item => serializeProduct(item.product))
+    inv.items.map(item => ({
+      ...serializeProduct(item.product),
+      invoiceId: inv.id
+    }))
   );
 
   // Compter le nombre d'articles dans la liste par défaut "Favoris"
@@ -108,11 +111,19 @@ export default async function ProfilePage() {
     }
   });
 
+  // Compter le nombre de notifications non lues
+  const unreadNotificationsCount = await prisma.notification.count({
+    where: {
+      user_id: userId,
+      is_opened: false
+    }
+  });
+
   const sidebarItems = [
     { icon: Heart, label: "Favoris", href: "/profile/favorites", count: defaultFavoritesCount },
+    { icon: Bell, label: "Notifications", href: "/profile/notifications", count: unreadNotificationsCount },
     { icon: DollarSign, label: "Mes ventes", href: "/profile/sales" },
     { icon: MapPin, label: "Mes adresses", href: "/profile/addresses" },
-    { icon: Settings, label: "Paramètres", href: "/profile/settings" },
     { icon: HelpCircle, label: "Aide", href: "/help" },
   ];
 

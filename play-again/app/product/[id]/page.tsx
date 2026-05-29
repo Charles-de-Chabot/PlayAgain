@@ -607,7 +607,7 @@ export default async function ProductDetailPage({
         </div>
       </div>
       <Link 
-        href={`/profile/${product.user.username}`} 
+        href={`/profile/${product.user.id}`} 
         className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 text-zinc-400 group-hover:text-brand-accent group-hover:border-brand-accent/50 transition-all"
       >
         <ChevronRight className="w-5 h-5" />
