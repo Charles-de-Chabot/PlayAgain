@@ -119,7 +119,7 @@ export async function POST(
     });
 
     // 4. Déclencher la notification post-commit pour le vendeur
-    const productImageUrl = item.product.media?.[0]?.url || item.product.media?.[0]?.src || null;
+    const productImageUrl = item.product.media?.[0]?.url || null;
     await createNotification({
       userId: item.product.user_id, // Le vendeur
       type: "TRANSACTION",

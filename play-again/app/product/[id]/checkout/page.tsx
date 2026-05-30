@@ -73,7 +73,10 @@ export default async function CheckoutPage({
   // Récupération des adresses de livraison enregistrées par l'acheteur
   const userAddresses = await prisma.address.findMany({
     where: { user_id: userId },
-    orderBy: { created_at: "desc" },
+    orderBy: [
+      { is_default: "desc" },
+      { created_at: "desc" }
+    ],
   });
 
   // Récupération des informations de profil de l'acheteur (email, nom, prénom, téléphone)

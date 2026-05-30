@@ -225,7 +225,7 @@ export async function POST(req: Request) {
       });
 
       // 4. Déclencher les notifications adaptées après validation SQL (Post-Commit)
-      const productImageUrl = product.media?.[0]?.url || product.media?.[0]?.src || null;
+      const productImageUrl = product.media?.[0]?.url || null;
 
       if (result.refund) {
         // Double achat concurrent : l'acheteur est remboursé

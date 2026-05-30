@@ -458,6 +458,7 @@ export interface GetFilteredProductsParams {
   sortBy?: string;
   isShipping?: boolean;
   onlyRecommended?: boolean;
+  minMatchScore?: number;
 }
 
 export async function getBrands() {
@@ -497,6 +498,13 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
       }
     }
   };
+
+  // Exclure les propres articles de l'utilisateur connecté
+  if (session?.user?.id) {
+    where.user_id = {
+      not: parseInt(session.user.id)
+    };
+  }
 
   if (filters.searchQuery) {
     where.OR = [
@@ -598,15 +606,17 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
       };
     }));
 
-    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= 60% + Sports Favoris)
+    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= threshold + Sports Favoris)
     if (filters.onlyRecommended && sportProfile) {
       const userInterests = Array.isArray(sportProfile.interests)
         ? (sportProfile.interests as string[]).map(i => i.toLowerCase().trim())
         : [];
 
+      const threshold = filters.minMatchScore !== undefined ? filters.minMatchScore : 60;
+
       productsWithScores = productsWithScores.filter(p => {
-        // Doit correspondre au niveau (score >= 60)
-        const matchesLevel = p.matchScore >= 60;
+        // Doit correspondre au niveau (score >= threshold)
+        const matchesLevel = p.matchScore >= threshold;
         
         // Doit correspondre à un sport/catégorie favori de l'utilisateur
         const productCategory = p.category?.label?.toLowerCase().trim();

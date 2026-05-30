@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight } from "lucide-react";
@@ -37,7 +37,12 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Email ou mot de passe incorrect");
       } else {
-        router.push("/");
+        const session = await getSession();
+        if (session?.user && (session.user as any).role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/profile");
+        }
         router.refresh();
       }
     } catch (err) {

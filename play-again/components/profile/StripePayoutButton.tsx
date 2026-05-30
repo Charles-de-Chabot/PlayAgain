@@ -68,7 +68,7 @@ export function StripePayoutButton({ stripeConnectId, shouldPulse }: StripePayou
               )}
             </div>
             <div className="flex flex-col items-start gap-0.5">
-              <span className="font-bold text-sm text-zinc-200">Gérer mes gains</span>
+              <span className="font-bold text-sm text-zinc-200">Ma Carte</span>
               <span className="text-[9px] text-brand-accent/70 font-black tracking-widest lowercase italic">Compte Stripe Express lié</span>
             </div>
           </div>

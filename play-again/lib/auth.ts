@@ -54,11 +54,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/auth/login",
   },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! }
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      } else if (token.email && !token.role) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email }
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
+        (session.user as any).role = token.role || "USER";
       }
       return session;
     },
   },
 });
+

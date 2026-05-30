@@ -92,6 +92,9 @@ model User {
   invoices        Invoice[]
   notifications   Notification[]
   media           Media[]
+  verificationRequests VerificationRequest[]
+  reviewedRequests     VerificationRequest[] @relation("ReviewedRequests")
+  supportTickets  SupportTicket[]
 }
 
 model Category {
@@ -178,6 +181,7 @@ model Address {
   city          String   @db.VarChar(100)
   zip_code      String   @db.VarChar(20)
   country       String   @db.VarChar(100)
+  is_default    Boolean  @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
   
@@ -186,16 +190,18 @@ model Address {
 }
 
 model Conversation {
-  id         Int       @id @default(autoincrement())
-  user_id    Int
-  product_id Int
-  metadata   Json?
-  created_at DateTime  @default(now())
+  id              Int       @id @default(autoincrement())
+  user_id         Int
+  product_id      Int?
+  isSupportThread Boolean   @default(false)
+  metadata        Json?
+  created_at      DateTime  @default(now())
   
   user       User      @relation("UserConversations", fields: [user_id], references: [id])
-  product    Product   @relation(fields: [product_id], references: [id])
+  product    Product?  @relation(fields: [product_id], references: [id])
   messages   Message[]
 }
+
 
 model Message {
   id              Int          @id @default(autoincrement())
@@ -381,3 +387,105 @@ model BrandExpertise {
 
   @@unique([brandName, rangeName])
 }
+
+// --- Énumérations de vérification d'identité ---
+
+enum VerificationStatus {
+  PENDING           // En attente de revue administrative
+  PROCESSING_AI     // En cours de traitement par l'IA (pour V2)
+  APPROVED          // Validée avec succès
+  REJECTED          // Refusée
+}
+
+enum VerificationMethod {
+  MANUAL            // Revue par un administrateur humain
+  AI                // Revue automatisée par l'intelligence artificielle
+}
+
+// --- Modèle de Requête de Vérification d'Identité ---
+
+model VerificationRequest {
+  id                  Int                @id @default(autoincrement())
+  userId              Int
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status              VerificationStatus @default(PENDING)
+  method              VerificationMethod @default(MANUAL)
+  
+  // Coordonnées saisies par l'utilisateur lors du formulaire (pour comparaison de conformité)
+  submittedEmail      String             @db.VarChar(100)
+  submittedPhone      String             @db.VarChar(20)
+  submittedStreetNumber String?          @db.VarChar(10) // Numéro de rue (ex: "12bis", optionnel)
+  submittedStreetName   String             @db.VarChar(255) // Nom de la rue
+  submittedCity       String             @db.VarChar(100)
+  submittedZip        String             @db.VarChar(20)
+  submittedCountry    String             @db.VarChar(100)
+  
+  // URLs des documents stockés (jusqu'à 2 photos maximum autorisées pour l'ID + 1 pour le selfie)
+  idCardPhoto1Url     String             @db.VarChar(255) // Première photo obligatoire (ex: Recto ou Page Passeport)
+  idCardPhoto2Url     String?            @db.VarChar(255) // Deuxième photo optionnelle (ex: Verso s'il existe)
+  selfieUrl           String             @db.VarChar(255) // Selfie avec le mot manuscrit "Play Again" (Strictement obligatoire et unique)
+  
+  // En cas de refus, l'administrateur (ou l'IA) indique pourquoi pour guider l'utilisateur
+  rejectionReason     String?            @db.Text
+  
+  // Qui a traité la demande (utile pour l'audit)
+  reviewedById        Int?
+  reviewedBy          User?              @relation("ReviewedRequests", fields: [reviewedById], references: [id])
+  
+  // Données techniques de l'IA (scores de confiance, logs d'analyses faciales)
+  aiMetadata          Json?
+  
+  submittedAt         DateTime           @default(now())
+  reviewedAt          DateTime?
+  
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SupportTicket {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String?          @db.VarChar(100)
+  content   String           @db.Text
+  status    String           @db.VarChar(20) // "NEW", "IN_PROGRESS", "RESOLVED"
+  messages  SupportMessage[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model SupportMessage {
+  id           Int           @id @default(autoincrement())
+  ticketId     Int
+  ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId     Int
+  isAdminReply Boolean       @default(false)
+  content      String        @db.Text
+  createdAt    DateTime      @default(now())
+}
+
+model PromoCode {
+  id              Int      @id @default(autoincrement())
+  code            String   @unique @db.VarChar(50)
+  discountPercent Int
+  minBasketAmount Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+}
+
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int
+  adminEmail String
+  action     String   // ex: "USER_SOFT_DELETE", "LITIGE_RESOLVED", "PROMO_CODE_CREATED"
+  targetId   Int?     // ID de l'élément affecté
+  metadata   Json?    // Motif ou variables additionnelles
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}
+
