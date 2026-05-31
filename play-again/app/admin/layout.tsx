@@ -94,15 +94,27 @@ export default async function AdminLayout({
       {/* 🚀 Barre Latérale Administrative (Sidebar) */}
       <aside className="w-64 bg-[#0E1322]/80 backdrop-blur-xl border-r border-white/[0.06] flex flex-col h-full z-30 shrink-0">
         {/* En-tête Sidebar */}
-        <div className="p-6 border-b border-white/[0.06] flex items-center justify-between">
-          <Link href="/admin" className="flex items-center gap-2">
-            <span className="font-black text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">
-              PLAYAGAIN
-            </span>
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-widest">
-              Admin
-            </span>
-          </Link>
+        <div className="p-5 border-b border-white/[0.06] flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <Link href="/admin" className="flex items-center gap-2">
+              <span className="font-black text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">
+                PLAYAGAIN
+              </span>
+            </Link>
+          </div>
+          
+          {/* Toggle de retour à la boutique */}
+          <div className="flex items-center justify-between bg-black/40 border border-white/[0.06] rounded-xl px-2.5 py-1.5 select-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+            <span className="text-[8px] md:text-[9px] uppercase tracking-wider font-extrabold text-slate-500">Shop</span>
+            <Link 
+              href="/"
+              className="relative w-8.5 h-4.5 bg-emerald-500 rounded-full transition-all duration-300 border border-emerald-400/30 cursor-pointer flex items-center justify-end p-0.5 shadow-[0_0_8px_rgba(16,185,129,0.4)] group hover:bg-emerald-400"
+              title="Retourner à la boutique (mode public)"
+            >
+              <span className="w-3.5 h-3.5 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-all duration-300 translate-x-0" />
+            </Link>
+            <span className="text-[8px] md:text-[9px] uppercase tracking-wider font-black text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">Admin</span>
+          </div>
         </div>
 
         {/* Liens de Navigation */}

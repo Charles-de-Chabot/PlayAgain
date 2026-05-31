@@ -103,6 +103,8 @@ export default function AuditLogsAdminPage() {
             <option value="USER_REACTIVATE">Réactiver utilisateur (USER_REACTIVATE)</option>
             <option value="CATALOG_PRODUCT_DEACTIVATE">Suspendre produit (CATALOG_PRODUCT_DEACTIVATE)</option>
             <option value="CATALOG_PRODUCT_ACTIVATE">Réactiver produit (CATALOG_PRODUCT_ACTIVATE)</option>
+            <option value="VERIFICATION_APPROVED">Certifier membre (VERIFICATION_APPROVED)</option>
+            <option value="VERIFICATION_REJECTED">Rejeter certification (VERIFICATION_REJECTED)</option>
             <option value="PROMO_CODE_CREATED">Créer code promo (PROMO_CODE_CREATED)</option>
             <option value="PROMO_CODE_BROADCAST">Diffuser offre (PROMO_CODE_BROADCAST)</option>
             <option value="STORAGE_ORPHAN_CLEANUP">Purge orpheline (STORAGE_ORPHAN_CLEANUP)</option>

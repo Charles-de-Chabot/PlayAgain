@@ -2,6 +2,54 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+export async function GET(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorisé. Veuillez vous connecter." }, { status: 401 });
+    }
+
+    const adminId = parseInt(session.user.id);
+
+    // Vérification du rôle ADMIN
+    const adminUser = await prisma.user.findUnique({
+      where: { id: adminId }
+    });
+
+    if (!adminUser || adminUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Accès refusé. Vous devez être administrateur." }, { status: 403 });
+    }
+
+    // Récupérer toutes les demandes KYC en attente (status PENDING ou PROCESSING_AI)
+    const requests = await prisma.verificationRequest.findMany({
+      where: {
+        status: {
+          in: ["PENDING", "PROCESSING_AI"]
+        }
+      },
+      include: {
+        user: {
+          select: {
+            username: true,
+            firstname: true,
+            lastname: true,
+            email: true,
+            is_certified: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    return NextResponse.json({ requests });
+  } catch (error: any) {
+    console.error("Erreur dans l'API de listing de modération :", error);
+    return NextResponse.json({ error: error.message || "Une erreur interne est survenue." }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -36,7 +84,15 @@ export async function POST(req: Request) {
 
     // 2. Récupérer la demande de vérification
     const verificationRequest = await prisma.verificationRequest.findUnique({
-      where: { id: parseInt(requestId) }
+      where: { id: parseInt(requestId) },
+      include: {
+        user: {
+          select: {
+            username: true,
+            email: true
+          }
+        }
+      }
     });
 
     if (!verificationRequest) {
@@ -74,6 +130,20 @@ export async function POST(req: Request) {
             message: "Félicitations ! Votre demande de vérification a été approuvée. Vous arborez désormais le badge de confiance sur PlayAgain !",
             is_opened: false
           }
+        }),
+        prisma.adminLog.create({
+          data: {
+            adminId: adminId,
+            adminEmail: adminUser.email,
+            action: "VERIFICATION_APPROVED",
+            targetId: targetUserId,
+            metadata: {
+              requestId: verificationRequest.id,
+              userId: targetUserId,
+              userEmail: (verificationRequest as any).user?.email || null,
+              username: (verificationRequest as any).user?.username || null
+            }
+          }
         })
       ]);
 
@@ -96,6 +166,21 @@ export async function POST(req: Request) {
             type: "VERIFICATION_REJECTED",
             message: `Votre demande de vérification a été refusée. Motif : ${rejectionReason}. Vous pouvez corriger vos informations et soumettre une nouvelle demande.`,
             is_opened: false
+          }
+        }),
+        prisma.adminLog.create({
+          data: {
+            adminId: adminId,
+            adminEmail: adminUser.email,
+            action: "VERIFICATION_REJECTED",
+            targetId: targetUserId,
+            metadata: {
+              requestId: verificationRequest.id,
+              userId: targetUserId,
+              userEmail: (verificationRequest as any).user?.email || null,
+              username: (verificationRequest as any).user?.username || null,
+              reason: rejectionReason
+            }
           }
         })
       ]);

@@ -30,9 +30,42 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId") || "";
+
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        select: {
+          id: true,
+          username: true,
+          firstname: true,
+          lastname: true,
+          email: true,
+          phone: true,
+          profile_picture: true,
+          created_at: true,
+          is_active: true,
+          is_certified: true,
+          role: true,
+          _count: {
+            select: {
+              products: true
+            }
+          }
+        }
+      });
+      if (!user) {
+        return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
+      }
+      return NextResponse.json({ user });
+    }
+
     const search = searchParams.get("search") || "";
     const role = searchParams.get("role") || "";
     const status = searchParams.get("status") || ""; // "active" ou "inactive"
+    const certified = searchParams.get("certified") || ""; // "true" ou "false"
+    const hasProducts = searchParams.get("hasProducts") || ""; // "true" ou "false"
+    const sortBy = searchParams.get("sortBy") || "date_desc";
 
     // Clause where dynamique
     const whereClause: any = {};
@@ -56,6 +89,28 @@ export async function GET(req: Request) {
       whereClause.is_active = false;
     }
 
+    if (certified === "true") {
+      whereClause.is_certified = true;
+    } else if (certified === "false") {
+      whereClause.is_certified = false;
+    }
+
+    if (hasProducts === "true") {
+      whereClause.products = { some: {} };
+    } else if (hasProducts === "false") {
+      whereClause.products = { none: {} };
+    }
+
+    // Gestion du tri dynamique
+    let orderByClause: any = { created_at: "desc" };
+    if (sortBy === "date_asc") {
+      orderByClause = { created_at: "asc" };
+    } else if (sortBy === "products_desc") {
+      orderByClause = { products: { _count: "desc" } };
+    } else if (sortBy === "products_asc") {
+      orderByClause = { products: { _count: "asc" } };
+    }
+
     const users = await prisma.user.findMany({
       where: whereClause,
       select: {
@@ -76,7 +131,7 @@ export async function GET(req: Request) {
           }
         }
       },
-      orderBy: { created_at: "desc" }
+      orderBy: orderByClause
     });
 
     return NextResponse.json({ users });

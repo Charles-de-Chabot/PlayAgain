@@ -67,8 +67,8 @@ export default function VerificationsAdminPage() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      // Pour des raisons pratiques de modération, on peut lister les requêtes en base de données
-      const res = await fetch("/api/admin/verify/list"); // Route optionnelle ou on simule/récupère directement
+      // Pour des raisons pratiques de modération, on liste les requêtes en base de données
+      const res = await fetch("/api/admin/verify");
       let data = await res.json();
       
       // Fallback au cas où /list n'est pas encore créée (on crée une requête d'exemple ultra-propre basée sur les modèles Prisma)

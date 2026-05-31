@@ -38,8 +38,11 @@ export default function MarketingAdminPage() {
   const [discountPercent, setDiscountPercent] = useState("");
   const [minBasketAmount, setMinBasketAmount] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedType, setSelectedType] = useState("");
 
-  // --- CHARGEMENT DES COUPONS ---
+  // --- CHARGEMENT DES COUPONS & SEGMENTS ---
   const fetchCoupons = async () => {
     try {
       setLoading(true);
@@ -56,8 +59,21 @@ export default function MarketingAdminPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/admin/marketing/categories");
+      const data = await res.json();
+      if (data.categories) {
+        setCategoriesList(data.categories);
+      }
+    } catch (e) {
+      console.error("Error loading categories:", e);
+    }
+  };
+
   useEffect(() => {
     fetchCoupons();
+    fetchCategories();
   }, []);
 
   // --- ACTIONS ---
@@ -85,7 +101,9 @@ export default function MarketingAdminPage() {
           code: code.trim(),
           discountPercent,
           minBasketAmount,
-          expiresAt
+          expiresAt,
+          categoryId: selectedCategory || null,
+          typeId: selectedType || null
         })
       });
 
@@ -101,6 +119,8 @@ export default function MarketingAdminPage() {
       setDiscountPercent("");
       setMinBasketAmount("");
       setExpiresAt("");
+      setSelectedCategory("");
+      setSelectedType("");
 
       // Recharger la liste
       fetchCoupons();
@@ -223,15 +243,75 @@ export default function MarketingAdminPage() {
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-500 font-bold uppercase">Date d'Expiration</label>
               <div className="relative flex items-center">
-                <Calendar className="absolute left-3.5 w-4 h-4 text-slate-500" />
+                <Calendar className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
                 <input
                   type="date"
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch (err) {}
+                  }}
+                  onFocus={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch (err) {}
+                  }}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
                 />
+                <style>{`
+                  input[type="date"]::-webkit-calendar-picker-indicator {
+                    filter: invert(1);
+                    cursor: pointer;
+                    opacity: 0.6;
+                    transition: opacity 0.2s;
+                  }
+                  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+                    opacity: 1;
+                  }
+                `}</style>
               </div>
             </div>
+
+            {/* Restriction Catégorie */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-slate-500 font-bold uppercase">Restriction Catégorie (Optionnel)</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setSelectedType(""); // reset type on category change
+                }}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
+              >
+                <option value="">Toutes les catégories</option>
+                {categoriesList.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Restriction Type de Produit (Affiché seulement si catégorie sélectionnée) */}
+            {selectedCategory && (
+              <div className="space-y-1.5 animate-fade-in">
+                <label className="text-[10px] text-slate-500 font-bold uppercase">Restriction Type (Optionnel)</label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
+                >
+                  <option value="">Tous les types d'articles</option>
+                  {(categoriesList.find((cat) => cat.id === parseInt(selectedCategory))?.types || []).map((type: any) => (
+                    <option key={type.id} value={type.id}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Bouton de Soumission */}
             <button
@@ -293,6 +373,23 @@ export default function MarketingAdminPage() {
                       <div className="flex-1 flex flex-col space-y-1 text-xs text-slate-300">
                         <p className="font-extrabold text-white">Conditions de validation :</p>
                         <p>Panier minimum requis : <span className="font-mono text-slate-100 font-extrabold">{parseFloat(coupon.minBasketAmount.toString()).toFixed(2)}€</span></p>
+                        
+                        {/* Badges de restriction de catégorie / type */}
+                        {((coupon as any).category || (coupon as any).type) && (
+                          <div className="flex flex-wrap gap-1.5 my-1">
+                            {(coupon as any).category && (
+                              <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                Catégorie : {(coupon as any).category.label}
+                              </span>
+                            )}
+                            {(coupon as any).type && (
+                              <span className="inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                                Type : {(coupon as any).type.label}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-medium mt-1">
                           <Clock className="w-3.5 h-3.5 text-slate-500" />
                           <span>

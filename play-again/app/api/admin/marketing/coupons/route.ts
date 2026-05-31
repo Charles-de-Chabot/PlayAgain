@@ -21,7 +21,7 @@ async function checkAdmin() {
   return { admin: adminUser, id: adminId };
 }
 
-// 🟢 GET : Liste tous les codes de réduction
+// 🟢 GET : Liste tous les codes de réduction avec scope catégorie et type
 export async function GET() {
   try {
     const adminCheck = await checkAdmin();
@@ -30,6 +30,10 @@ export async function GET() {
     }
 
     const coupons = await prisma.promoCode.findMany({
+      include: {
+        category: true,
+        type: true
+      },
       orderBy: { createdAt: "desc" }
     });
 
@@ -48,7 +52,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
-    const { code, discountPercent, minBasketAmount, expiresAt } = await req.json();
+    const { code, discountPercent, minBasketAmount, expiresAt, categoryId, typeId } = await req.json();
 
     if (!code || !discountPercent || !minBasketAmount || !expiresAt) {
       return NextResponse.json({ error: "Tous les champs ('code', 'discountPercent', 'minBasketAmount', 'expiresAt') sont requis." }, { status: 400 });
@@ -69,7 +73,13 @@ export async function POST(req: Request) {
         discountPercent: parseInt(discountPercent),
         minBasketAmount: parseFloat(minBasketAmount),
         expiresAt: new Date(expiresAt),
-        isActive: true
+        isActive: true,
+        categoryId: categoryId ? parseInt(categoryId) : null,
+        typeId: typeId ? parseInt(typeId) : null
+      },
+      include: {
+        category: true,
+        type: true
       }
     });
 
@@ -83,7 +93,9 @@ export async function POST(req: Request) {
         metadata: {
           code: newCoupon.code,
           discountPercent: newCoupon.discountPercent,
-          minBasketAmount: newCoupon.minBasketAmount
+          minBasketAmount: newCoupon.minBasketAmount,
+          categoryScope: newCoupon.category?.label || "Tous",
+          typeScope: newCoupon.type?.label || "Tous"
         }
       }
     });

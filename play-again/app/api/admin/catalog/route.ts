@@ -34,6 +34,8 @@ export async function GET(req: Request) {
     const categoryId = searchParams.get("categoryId") || "";
     const brandId = searchParams.get("brandId") || "";
     const status = searchParams.get("status") || ""; // "active", "inactive", "sold"
+    const state = searchParams.get("state") || ""; // "NEUF", "EXCELLENT", "BON", "SATISFAISANT"
+    const sortBy = searchParams.get("sortBy") || "date_desc";
 
     // Clause where dynamique
     const whereClause: any = {};
@@ -53,6 +55,10 @@ export async function GET(req: Request) {
       whereClause.brand_id = parseInt(brandId);
     }
 
+    if (state) {
+      whereClause.state = state;
+    }
+
     if (status === "active") {
       whereClause.is_active = true;
       whereClause.is_sold = false;
@@ -60,6 +66,16 @@ export async function GET(req: Request) {
       whereClause.is_active = false;
     } else if (status === "sold") {
       whereClause.is_sold = true;
+    }
+
+    // Gestion du tri dynamique
+    let orderByClause: any = { created_at: "desc" };
+    if (sortBy === "date_asc") {
+      orderByClause = { created_at: "asc" };
+    } else if (sortBy === "price_desc") {
+      orderByClause = { price: "desc" };
+    } else if (sortBy === "price_asc") {
+      orderByClause = { price: "asc" };
     }
 
     const products = await prisma.product.findMany({
@@ -81,7 +97,7 @@ export async function GET(req: Request) {
           }
         }
       },
-      orderBy: { created_at: "desc" }
+      orderBy: orderByClause
     });
 
     return NextResponse.json({ products });

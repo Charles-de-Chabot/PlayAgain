@@ -98,19 +98,21 @@ model User {
 }
 
 model Category {
-  id       Int       @id @default(autoincrement())
-  label    String    @db.VarChar(50)
-  types    Type[]
-  products Product[]
+  id         Int         @id @default(autoincrement())
+  label      String      @db.VarChar(50)
+  types      Type[]
+  products   Product[]
+  promoCodes PromoCode[]
 }
 
 model Type {
-  id          Int       @id @default(autoincrement())
-  label       String    @db.VarChar(50)
+  id          Int         @id @default(autoincrement())
+  label       String      @db.VarChar(50)
   category_id Int
-  category    Category  @relation(fields: [category_id], references: [id])
+  category    Category    @relation(fields: [category_id], references: [id])
   products    Product[]
   sizes       Size[]
+  promoCodes  PromoCode[]
 }
 
 model Brand {
@@ -469,13 +471,17 @@ model SupportMessage {
 }
 
 model PromoCode {
-  id              Int      @id @default(autoincrement())
-  code            String   @unique @db.VarChar(50)
+  id              Int       @id @default(autoincrement())
+  code            String    @unique @db.VarChar(50)
   discountPercent Int
-  minBasketAmount Decimal  @db.Decimal(10, 2)
-  isActive        Boolean  @default(true)
+  minBasketAmount Decimal   @db.Decimal(10, 2)
+  isActive        Boolean   @default(true)
   expiresAt       DateTime
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
+  categoryId      Int?
+  category        Category? @relation(fields: [categoryId], references: [id])
+  typeId          Int?
+  type            Type?     @relation(fields: [typeId], references: [id])
 }
 
 model AdminLog {
