@@ -22,7 +22,8 @@ import {
   ShieldCheck,
   QrCode,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from "lucide-react";
 import { sendMessage, resolveOffer, markAsRead, uploadChatImage } from "@/app/actions/message";
 
@@ -62,6 +63,7 @@ interface Conversation {
   id: number;
   user_id: number;
   product: Product;
+  isSupportThread?: boolean;
 }
 
 interface InvoiceInfo {
@@ -77,6 +79,7 @@ interface ChatAreaClientProps {
   currentUserRole: string;
   partner: User;
   isBuyer: boolean;
+  isSupportClosed?: boolean;
 }
 
 export default function ChatAreaClient({
@@ -86,6 +89,7 @@ export default function ChatAreaClient({
   currentUserRole,
   partner,
   isBuyer,
+  isSupportClosed = false,
 }: ChatAreaClientProps) {
   const [messages, setMessages] = useState<Message[]>(initialConversation.messages);
   const [invoice, setInvoice] = useState<InvoiceInfo | null>(initialInvoice);
@@ -177,8 +181,44 @@ export default function ChatAreaClient({
     }
   };
 
+  const [deliveringInvoiceId, setDeliveringInvoiceId] = useState<number | null>(null);
+
+  const handleSimulateDelivery = async (invoiceId: number) => {
+    if (deliveringInvoiceId !== null) return;
+    setDeliveringInvoiceId(invoiceId);
+
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/deliver`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur lors de la livraison");
+      }
+
+      // Récupérer le fil des messages rafraîchi
+      const resMsg = await fetch(`/api/conversations/${initialConversation.id}/messages`);
+      if (resMsg.ok) {
+        const dataMsg = await resMsg.json();
+        setMessages(dataMsg.messages);
+        if (dataMsg.invoice) {
+          setInvoice(dataMsg.invoice);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || "Erreur de connexion");
+    } finally {
+      setDeliveringInvoiceId(null);
+    }
+  };
+
   const [isReleasingFunds, setIsReleasingFunds] = useState(false);
   const [isDisputing, setIsDisputing] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeInvoiceId, setDisputeInvoiceId] = useState<number | null>(null);
+  const [disputeReason, setDisputeReason] = useState("");
 
   const handleReleaseFunds = async (invoiceId: number) => {
     if (isReleasingFunds) return;
@@ -213,14 +253,30 @@ export default function ChatAreaClient({
 
   const handleDispute = async (invoiceId: number) => {
     if (isDisputing) return;
-    if (!confirm("Voulez-vous vraiment déclarer un problème concernant ce colis ? Les fonds resteront gelés le temps d'analyser votre demande par notre service client.")) {
+    
+    setDisputeInvoiceId(invoiceId);
+    setDisputeReason("");
+    setShowDisputeModal(true);
+  };
+
+  const submitDispute = async () => {
+    if (!disputeInvoiceId) return;
+    if (!disputeReason.trim()) {
+      alert("Vous devez décrire le problème pour pouvoir déclarer un litige.");
       return;
     }
+
+    const invoiceId = disputeInvoiceId;
+    const reason = disputeReason.trim();
+
+    setShowDisputeModal(false);
     setIsDisputing(true);
 
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/dispute`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
       });
 
       const data = await res.json();
@@ -229,18 +285,10 @@ export default function ChatAreaClient({
         throw new Error(data.error || "Erreur lors de l'ouverture du litige");
       }
 
-      // Récupérer le fil des messages rafraîchi
-      const resMsg = await fetch(`/api/conversations/${initialConversation.id}/messages`);
-      if (resMsg.ok) {
-        const dataMsg = await resMsg.json();
-        setMessages(dataMsg.messages);
-        if (dataMsg.invoice) {
-          setInvoice(dataMsg.invoice);
-        }
-      }
+      alert("Votre litige a bien été déclaré. Vous allez être redirigé vers votre fil de discussion avec notre Service Après-Vente.");
+      window.location.href = `/messages/${data.conversationId}`;
     } catch (err: any) {
       alert(err.message || "Erreur de connexion");
-    } finally {
       setIsDisputing(false);
     }
   };
@@ -259,7 +307,7 @@ export default function ChatAreaClient({
   // 1. L'annonce est désactivée par le vendeur (et non vendue)
   // 2. OU si le produit est vendu ET la transaction est définitivement terminée (expédiée ou remise validée)
   const isTransactionFinished = (() => {
-    if (!product.is_sold || !invoice) return false;
+    if (!product || !product.is_sold || !invoice) return false;
     
     const isShipping = invoice.address_id !== null;
     if (isShipping) {
@@ -271,12 +319,14 @@ export default function ChatAreaClient({
     }
   })();
 
-  const isReadOnly = (!product.is_active && !product.is_sold) || isTransactionFinished;
+  const isReadOnly = isSupportClosed || (product 
+    ? ((!product.is_active && !product.is_sold) || isTransactionFinished)
+    : false);
 
   const acceptedOffer = messages.find(
-    (msg) => msg.metadata && msg.metadata.type === "OFFER" && msg.metadata.status === "ACCEPTED"
+    (msg) => msg.metadata && (msg.metadata as any).type === "OFFER" && (msg.metadata as any).status === "ACCEPTED"
   );
-  const currentPrice = acceptedOffer ? acceptedOffer.metadata.amount : product.price;
+  const currentPrice = acceptedOffer ? (acceptedOffer.metadata as any).amount : (product ? product.price : 0);
 
   // Marquage automatique de tous les messages comme lus dès l'ouverture du salon
   useEffect(() => {
@@ -442,7 +492,7 @@ export default function ChatAreaClient({
       };
 
       // 2. Enregistrement en BDD
-      await sendMessage(initialConversation.id, "Image partagée", metadata);
+      await sendMessage(initialConversation.id, "Image partagé", metadata);
       
       // 3. Re-fetch
       const res = await fetch(`/api/conversations/${initialConversation.id}/messages`);
@@ -543,7 +593,7 @@ export default function ChatAreaClient({
 
   const partnerName = partner.username || partner.firstname || "Utilisateur";
   const partnerImage = partner.profile_picture || "/uploads/avatars/default.png";
-  const productMedia = product.media[0]?.url;
+  const productMedia = product ? product.media[0]?.url : undefined;
   const partnerSoldCount = (partner as any).products?.length || 0;
 
   return (
@@ -586,52 +636,67 @@ export default function ChatAreaClient({
             
             {/* Infos produit affichées à côté du nom */}
             <div className="flex flex-wrap items-center gap-x-2 text-xs text-white/50 min-w-0 leading-none">
-              <span className="font-bold text-brand-accent truncate max-w-[150px] sm:max-w-xs">{product.title}</span>
-              <span className="text-white/30">•</span>
-              <span>État : <span className="text-white/80 font-bold">{product.state}</span></span>
-              <span className="text-white/30">•</span>
-              <span>Prix : <span className="font-semibold text-white/80">
-                {acceptedOffer ? (
-                  <>
-                    <span className="line-through text-white/30 mr-1">{product.price} €</span>
-                    <span className="text-brand-accent font-black">{currentPrice} €</span>
-                  </>
-                ) : (
-                  <span>{product.price} €</span>
-                )}
-              </span></span>
+              {product ? (
+                <>
+                  <span className="font-bold text-brand-accent truncate max-w-[150px] sm:max-w-xs">{product.title}</span>
+                  <span className="text-white/30">•</span>
+                  <span>État : <span className="text-white/80 font-bold">{product.state}</span></span>
+                  <span className="text-white/30">•</span>
+                  <span>Prix : <span className="font-semibold text-white/80">
+                    {acceptedOffer ? (
+                      <>
+                        <span className="line-through text-white/30 mr-1">{product.price} €</span>
+                        <span className="text-brand-accent font-black">{currentPrice} €</span>
+                      </>
+                    ) : (
+                      <span>{product.price} €</span>
+                    )}
+                  </span></span>
+                </>
+              ) : (
+                <span className="font-bold text-brand-accent">Assistance SAV PlayAgain</span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Partie droite (Photo du produit à gauche du bouton Acheter) */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {productMedia && (
-            <img
-              src={productMedia}
-              alt={product.title}
-              className="h-10 w-10 rounded-xl object-cover border border-white/10 shadow-md flex-shrink-0"
-            />
-          )}
-          {isBuyer && !isReadOnly && (
-            <Link
-              href={`/product/${product.id}`}
-              className="bg-brand-primary text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-brand-primary/80 border border-brand-primary/20 transition-all shadow-md"
-            >
-              Acheter
-            </Link>
-          )}
-        </div>
+        {product && (
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {productMedia && (
+              <img
+                src={productMedia}
+                alt={product.title}
+                className="h-10 w-10 rounded-xl object-cover border border-white/10 shadow-md flex-shrink-0"
+              />
+            )}
+            {isBuyer && !isReadOnly && (
+              <Link
+                href={acceptedOffer ? `/product/${product.id}/checkout` : `/product/${product.id}`}
+                className="bg-brand-primary text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-brand-primary/80 border border-brand-primary/20 transition-all shadow-md"
+              >
+                Acheter
+              </Link>
+            )}
+          </div>
+        )}
       </header>
 
       {/* Bannière d'avertissement Lecture seule */}
-      {isReadOnly && (
+      {isReadOnly && product && (
         <div className="bg-brand-primary/10 border-b border-brand-primary/20 p-2 text-center text-xs text-white/70 font-semibold flex items-center justify-center gap-2">
           <Lock className="h-3.5 w-3.5 text-brand-primary" />
           {!product.is_active && !product.is_sold 
             ? "Le vendeur a supprimé cette annonce. La discussion est désormais en lecture seule."
             : "La transaction est terminée. La discussion est désormais fermée en lecture seule."
           }
+        </div>
+      )}
+
+      {isSupportClosed && (
+        <div className="bg-brand-accent/15 border-b border-brand-accent/30 p-2.5 text-center text-xs text-brand-accent font-semibold flex items-center justify-center gap-2 animate-fadeIn">
+          <AlertTriangle className="h-4 w-4 text-brand-accent shrink-0 animate-pulse" />
+          Ce litige a été résolu par l'administration. La discussion avec le support est close et en lecture seule.
         </div>
       )}
 
@@ -691,9 +756,27 @@ export default function ChatAreaClient({
 
                       {invoiceId !== null && (
                         isShipped ? (
-                          <div className="w-full py-2.5 px-4 bg-brand-accent/15 border border-brand-accent/30 text-brand-accent text-center text-xs font-black rounded-xl flex items-center justify-center gap-1.5">
-                            <Check className="h-4 w-4" />
-                            Colis marqué comme expédié
+                          <div className="space-y-2 w-full">
+                            <div className="w-full py-2.5 px-4 bg-brand-accent/15 border border-brand-accent/30 text-brand-accent text-center text-xs font-black rounded-xl flex items-center justify-center gap-1.5">
+                              <Check className="h-4 w-4" />
+                              Colis marqué comme expédié
+                            </div>
+                            {invoice && invoice.status === "SHIPPED" && (
+                              <button
+                                onClick={() => handleSimulateDelivery(invoiceId)}
+                                disabled={deliveringInvoiceId !== null}
+                                className="w-full py-2.5 px-4 bg-cyan-500 hover:brightness-110 text-black text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+                              >
+                                {deliveringInvoiceId !== null ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-black" />
+                                ) : (
+                                  <>
+                                    <Package className="h-4 w-4" />
+                                    Simuler la livraison (Test)
+                                  </>
+                                )}
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <button
@@ -899,7 +982,7 @@ export default function ChatAreaClient({
                     >
                       <img
                         src={msgMeta.url}
-                        alt="Image partagée"
+                        alt="Image partagé"
                         className="w-full h-auto object-cover max-h-[300px] hover:scale-[1.02] transition-transform duration-300"
                         onLoad={scrollToBottom}
                       />
@@ -1112,7 +1195,7 @@ export default function ChatAreaClient({
             >
               <ImageIcon className="h-4.5 w-4.5 text-brand-accent" /> Image
             </button>
-            {isBuyer && (
+            {isBuyer && !initialConversation.isSupportThread && (
               <button
                 onClick={() => {
                   setShowOfferModal(true);
@@ -1289,6 +1372,63 @@ export default function ChatAreaClient({
                 Annuler
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PERSONNALISÉ DE DÉCLARATION DE LITIGE */}
+      {showDisputeModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="relative bg-zinc-950 border border-white/10 rounded-[2.2rem] w-full max-w-lg p-7 md:p-9 space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col text-left">
+            
+            {/* Icône de litige */}
+            <div className="w-12 h-12 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center justify-center text-red-400">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+            </div>
+
+            {/* Titres */}
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-white">Déclarer un problème</h3>
+              <p className="text-xs text-zinc-500 font-semibold leading-relaxed">
+                Notre service de médiation est à votre écoute pour sécuriser votre achat. Décrivez précisément le problème ci-dessous. Les fonds resteront gelés en sécurité sous séquestre.
+              </p>
+            </div>
+
+            {/* Formulaire message */}
+            <div className="space-y-2">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-1">
+                Description de votre problème *
+              </label>
+              <textarea
+                rows={4}
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                className="w-full bg-black/55 border border-white/10 rounded-2xl p-4 text-xs text-white focus:border-red-500/60 focus:ring-0 transition-all outline-none resize-none placeholder-zinc-700 font-medium"
+                placeholder="Indiquez ici si l'article est défectueux, incomplet, non conforme à la description..."
+              />
+            </div>
+
+            {/* Boutons d'actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDisputeModal(false)}
+                className="px-5 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-zinc-300 text-xs font-bold transition-all cursor-pointer"
+              >
+                Annuler
+              </button>
+              
+              <button
+                type="button"
+                onClick={submitDispute}
+                disabled={!disputeReason.trim()}
+                className="px-5 py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-red-500/20 cursor-pointer"
+              >
+                <AlertTriangle className="w-4 h-4 text-white" />
+                <span>Confirmer le litige</span>
+              </button>
+            </div>
+
           </div>
         </div>
       )}

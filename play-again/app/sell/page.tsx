@@ -6,11 +6,76 @@ import { SellForm } from "@/components/sell/SellForm";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
-export default async function SellPage() {
+import Stripe from "stripe";
+import { StripeRedirector } from "./StripeRedirector";
+
+export default async function SellPage({
+  searchParams
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/auth/login");
+  }
+
+  const resolvedParams = await searchParams;
+  const stripeStatus = resolvedParams.stripe;
+
+  const userId = parseInt(session.user.id);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { addresses: true }
+  });
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  // Redirection automatique Stripe Connect si pas d'IBAN
+  if (!user.stripeConnectId) {
+    let stripeAccountId;
+
+    try {
+      if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error("STRIPE_SECRET_KEY non configurée.");
+      }
+
+      // 1. Création temporaire du compte Stripe Express (non stocké en BDD pour l'instant)
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "FR",
+        capabilities: {
+          transfers: { requested: true },
+        },
+        business_type: "individual",
+        metadata: {
+          userId: user.id.toString(),
+          email: user.email,
+        },
+      });
+
+      stripeAccountId = account.id;
+    } catch (err) {
+      console.error("Erreur lors de la création du compte connecté Stripe Connect:", err);
+      redirect("/profile?stripe=error");
+    }
+
+    // 2. Génération du lien d'onboarding
+    // Le return_url redirige vers notre API de validation qui enregistrera l'id seulement si le compte est complété.
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const accountLink = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: `${appUrl}/profile?stripe=failed`,
+      return_url: `${appUrl}/api/stripe/success?acct=${stripeAccountId}`,
+      type: "account_onboarding",
+    });
+
+    // 3. Redirection immédiate via composant client pour contourner les blocages de navigation Next.js
+    return <StripeRedirector url={accountLink.url} />;
   }
 
   // Récupération des données pour les listes déroulantes
@@ -28,13 +93,7 @@ export default async function SellPage() {
     orderBy: { label: 'asc' }
   });
 
-  // Récupération de l'utilisateur avec ses adresses pour la localisation
-  const user = await prisma.user.findUnique({
-    where: { id: parseInt(session.user.id!) },
-    include: { addresses: true }
-  });
-
-  const userCity = user?.addresses[0]?.city || null;
+  const userCity = user.addresses[0]?.city || null;
 
   return (
     <main className="min-h-screen bg-black text-white pb-24 relative overflow-hidden font-sans">
@@ -48,6 +107,21 @@ export default async function SellPage() {
         <Header />
 
         <div className="max-w-4xl mx-auto px-4 pt-10 md:pt-16 pb-12 relative z-10">
+          {stripeStatus === "success" && (
+            <div className="mb-8 w-full p-4 rounded-3xl bg-zinc-950/80 border border-brand-accent/30 backdrop-blur-2xl relative overflow-hidden flex items-center gap-4 shadow-[0_0_20px_rgba(198,255,52,0.1)]">
+              <div className="w-10 h-10 rounded-full bg-brand-accent/20 border border-brand-accent/30 flex items-center justify-center text-brand-accent shrink-0">
+                ✓
+              </div>
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-black uppercase tracking-wider text-white italic">
+                  Compte vendeur activé avec succès !
+                </h3>
+                <p className="text-xs text-zinc-400 font-bold">
+                  Votre IBAN est configuré. Vous pouvez désormais publier des annonces et recevoir vos gains.
+                </p>
+              </div>
+            </div>
+          )}
           {/* Header Navigation */}
           <div className="mb-12 mt-8  flex items-center justify-between">
             <Link 

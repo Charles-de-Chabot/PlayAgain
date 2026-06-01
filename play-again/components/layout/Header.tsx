@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Compass, CircleUserRound, LogOut, ShoppingBag, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "next-auth/react";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function Header() {
   const { isAuthenticated, user } = useAuth();
@@ -71,6 +72,21 @@ export function Header() {
       
       {/* Right side: Welcome, Icons & Auth */}
       <div className="flex items-center gap-2 md:gap-4">
+        {/* Toggle Mode Administrateur si rôle ADMIN */}
+        {isAuthenticated && (user as any)?.role === "ADMIN" && (
+          <div className="flex items-center gap-1.5 bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-full px-2 py-1 md:px-2.5 md:py-1 select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_4px_15px_rgba(0,0,0,0.3)] mr-1">
+            <span className="text-[8px] md:text-[9px] uppercase tracking-wider font-black text-brand-accent">Shop</span>
+            <Link 
+              href="/admin"
+              className="relative w-7 h-4 md:w-8.5 md:h-4.5 bg-zinc-950 rounded-full transition-all duration-300 border border-zinc-800 cursor-pointer flex items-center justify-start p-0.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)] group hover:border-brand-accent/30"
+              title="Basculer vers l'espace Administrateur"
+            >
+              <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 bg-zinc-400 group-hover:bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-all duration-300 translate-x-0" />
+            </Link>
+            <span className="text-[8px] md:text-[9px] uppercase tracking-wider font-black text-zinc-500">Admin</span>
+          </div>
+        )}
+
         {/* Message de bienvenue - Toujours visible si connecté */}
         {isAuthenticated && (
           <div className="mr-1 flex flex-col items-end shrink-0 sm:flex">
@@ -101,6 +117,9 @@ export function Header() {
               <MessageCircle className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
             </Link>
           )}
+
+          {/* Cloche de notifications temps réel - Uniquement si connecté */}
+          {isAuthenticated && <NotificationBell />}
 
           {/* Icône Shop (Mobile uniquement) */}
           <Link 

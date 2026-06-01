@@ -672,13 +672,13 @@ export function ShopCatalog({
               )}
             </div>
           ) : (
-            /* État vide magnifique */
-            <div className="flex flex-col items-center justify-center flex-1 py-20 px-4 text-center bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl max-w-2xl mx-auto w-full my-auto">
-              <div className="w-16 h-16 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center mb-6">
-                <Trash2 className="w-7 h-7 text-brand-primary" />
+            /* État vide magnifique - Version compacte et alignée en haut */
+            <div className="flex flex-col items-center justify-center py-10 px-6 text-center bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl max-w-2xl mx-auto w-full mt-4 mb-auto">
+              <div className="w-12 h-12 rounded-full bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center mb-4">
+                <Trash2 className="w-5 h-5 text-brand-primary" />
               </div>
-              <h4 className="text-lg font-black uppercase italic tracking-tight mb-2">Aucun article trouvé</h4>
-              <p className="text-xs text-white/50 max-w-sm leading-relaxed mb-8">
+              <h4 className="text-base font-black uppercase italic tracking-tight mb-2">Aucun article trouvé</h4>
+              <p className="text-xs text-white/50 max-w-md leading-relaxed mb-6">
                 Vos critères de filtrage sont très spécifiques. Essayez de réinitialiser vos options ou d'élargir vos recherches pour trouver le matériel idéal !
               </p>
               <button

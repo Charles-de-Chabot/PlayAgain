@@ -78,14 +78,22 @@ export default async function ConversationPage({
   }
 
   // 2. Sécurité : L'utilisateur connecté doit faire partie de la conversation
+  const isSupport = conversation.isSupportThread;
   const isBuyer = conversation.user_id === userId;
-  const isSeller = conversation.product.user_id === userId;
+  const isSeller = conversation.product ? conversation.product.user_id === userId : false;
   if (!isBuyer && !isSeller) {
     return redirect("/messages");
   }
 
   // Interlocuteur (l'autre participant)
-  const partner = isBuyer ? conversation.product.user : conversation.user;
+  const partner = isSupport ? {
+    id: 999999,
+    username: "Support Officiel PlayAgain",
+    firstname: "Support",
+    lastname: "PlayAgain",
+    profile_picture: null,
+    products: []
+  } : (isBuyer && conversation.product ? conversation.product.user : conversation.user);
 
   // 3. Récupération du rôle de l'utilisateur connecté
   const currentUser = await prisma.user.findUnique({
@@ -95,7 +103,7 @@ export default async function ConversationPage({
   const userRole = currentUser?.role || "USER";
 
   // 4. Récupération de la facture associée active
-  const invoice = await prisma.invoice.findFirst({
+  const invoice = conversation.product_id ? await prisma.invoice.findFirst({
     where: {
       items: {
         some: {
@@ -111,7 +119,7 @@ export default async function ConversationPage({
       status: true,
       address_id: true,
     },
-  });
+  }) : null;
 
   const serializedInvoice = invoice ? {
     id: invoice.id,
@@ -123,26 +131,38 @@ export default async function ConversationPage({
   const serializedConversation = {
     ...conversation,
     created_at: conversation.created_at.toISOString(),
-    product: {
+    product: conversation.product ? {
       ...conversation.product,
       price: Number(conversation.product.price),
       created_at: conversation.product.created_at.toISOString(),
       updated_at: conversation.product.updated_at.toISOString(),
-    },
+    } : null,
     messages: conversation.messages.map((msg) => ({
       ...msg,
       created_at: msg.created_at.toISOString(),
     })),
   };
 
+  let isSupportClosed = false;
+  if (conversation.isSupportThread) {
+    const latestTicket = await prisma.supportTicket.findFirst({
+      where: { userId: conversation.user_id },
+      orderBy: { createdAt: "desc" }
+    });
+    if (latestTicket && latestTicket.status === "RESOLVED") {
+      isSupportClosed = true;
+    }
+  }
+
   return (
     <ChatAreaClient 
-      initialConversation={serializedConversation}
+      initialConversation={serializedConversation as any}
       initialInvoice={serializedInvoice}
       currentUserId={userId}
       currentUserRole={userRole}
       partner={partner}
       isBuyer={isBuyer}
+      isSupportClosed={isSupportClosed}
     />
   );
 }

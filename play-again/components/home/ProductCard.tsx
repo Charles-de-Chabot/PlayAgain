@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap, CheckCircle2, Star, Sparkles, Shield, ShoppingCart, Heart, Trophy } from "lucide-react";
+import { Zap, CheckCircle2, Star, Sparkles, Shield, ShoppingCart, Heart, Trophy, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompareStore, CompareProduct } from "@/store/useCompareStore";
 import { useState, useEffect } from "react";
@@ -189,6 +189,16 @@ export function ProductCard({ id, title, price, condition, category, image, matc
           </div>
         )}
 
+        {/* Badge Vendeur Certifié (Glass) */}
+        {fullProduct?.user?.is_certified && (
+          <div 
+            className="absolute left-3 bottom-3 z-30 bg-zinc-950/60 backdrop-blur-md px-2 py-0.5 md:px-2.5 md:py-1 rounded-full text-[8px] md:text-[9px] font-bold uppercase tracking-wider border border-brand-accent/30 text-brand-accent shadow-[0_0_15px_rgba(163,230,53,0.15)] flex items-center gap-1 cursor-help"
+            title="Vendeur Certifié Play Again"
+          >
+            <ShieldCheck className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0 text-brand-accent" />
+          </div>
+        )}
+
         {image ? (
           <img 
             src={image} 
@@ -198,6 +208,15 @@ export function ProductCard({ id, title, price, condition, category, image, matc
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-700">
             <span className="text-[10px] uppercase font-black italic">No Visual</span>
+          </div>
+        )}
+
+        {/* Sold Overlay/Badge */}
+        {fullProduct?.is_sold && (
+          <div className="absolute inset-0 bg-black/60 z-20 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-300">
+            <span className="bg-red-500/90 text-white font-black text-[10px] md:text-xs uppercase tracking-widest px-4 py-1.5 rounded-full border border-red-400/30 shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+              Vendu
+            </span>
           </div>
         )}
 

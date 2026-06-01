@@ -689,26 +689,32 @@ async function main() {
     const usersToCreate = [
         { username: "test", email: "test@test.com", password: hashedPassword },
         { username: "test2", email: "test2@test.com", password: hashedPassword },
-        { username: "test3", email: "test3@test.comp", password: hashedPassword },
+        { username: "test3", email: "test3@test.com", password: hashedPassword },
     ];
 
     const dbUsers: Record<string, any> = {};
     for (const u of usersToCreate) {
         dbUsers[u.email] = await prisma.user.upsert({
             where: { email: u.email },
-            update: { username: u.username, password: u.password },
+            update: { username: u.username, password: u.password, stripeConnectId: null },
             create: {
                 username: u.username,
                 email: u.email,
                 password: u.password,
                 is_active: true,
-                role: "USER"
+                role: "USER",
+                stripeConnectId: null
             }
         });
     }
 
     // --- Insertion des Produits de Test avec Photos ---
-    console.log("Nettoyage des anciens articles et médias de test...");
+    await prisma.message.deleteMany({});
+    await prisma.conversation.deleteMany({});
+    await prisma.invoiceItem.deleteMany({});
+    await prisma.invoice.deleteMany({});
+    await prisma.basketItem.deleteMany({});
+    await prisma.favItem.deleteMany({});
     await prisma.media.deleteMany({});
     await prisma.product.deleteMany({});
 

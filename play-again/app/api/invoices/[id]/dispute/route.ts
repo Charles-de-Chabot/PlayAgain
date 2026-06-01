@@ -50,6 +50,18 @@ export async function POST(
       return NextResponse.json({ error: "Aucun article dans cette facture" }, { status: 400 });
     }
 
+    let reason = "Problème non détaillé lors de l'ouverture du litige.";
+    try {
+      const body = await req.json();
+      if (body.reason && body.reason.trim()) {
+        reason = body.reason.trim();
+      }
+    } catch (_) {
+      // Pas de corps JSON fourni ou vide
+    }
+
+    let supportConversationId = 0;
+
     // 3. Validation et transition de statut vers DISPUTED
     await prisma.$transaction(async (tx) => {
       await tx.invoice.update({
@@ -88,9 +100,62 @@ export async function POST(
           },
         },
       });
+
+      // --- CRÉATION DU TICKET DE SUPPORT D'ASSISTANCE POUR L'ADMINISTRATEUR ---
+      const ticket = await tx.supportTicket.create({
+        data: {
+          userId: userId,
+          subject: `Litige Colis - Commande #${invoiceId} - ${item.product.title}`,
+          content: reason,
+          status: "NEW",
+        }
+      });
+
+      // Premier message dans le ticket de support interne
+      await tx.supportMessage.create({
+        data: {
+          ticketId: ticket.id,
+          senderId: userId,
+          isAdminReply: false,
+          content: reason,
+        }
+      });
+
+      // --- CRÉATION/RÉCUPÉRATION DU FIL SUPPORT MESSAGERIE DE L'ACHETEUR ---
+      let supportConv = await tx.conversation.findFirst({
+        where: {
+          user_id: userId,
+          isSupportThread: true
+        }
+      });
+
+      if (!supportConv) {
+        supportConv = await tx.conversation.create({
+          data: {
+            user_id: userId,
+            isSupportThread: true,
+            metadata: {
+              title: "Support PlayAgain",
+              official: true
+            }
+          }
+        });
+      }
+
+      supportConversationId = supportConv.id;
+
+      // Envoyer le message de signalement de litige dans le fil support de la messagerie
+      await tx.message.create({
+        data: {
+          conversation_id: supportConv.id,
+          user_id: userId,
+          content: `⚠️ [LITIGE OUVERT - Commande #${invoiceId} - ${item.product.title}]\n\nDescription du problème rencontré :\n"${reason}"\n\nVotre réclamation a bien été transmise à notre équipe de support. Un administrateur va prendre en charge votre dossier très rapidement. Vous recevrez les réponses directement dans cette discussion.`,
+          is_read: true,
+        }
+      });
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, conversationId: supportConversationId });
   } catch (error: any) {
     console.error("Erreur lors de la déclaration du litige :", error);
     return NextResponse.json({ error: "Une erreur interne est survenue." }, { status: 500 });

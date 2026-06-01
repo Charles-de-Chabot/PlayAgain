@@ -38,8 +38,17 @@ export async function GET(
       return NextResponse.json({ error: "Conversation introuvable" }, { status: 404 });
     }
 
-    // Sécurité : seul l'acheteur ou le vendeur peut lire les messages
-    if (conversation.user_id !== userId && conversation.product.user_id !== userId) {
+    // Sécurité : seul l'acheteur, le vendeur ou l'admin (pour le support) peut lire les messages
+    const isSupport = !conversation.product_id;
+    const isSeller = conversation.product ? conversation.product.user_id === userId : false;
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+    const isAdmin = currentUser?.role === "ADMIN";
+
+    if (conversation.user_id !== userId && !isSeller && !(isSupport && isAdmin)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
@@ -50,7 +59,7 @@ export async function GET(
     });
 
     // 3. Récupération de la facture associée active
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = conversation.product_id ? await prisma.invoice.findFirst({
       where: {
         items: {
           some: {
@@ -66,7 +75,7 @@ export async function GET(
         status: true,
         address_id: true,
       },
-    });
+    }) : null;
 
     return NextResponse.json({ 
       messages,

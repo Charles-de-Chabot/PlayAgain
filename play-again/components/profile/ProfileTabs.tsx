@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ProductCard } from "@/components/home/ProductCard";
-import { Package, ShoppingBag, Plus } from "lucide-react";
+import { Package, ShoppingBag, Plus, FileText } from "lucide-react";
 import Link from "next/link";
 
 interface ProfileTabsProps {
@@ -126,16 +126,26 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
           purchases.length > 0 ? (
             <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,220px)] gap-x-8 gap-y-12 mt-12 justify-center">
               {purchases.map((product) => (
-                <ProductCard 
-                  key={product.id} 
-                  id={product.id}
-                  title={product.title}
-                  price={Number(product.price)}
-                  condition={product.state}
-                  category={product.category?.label || "Sport"}
-                  image={product.media?.[0]?.url}
-                  fullProduct={product}
-                />
+                <div key={product.id} className="flex flex-col gap-3 group">
+                  <ProductCard 
+                    id={product.id}
+                    title={product.title}
+                    price={Number(product.price)}
+                    condition={product.state}
+                    category={product.category?.label || "Sport"}
+                    image={product.media?.[0]?.url}
+                    fullProduct={product}
+                  />
+                  {product.invoiceId && (
+                    <Link
+                      href={`/product/${product.id}/checkout/success?invoice_id=${product.invoiceId}`}
+                      className="w-full py-2.5 bg-white/5 hover:bg-brand-primary/10 border border-white/10 hover:border-brand-primary/30 text-zinc-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest text-center transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-brand-primary" />
+                      <span>Facture PDF</span>
+                    </Link>
+                  )}
+                </div>
               ))}
             </div>
           ) : (

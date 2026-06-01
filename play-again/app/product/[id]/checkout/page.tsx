@@ -42,10 +42,41 @@ export default async function CheckoutPage({
     redirect(`/product/${id}`);
   }
 
+  // Vérifier s'il y a une négociation validée (ACCEPTED) pour ce produit et cet acheteur
+  const conversation = await prisma.conversation.findFirst({
+    where: {
+      user_id: userId,
+      product_id: rawProduct.id,
+    },
+    include: {
+      messages: {
+        orderBy: { created_at: "desc" },
+      }
+    }
+  });
+
+  if (conversation) {
+    const acceptedOffer = conversation.messages.find((msg) => {
+      const meta = msg.metadata as any;
+      return meta && meta.type === "OFFER" && meta.status === "ACCEPTED";
+    });
+
+    if (acceptedOffer) {
+      const negotiatedPrice = Number((acceptedOffer.metadata as any).amount);
+      if (!isNaN(negotiatedPrice) && negotiatedPrice > 0) {
+        // Remplacer temporairement le prix pour le checkout
+        rawProduct.price = negotiatedPrice as any;
+      }
+    }
+  }
+
   // Récupération des adresses de livraison enregistrées par l'acheteur
   const userAddresses = await prisma.address.findMany({
     where: { user_id: userId },
-    orderBy: { created_at: "desc" },
+    orderBy: [
+      { is_default: "desc" },
+      { created_at: "desc" }
+    ],
   });
 
   // Récupération des informations de profil de l'acheteur (email, nom, prénom, téléphone)
@@ -56,6 +87,7 @@ export default async function CheckoutPage({
       firstname: true,
       lastname: true,
       phone: true,
+      username: true,
     },
   });
 

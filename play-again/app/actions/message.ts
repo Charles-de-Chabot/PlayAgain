@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { join } from "path";
 import { writeFile, mkdir } from "fs/promises";
+import { createNotification } from "@/app/actions/notification";
 
 /**
  * Téléverse une image de messagerie sur le disque dur du serveur.
@@ -114,19 +115,39 @@ export async function sendMessage(conversationId: number, content: string, metad
     throw new Error("Discussion introuvable.");
   }
 
-  // Sécurité : l'expéditeur doit être l'acheteur ou le vendeur
+  // Sécurité : l'expéditeur doit être l'acheteur ou le vendeur (ou l'admin pour le support)
+  const isSupport = conversation.isSupportThread;
   const isBuyer = conversation.user_id === senderId;
-  const isSeller = conversation.product.user_id === senderId;
-  if (!isBuyer && !isSeller) {
+  const isSeller = conversation.product ? conversation.product.user_id === senderId : false;
+
+  const senderUser = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { role: true }
+  });
+  const isAdmin = senderUser?.role === "ADMIN";
+
+  if (!isBuyer && !isSeller && !(isSupport && isAdmin)) {
     throw new Error("Vous n'êtes pas autorisé à participer à cette discussion.");
   }
 
   // Garde-fous de robustesse (Lecture Seule)
-  if (!conversation.product.is_active) {
-    throw new Error("Impossible d'envoyer un message : cette annonce a été supprimée par le vendeur.");
+  if (conversation.isSupportThread) {
+    const latestTicket = await prisma.supportTicket.findFirst({
+      where: { userId: conversation.user_id },
+      orderBy: { createdAt: "desc" }
+    });
+    if (latestTicket && latestTicket.status === "RESOLVED") {
+      throw new Error("Ce litige a été résolu par l'administration. La discussion est close.");
+    }
   }
-  if (conversation.product.is_sold) {
-    throw new Error("Impossible d'envoyer un message : cet article a été vendu.");
+
+  if (conversation.product) {
+    if (!conversation.product.is_active) {
+      throw new Error("Impossible d'envoyer un message : cette annonce a été supprimée par le vendeur.");
+    }
+    if (conversation.product.is_sold) {
+      throw new Error("Impossible d'envoyer un message : cet article a été vendu.");
+    }
   }
 
   // 2. Création du message
@@ -138,6 +159,91 @@ export async function sendMessage(conversationId: number, content: string, metad
       metadata: metadata || null,
     },
   });
+
+  // Synchronisation avec le Helpdesk support interne si c'est un fil support
+  if (isSupport) {
+    // Trouver le dernier ticket non résolu de l'utilisateur
+    let ticket = await prisma.supportTicket.findFirst({
+      where: {
+        userId: conversation.user_id,
+        status: { not: "RESOLVED" }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    // Si aucun ticket actif n'existe (par exemple s'il a été résolu mais qu'ils continuent à parler),
+    // on recrée un nouveau ticket pour garder le fil de discussion actif.
+    if (!ticket) {
+      ticket = await prisma.supportTicket.create({
+        data: {
+          userId: conversation.user_id,
+          subject: "Discussion Support réouverte",
+          content: content,
+          status: "NEW"
+        }
+      });
+    } else {
+      // Si le client répond, on remet le statut à "NEW" pour signaler à l'admin qu'une nouvelle réponse l'attend.
+      if (!isAdmin) {
+        await prisma.supportTicket.update({
+          where: { id: ticket.id },
+          data: {
+            status: "NEW",
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
+
+    let metaObj = metadata;
+    if (typeof metadata === "string" && metadata.trim().startsWith("{")) {
+      try {
+        metaObj = JSON.parse(metadata);
+      } catch (e) {}
+    }
+
+    const isImage = (metaObj?.type === "IMAGE" || metaObj?.url) && metaObj?.url;
+    const supportMessageContent = isImage
+      ? `📷 Image partagée : ${metaObj.url}`
+      : content.trim();
+
+    // Créer le message de support correspondant
+    await prisma.supportMessage.create({
+      data: {
+        ticketId: ticket.id,
+        senderId: senderId,
+        isAdminReply: isAdmin,
+        content: supportMessageContent
+      }
+    });
+  }
+
+  // 3. Récupérer les détails de l'expéditeur pour la notification
+  const sender = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { username: true, profile_picture: true }
+  });
+
+  // Déterminer le destinataire
+  const targetUserId = conversation.user_id === senderId 
+    ? (conversation.product ? conversation.product.user_id : null) 
+    : conversation.user_id;
+
+  // Déclencher la notification in-app en direct si le destinataire existe
+  if (targetUserId) {
+    await createNotification({
+      userId: targetUserId,
+      type: "MESSAGE",
+      message: `✉️ Nouveau message de ${sender?.username || "un membre"} : "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`,
+      metadata: {
+        redirectUrl: `/messages?conversationId=${conversationId}`,
+        conversationId,
+        senderName: sender?.username || "un membre",
+        senderAvatarUrl: sender?.profile_picture || null,
+        messageSnippet: content.substring(0, 40) + (content.length > 40 ? '...' : ''),
+      }
+    });
+  }
 
   // Revalidation du cache Next.js
   revalidatePath(`/messages/${conversationId}`);
@@ -211,7 +317,7 @@ export async function resolveOffer(messageId: number, status: "ACCEPTED" | "DECL
   }
 
   // 2. Sécurité : Seul le vendeur du produit peut résoudre l'offre
-  if (message.conversation.product.user_id !== userId) {
+  if (!message.conversation.product || message.conversation.product.user_id !== userId) {
     throw new Error("Seul le vendeur de l'article peut accepter ou décliner une offre.");
   }
 

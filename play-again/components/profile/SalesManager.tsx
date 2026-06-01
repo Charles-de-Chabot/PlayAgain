@@ -89,6 +89,32 @@ export function SalesManager({ initialSales }: SalesManagerProps) {
     }
   };
 
+  // Handler de simulation de livraison de colis (Test)
+  const handleSimulateDelivery = async (saleId: number) => {
+    setLoadingIds(prev => ({ ...prev, [saleId]: true }));
+    setErrors(prev => ({ ...prev, [saleId]: "" }));
+    
+    try {
+      const res = await fetch(`/api/invoices/${saleId}/deliver`, {
+        method: "POST"
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Une erreur est survenue lors de la livraison.");
+      }
+      
+      // Mettre à jour l'état local
+      setSales(prev => 
+        prev.map(s => s.id === saleId ? { ...s, status: "DELIVERED" } : s)
+      );
+    } catch (err: any) {
+      setErrors(prev => ({ ...prev, [saleId]: err.message }));
+    } finally {
+      setLoadingIds(prev => ({ ...prev, [saleId]: false }));
+    }
+  };
+
   // 3. Handler de saisie de code remise main propre
   const handleVerifyCode = async (saleId: number) => {
     const code = verificationCodes[saleId]?.trim().toUpperCase();
@@ -402,6 +428,24 @@ export function SalesManager({ initialSales }: SalesManagerProps) {
                             <>
                               <Truck className="w-4 h-4 text-white" />
                               <span>Marquer expédié</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Simuler la livraison (Test) */}
+                      {hasAddress && sale.status === "SHIPPED" && (
+                        <button
+                          onClick={() => handleSimulateDelivery(sale.id)}
+                          disabled={isLoading}
+                          className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:brightness-110 text-black border border-cyan-400/20 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-cyan-500/10 disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-black" />
+                          ) : (
+                            <>
+                              <Package className="w-4 h-4 text-black" />
+                              <span>Simuler livraison</span>
                             </>
                           )}
                         </button>

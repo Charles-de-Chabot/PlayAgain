@@ -214,6 +214,15 @@ export async function getLatestProducts() {
 
   // 2. Récupération de tous les derniers produits
   const products = await prisma.product.findMany({
+    where: {
+      is_sold: false,
+      is_active: true,
+      user: {
+        stripeConnectId: {
+          not: null,
+        },
+      },
+    },
     take: 8,
     orderBy: { created_at: "desc" },
     include: {
@@ -221,6 +230,7 @@ export async function getLatestProducts() {
       media: true,
       brand: true,
       type: true,
+      user: true,
     },
   });
 
@@ -300,11 +310,18 @@ export async function getRecommendedProducts() {
   if (!sportProfile) {
     console.log("⚠️ [Match] Pas de profil sportif, retour produits par défaut");
     const products = await prisma.product.findMany({
-      where: session?.user?.id ? {
-        user_id: {
-          not: parseInt(session.user.id)
-        }
-      } : undefined,
+      where: {
+        is_sold: false,
+        is_active: true,
+        user: {
+          stripeConnectId: {
+            not: null,
+          },
+          id: session?.user?.id ? {
+            not: parseInt(session.user.id),
+          } : undefined,
+        },
+      },
       take: 8,
       orderBy: { created_at: "desc" },
       include: {
@@ -312,6 +329,7 @@ export async function getRecommendedProducts() {
         media: true,
         brand: true,
         type: true,
+        user: true,
       },
     });
 
@@ -350,14 +368,21 @@ export async function getRecommendedProducts() {
   // 4. Récupération des produits correspondant aux catégories d'intérêts (en excluant les nôtres)
   const products = await prisma.product.findMany({
     where: {
+      is_sold: false,
+      is_active: true,
       category: interests.length > 0 ? {
         label: {
           in: interests
         }
       } : undefined,
-      user_id: session?.user?.id ? {
-        not: parseInt(session.user.id)
-      } : undefined
+      user: {
+        stripeConnectId: {
+          not: null
+        },
+        id: session?.user?.id ? {
+          not: parseInt(session.user.id)
+        } : undefined
+      }
     },
     take: 8,
     orderBy: { created_at: "desc" },
@@ -366,6 +391,7 @@ export async function getRecommendedProducts() {
       media: true,
       brand: true,
       type: true,
+      user: true,
     },
   });
 
@@ -435,6 +461,7 @@ export interface GetFilteredProductsParams {
   sortBy?: string;
   isShipping?: boolean;
   onlyRecommended?: boolean;
+  minMatchScore?: number;
 }
 
 export async function getBrands() {
@@ -467,7 +494,20 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
   // 2. Construction de la clause 'where' Prisma
   const where: any = {
     is_sold: false, // On n'affiche que les articles non vendus
+    is_active: true, // On n'affiche que les articles actifs
+    user: {
+      stripeConnectId: {
+        not: null
+      }
+    }
   };
+
+  // Exclure les propres articles de l'utilisateur connecté
+  if (session?.user?.id) {
+    where.user_id = {
+      not: parseInt(session.user.id)
+    };
+  }
 
   if (filters.searchQuery) {
     where.OR = [
@@ -531,6 +571,7 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
         media: true,
         brand: true,
         type: true,
+        user: true,
       },
     });
 
@@ -569,15 +610,17 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
       };
     }));
 
-    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= 60% + Sports Favoris)
+    // 6. Application du filtre IA "Recommandé pour mon profil" (matchScore >= threshold + Sports Favoris)
     if (filters.onlyRecommended && sportProfile) {
       const userInterests = Array.isArray(sportProfile.interests)
         ? (sportProfile.interests as string[]).map(i => i.toLowerCase().trim())
         : [];
 
+      const threshold = filters.minMatchScore !== undefined ? filters.minMatchScore : 60;
+
       productsWithScores = productsWithScores.filter(p => {
-        // Doit correspondre au niveau (score >= 60)
-        const matchesLevel = p.matchScore >= 60;
+        // Doit correspondre au niveau (score >= threshold)
+        const matchesLevel = p.matchScore >= threshold;
         
         // Doit correspondre à un sport/catégorie favori de l'utilisateur
         const productCategory = p.category?.label?.toLowerCase().trim();

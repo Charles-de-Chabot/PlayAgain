@@ -18,7 +18,7 @@ export default async function CheckoutSuccessPage({
   }
 
   // Récupérer la facture correspondante pour afficher le reçu rétro
-  const rawInvoice = await prisma.invoice.findUnique({
+  let rawInvoice = await prisma.invoice.findUnique({
     where: { id: parseInt(invoice_id) },
     include: {
       items: {
@@ -40,6 +40,38 @@ export default async function CheckoutSuccessPage({
     notFound();
   }
 
+  // Si la facture est toujours en statut PENDING, on tente une validation synchrone de secours
+  if (rawInvoice.status === "PENDING" && rawInvoice.payment_intent_id) {
+    try {
+      const { handlePaymentSuccess } = await import("@/lib/checkout");
+      await handlePaymentSuccess(rawInvoice.payment_intent_id);
+      
+      // Re-récupérer la facture mise à jour
+      const updatedInvoice = await prisma.invoice.findUnique({
+        where: { id: parseInt(invoice_id) },
+        include: {
+          items: {
+            include: {
+              product: {
+                include: {
+                  brand: true,
+                  media: true,
+                },
+              },
+            },
+          },
+          address: true,
+          user: true,
+        },
+      });
+      if (updatedInvoice) {
+        rawInvoice = updatedInvoice;
+      }
+    } catch (err) {
+      console.error("Erreur lors de la validation synchrone de secours de la facture:", err);
+    }
+  }
+
   // Sérialiser les données pour le client
   const invoice = JSON.parse(JSON.stringify(rawInvoice));
 
@@ -56,7 +88,9 @@ export default async function CheckoutSuccessPage({
       </div>
 
       <div className="relative z-10">
-        <Header />
+        <div className="print:hidden">
+          <Header />
+        </div>
         
         <div className="max-w-3xl mx-auto px-4 pt-24 md:pt-32">
           <SuccessClient invoice={invoice} />

@@ -27,8 +27,9 @@ export default function RootLayout({
     <html
       lang="fr"
       className={`${montserrat.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-sans bg-black text-white">
+      <body className="min-h-full flex flex-col font-sans bg-black text-white" suppressHydrationWarning>
         <SessionProvider>
           <GlobalScrollbar />
           <div className="flex-1 flex flex-col">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/app/actions/notification";
 
 export async function POST(
   req: Request,
@@ -26,7 +27,11 @@ export async function POST(
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                media: true,
+              }
+            },
           },
         },
       },
@@ -56,7 +61,7 @@ export async function POST(
     }
 
     // 3. Validation et transition de statut (PAID -> SHIPPED)
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // A. Mettre à jour le statut de la facture à SHIPPED
       await tx.invoice.update({
         where: { id: invoiceId },
@@ -91,7 +96,27 @@ export async function POST(
           },
         },
       });
+
+      return { conversationId: conversation.id };
     });
+
+    // 4. Déclencher la notification in-app pour l'acheteur
+    try {
+      const productImageUrl = item.product.media?.[0]?.url || null;
+      await createNotification({
+        userId: invoice.user_id, // Acheteur
+        type: "TRANSACTION",
+        message: `📦 Bonne nouvelle ! Le vendeur a expédié votre article "${item.product.title}".`,
+        metadata: {
+          redirectUrl: `/messages?conversationId=${result.conversationId}`,
+          invoiceId: invoice.id,
+          productId: item.product_id,
+          productImageUrl,
+        }
+      });
+    } catch (err) {
+      console.error("Erreur d'envoi de la notification d'expédition :", err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

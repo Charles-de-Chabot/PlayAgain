@@ -77,6 +77,95 @@ export async function saveSportProfile(data: any) {
       }
     }
 
+    // Déclencher le calcul et l'envoi de notification de match IA instantané
+    try {
+      // 1. Récupérer tous les produits tiers actifs et non vendus
+      const activeProducts = await prisma.product.findMany({
+        where: {
+          is_sold: false,
+          is_active: true,
+          user_id: { not: userId }, // Exclure ses propres produits
+          user: {
+            stripeConnectId: { not: null }
+          }
+        },
+        include: {
+          category: true,
+          media: true,
+          brand: true,
+          type: true
+        }
+      });
+
+      const matchedGear = [];
+
+      // 2. Parcourir les produits et calculer le match IA
+      // On recharge le profil avec ses compétences fraîches
+      const freshProfile = await prisma.sportProfile.findUnique({
+        where: { userId },
+        include: { skills: true }
+      });
+
+      if (freshProfile) {
+        // Import dynamique pour éviter tout couplage circulaire d'import serveur
+        const { calculateMatch } = await import("@/lib/ai/matcher");
+        const { createNotification } = await import("@/app/actions/notification");
+
+        for (const product of activeProducts) {
+          const matchResult = await calculateMatch(freshProfile, product);
+          if (matchResult.score >= 90) {
+            matchedGear.push({
+              productId: product.id,
+              title: product.title,
+              score: matchResult.score,
+              productImageUrl: product.media?.[0]?.url || null
+            });
+          }
+        }
+
+        // 3. Envoyer une notification s'il y a des matchs de haute qualité
+        if (matchedGear.length > 0) {
+          const count = matchedGear.length;
+          const firstMatch = matchedGear[0];
+          const productImageUrl = firstMatch.productImageUrl;
+
+          let message = "";
+          if (count === 1) {
+            message = `⚡ Match IA : L'équipement "${firstMatch.title}" correspond à ${firstMatch.score}% à votre niveau de sport !`;
+          } else {
+            message = `⚡ Match IA : ${count} équipements sportifs correspondent à plus de 90% à votre profil de sportif !`;
+          }
+
+          // Limitation anti-spam : éviter les doublons instantanés si de nombreuses modifs sont faites à la suite
+          const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000);
+          const sentRecently = await prisma.notification.findFirst({
+            where: {
+              user_id: userId,
+              type: "AI_MATCH",
+              created_at: { gte: twentyHoursAgo }
+            }
+          });
+
+          if (!sentRecently) {
+            await createNotification({
+              userId,
+              type: "AI_MATCH",
+              message,
+              metadata: {
+                redirectUrl: "/shop?playmatch=90",
+                productId: firstMatch.productId,
+                productImageUrl,
+                matchedCount: count
+              }
+            });
+            console.log(`✉️ [Instant Match IA] Notification envoyée à l'utilisateur #${userId} suite à la mise à jour de son profil.`);
+          }
+        }
+      }
+    } catch (matchErr) {
+      console.error("❌ [Instant Match IA] Erreur lors du calcul instantané :", matchErr);
+    }
+
     revalidatePath("/profile");
     return { success: true, profile };
   } catch (error) {

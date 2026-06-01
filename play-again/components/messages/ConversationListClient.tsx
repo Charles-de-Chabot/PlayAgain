@@ -66,10 +66,17 @@ export default function ConversationListClient({
 
   // Filtrer les conversations
   const filteredConversations = initialConversations.filter((conv) => {
+    const isSupport = conv.isSupportThread;
     const isBuyer = conv.user_id === currentUserId;
-    const partner = isBuyer ? conv.product.user : conv.user;
+    const partner = isSupport ? {
+      username: "Support Officiel PlayAgain",
+      firstname: "Support",
+      lastname: "PlayAgain",
+      profile_picture: null
+    } : (isBuyer && conv.product ? conv.product.user : conv.user);
+    
     const partnerName = partner?.username || partner?.firstname || "";
-    const productName = conv.product.title || "";
+    const productName = conv.product?.title || "Assistance SAV";
     
     const query = search.toLowerCase();
     return (
@@ -112,10 +119,16 @@ export default function ConversationListClient({
             </div>
           ) : (
             filteredConversations.map((conv) => {
+              const isSupport = conv.isSupportThread;
               const isBuyer = conv.user_id === currentUserId;
-              const partner = isBuyer ? conv.product.user : conv.user;
+              const partner = isSupport ? {
+                username: "Support Officiel PlayAgain",
+                firstname: "Support",
+                lastname: "PlayAgain",
+                profile_picture: null
+              } : (isBuyer && conv.product ? conv.product.user : conv.user);
               const lastMessage = conv.messages[0];
-              const productMedia = conv.product.media[0]?.url;
+              const productMedia = conv.product ? conv.product.media[0]?.url : undefined;
               
               const isUnread =
                 lastMessage &&
@@ -139,6 +152,8 @@ export default function ConversationListClient({
 
               // Déterminer si cette conversation est en lecture seule (bloquée)
               const isReadOnly = (() => {
+                if (conv.isSupportClosed) return true;
+                if (!conv.product) return false;
                 if (!conv.product.is_active && !conv.product.is_sold) return true;
                 if (conv.product.is_sold) {
                   const activeInvoice = conv.product.invoice_items?.[0]?.invoice;
@@ -162,7 +177,7 @@ export default function ConversationListClient({
                     isSelected
                       ? "bg-white/10 border-brand-accent"
                       : "bg-transparent border-transparent hover:bg-white/5 hover:border-white/10"
-                  } ${isReadOnly ? "opacity-55 saturate-[0.6] hover:opacity-85 hover:saturate-100" : ""}`}
+                  } ${isReadOnly && !isUnread ? "opacity-55 saturate-[0.6] hover:opacity-85 hover:saturate-100" : ""}`}
                 >
                   {/* Avatar de l'interlocuteur */}
                   <div className="relative flex-shrink-0">
@@ -200,7 +215,7 @@ export default function ConversationListClient({
 
                     <div className="flex items-center">
                       <span className="text-xs font-semibold text-brand-accent truncate">
-                        {conv.product.title}
+                        {conv.product ? conv.product.title : "Assistance SAV"}
                       </span>
                     </div>
 
@@ -215,7 +230,7 @@ export default function ConversationListClient({
                   </div>
 
                   {/* Miniature produit à droite */}
-                  {productMedia && (
+                  {productMedia && conv.product && (
                     <div className="h-10 w-10 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 relative">
                       <img
                         src={productMedia}

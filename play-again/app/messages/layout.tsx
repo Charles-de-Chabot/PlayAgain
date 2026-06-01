@@ -91,11 +91,19 @@ export default async function MessagesLayout({
     orderBy: { created_at: "desc" }
   });
 
+  const latestTicket = await prisma.supportTicket.findFirst({
+    where: { userId: userId },
+    orderBy: { createdAt: "desc" },
+    select: { status: true }
+  });
+  const isSupportClosed = latestTicket?.status === "RESOLVED";
+
   // Sérialisation des objets Decimal de Prisma pour éviter l'erreur de transfert RSC -> Client Component
   const serializedConversations = conversations.map((conv) => ({
     ...conv,
+    isSupportClosed: conv.isSupportThread ? isSupportClosed : false,
     created_at: conv.created_at.toISOString(),
-    product: {
+    product: conv.product ? {
       ...conv.product,
       price: Number(conv.product.price),
       created_at: conv.product.created_at.toISOString(),
@@ -104,7 +112,7 @@ export default async function MessagesLayout({
         ...item,
         unit_price: Number(item.unit_price),
       })),
-    },
+    } : null,
     messages: conv.messages.map((msg) => ({
       ...msg,
       created_at: msg.created_at.toISOString(),

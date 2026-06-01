@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ playmatch?: string; category?: string; q?: string }> | { playmatch?: string; category?: string; q?: string };
+  searchParams?: Promise<{ playmatch?: string; category?: string; q?: string; minmatch?: string }> | { playmatch?: string; category?: string; q?: string; minmatch?: string };
 }) {
   const resolvedParams = searchParams instanceof Promise ? await searchParams : searchParams;
-  const playMatchActive = resolvedParams?.playmatch === "true";
+  const playMatchActive = resolvedParams?.playmatch === "true" || resolvedParams?.playmatch === "90";
+  const minMatchScore = resolvedParams?.playmatch === "90" ? 90 : (resolvedParams?.minmatch ? parseInt(resolvedParams.minmatch, 10) : undefined);
   
   // Validation de la catégorie passée en paramètre
   const categoryParam = resolvedParams?.category;
@@ -27,6 +28,7 @@ export default async function ShopPage({
     getBrands(),
     getFilteredProducts({
       onlyRecommended: playMatchActive || undefined,
+      minMatchScore: minMatchScore,
       categoryId: validCategoryId || undefined,
       searchQuery: searchQueryParam || undefined,
     }), // Pré-filtrage côté serveur si PlayMatch, une catégorie ou une recherche est active par défaut

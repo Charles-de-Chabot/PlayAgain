@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import { registerUser } from "@/app/actions/register";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,8 +41,13 @@ export default function RegisterPage() {
       // En cas de pépin sur la connexion auto, on redirige vers le login classique
       router.push("/auth/login?registered=true");
     } else {
-      // 3. Redirection vers la home
-      router.push("/");
+      // 3. Redirection vers la page appropriée
+      const session = await getSession();
+      if (session?.user && (session.user as any).role === "ADMIN") {
+        router.push("/admin");
+      } else {
+        router.push("/profile");
+      }
       router.refresh();
     }
   };

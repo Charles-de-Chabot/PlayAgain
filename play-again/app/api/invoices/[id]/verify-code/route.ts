@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/app/actions/notification";
 
 export async function POST(
   req: Request,
@@ -33,7 +34,11 @@ export async function POST(
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                media: true,
+              }
+            },
           },
         },
       },
@@ -71,7 +76,7 @@ export async function POST(
     }
 
     // 4. Validation et transition de statut (PAID -> COMPLETED)
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // A. Mettre à jour le statut de la facture à COMPLETED
       await tx.invoice.update({
         where: { id: invoiceId },
@@ -106,7 +111,42 @@ export async function POST(
           },
         },
       });
+
+      return { conversationId: conversation.id };
     });
+
+    // 5. Déclencher les notifications in-app pour l'acheteur et le vendeur
+    try {
+      const productImageUrl = item.product.media?.[0]?.url || null;
+      
+      // A. Notifier l'acheteur
+      await createNotification({
+        userId: invoice.user_id, // Acheteur
+        type: "TRANSACTION",
+        message: `🤝 Votre remise en main propre pour l'article "${item.product.title}" a été validée avec succès !`,
+        metadata: {
+          redirectUrl: `/messages?conversationId=${result.conversationId}`,
+          invoiceId: invoice.id,
+          productId: item.product_id,
+          productImageUrl,
+        }
+      });
+
+      // B. Notifier le vendeur
+      await createNotification({
+        userId: userId, // Vendeur
+        type: "TRANSACTION",
+        message: `💸 Félicitations ! Votre vente en main propre pour l'article "${item.product.title}" a été validée. Les fonds sont débloqués.`,
+        metadata: {
+          redirectUrl: `/profile/sales`,
+          invoiceId: invoice.id,
+          productId: item.product_id,
+          productImageUrl,
+        }
+      });
+    } catch (err) {
+      console.error("Erreur d'envoi des notifications de validation de code :", err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

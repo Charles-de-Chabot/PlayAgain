@@ -29,6 +29,7 @@ interface Address {
   city: string;
   zip_code: string;
   country: string;
+  is_default?: boolean;
 }
 
 interface Product {
@@ -51,6 +52,7 @@ interface Buyer {
   firstname: string | null;
   lastname: string | null;
   phone: string | null;
+  username?: string | null;
 }
 
 interface CheckoutClientProps {
@@ -72,13 +74,20 @@ export function CheckoutClient({
   // --- États locaux ---
   const [isShipping, setIsShipping] = useState<boolean>(product.is_shipping);
   const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
+  
+  // Find default/primary address in priority
+  const defaultAddress = initialAddresses.find(addr => addr.is_default);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
-    initialAddresses.length > 0 ? initialAddresses[0].id : null
+    defaultAddress ? defaultAddress.id : (initialAddresses.length > 0 ? initialAddresses[0].id : null)
   );
 
   // Infos de contact (Nom complet, e-mail, téléphone)
   const [fullName, setFullName] = useState(
-    buyer ? `${buyer.firstname || ""} ${buyer.lastname || ""}`.trim() : ""
+    buyer 
+      ? (buyer.firstname || buyer.lastname)
+        ? `${buyer.firstname || ""} ${buyer.lastname || ""}`.trim()
+        : buyer.username || ""
+      : ""
   );
   const [email, setEmail] = useState(buyer?.email || "");
   const [phone, setPhone] = useState(buyer?.phone || "");

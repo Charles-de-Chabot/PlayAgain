@@ -93,4 +93,45 @@ body.modal-open nav.fixed.bottom-0 {
   display: none !important;
 }
 
+/* Animation de pulsation douce avec Glow Violet pour l'activation Stripe Connect */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(125, 56, 255, 0.2);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(125, 56, 255, 0.55);
+  }
+}
+
+.animate-pulse-stripe {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+/* Animation de vibration lors de la réception d'une notification */
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  10%, 90% { transform: rotate(15deg); }
+  20%, 80% { transform: rotate(-10deg); }
+  30%, 50%, 70% { transform: rotate(20deg); }
+  40%, 60% { transform: rotate(-15deg); }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 0.8s ease-in-out;
+}
+
+/* Badge de notification vibrant Vert Citron */
+@keyframes badge-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 1.8s infinite ease-in-out;
+}
+
+
 

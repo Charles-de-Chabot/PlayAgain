@@ -11,12 +11,14 @@ import {
   Calendar, 
   FileText,
   Copy,
-  Check
+  Check,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface InvoiceItem {
   id: number;
+  unit_price: string | number;
   product: {
     title: string;
     price: string | number;
@@ -69,10 +71,164 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
   const isHandDelivery = invoice.buyer_security_code !== null;
 
   return (
-    <div className="relative space-y-8 max-w-lg mx-auto">
+    <div className="relative space-y-8 max-w-2xl mx-auto">
+      <style>{`
+        @media print {
+          @page {
+            margin: 0.4cm !important;
+            size: portrait;
+          }
+          /* Rendre la page blanche et le texte noir à l'impression */
+          html, body, main, div, p, span, h1, h2, h3, select, button {
+            background-color: #ffffff !important;
+            background-image: none !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            backdrop-filter: none !important;
+          }
+          /* Cacher les éléments inutiles et supprimer les paddings du haut à l'impression */
+          header, footer, .print\\:hidden, #__next-prerender-indicator {
+            display: none !important;
+          }
+          .pt-24, .md\\:pt-32, .pt-32 {
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+          }
+          /* Mettre en valeur la facture avec un contour propre */
+          .bg-zinc-900\\/40 {
+            background-color: #ffffff !important;
+            border: 2px solid #000000 !important;
+            border-radius: 1.5rem !important;
+          }
+          /* Rendre les séparations nettes à l'impression */
+          .border-white\\/10, .border-dashed, .border-t, .border-b {
+            border-color: #000000 !important;
+          }
+          /* Adapter les textes secondaires pour une lecture optimale */
+          .text-zinc-400, .text-zinc-500, .text-zinc-300 {
+            color: #27272a !important;
+          }
+          /* Badge de validation en noir et blanc contrasté */
+          .bg-emerald-500\\/10 {
+            background-color: #ffffff !important;
+            border: 1px solid #166534 !important;
+            color: #166534 !important;
+          }
+          /* Encart de livraison ou de code de sécurité */
+          .bg-brand-accent\\/5, .bg-white\\/5, .bg-black\\/50 {
+            background-color: #f4f4f5 !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+          }
+          /* Ajustements pour tenir rigoureusement sur une page unique et centrer horizontalement */
+          .relative.space-y-8 {
+            margin: 0 auto !important;
+            max-width: 600px !important; /* Largeur premium aérée pour du A4 */
+            width: 100% !important;
+            page-break-inside: avoid !important;
+            float: none !important;
+          }
+          /* Forcer le centrage par le parent */
+          .max-w-3xl {
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            display: flex !important;
+            justify-content: center !important;
+          }
+          /* Réduire fortement les espacements verticaux à l'impression */
+          .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.4rem !important;
+          }
+          .space-y-6 > :not([hidden]) ~ :not([hidden]),
+          .space-y-4 > :not([hidden]) ~ :not([hidden]),
+          .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.35rem !important;
+          }
+          .p-6, .md\\:p-8 {
+            padding: 0.75rem !important;
+          }
+          .pb-5 {
+            padding-bottom: 0.3rem !important;
+          }
+          .pt-5 {
+            padding-top: 0.3rem !important;
+          }
+          .pt-4 {
+            padding-top: 0.2rem !important;
+          }
+          .pb-6 {
+            padding-bottom: 0.3rem !important;
+          }
+          .mb-6 {
+            margin-bottom: 0.4rem !important;
+          }
+          .mb-8 {
+            margin-bottom: 0.4rem !important;
+          }
+          .h-8 {
+            height: 1.2rem !important;
+          }
+          /* Mentions légales ultra-compactes à l'impression */
+          .px-8.py-4.space-y-1\\.5 {
+            padding: 0.15rem 0.5rem !important;
+            margin: 0 !important;
+          }
+          .text-\\[8px\\] {
+            font-size: 5.5px !important;
+            line-height: 1.1 !important;
+          }
+          .text-xs {
+            font-size: 0.7rem !important;
+            line-height: 1.2 !important;
+          }
+          .text-sm {
+            font-size: 0.75rem !important;
+            line-height: 1.25 !important;
+          }
+          /* --- Touches de couleurs signatures (Vert/Violet) du site --- */
+          /* Titre "Play Again" et marques en Violet signature */
+          h2.text-brand-primary, .text-brand-primary {
+            color: #7d38ff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* Badge de validation en Vert émeraude propre */
+          .bg-emerald-500\\/10 {
+            background-color: #f0fdf4 !important;
+            border: 1.5px solid #10b981 !important;
+            color: #10b981 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* Encart de protection de paiement (accent lime/jaune et orange doux) */
+          .bg-brand-accent\\/5 {
+            background-color: #fefce8 !important;
+            border: 1.5px solid #d97706 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .text-brand-accent {
+            color: #d97706 !important;
+          }
+          /* Ligne décorative supérieure : Dégradé néon emblématique du site */
+          .bg-linear-to-r {
+            background: linear-gradient(90deg, #7d38ff, #ccff00) !important;
+            height: 3px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* Code-barres à l'impression */
+          .print-barcode-bar {
+            background-color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
       
-      {/* 1. Entête de Confirmation & Statut */}
-      <div className="text-center space-y-4">
+      {/* 1. Entête de Confirmation & Statut (Masqué à l'impression pour économiser l'encre et l'espace) */}
+      <div className="text-center space-y-4 print:hidden">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-brand-accent mb-2 animate-bounce">
           <CheckCircle2 className="w-10 h-10" />
         </div>
@@ -95,6 +251,9 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
           
           {/* Logo & Identité Plateforme */}
           <div className="text-center pb-5 border-b border-white/5 space-y-1">
+            <div className="inline-block px-3 py-1 rounded-full bg-brand-primary/10 border border-brand-primary/20 mb-1.5 print:bg-transparent print:border-brand-primary/40">
+              <span className="text-[9px] font-black text-brand-primary uppercase tracking-[0.25em]">Ticket Officiel</span>
+            </div>
             <h2 className="text-2xl font-black tracking-widest text-brand-primary uppercase drop-shadow-[0_0_15px_rgba(125,56,255,0.4)]">
               Play Again
             </h2>
@@ -117,7 +276,7 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
               <Calendar className="w-4 h-4 text-brand-primary" />
               <span>Date d'achat</span>
             </div>
-            <div className="text-right font-bold text-white font-mono">
+            <div className="text-right font-bold text-white font-mono" suppressHydrationWarning>
               {invoiceDate}
             </div>
           </div>
@@ -143,7 +302,7 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
                   </p>
                 </div>
                 <span className="font-black text-sm text-white shrink-0 font-mono">
-                  {Number(productItem.price).toFixed(2)} €
+                  {Number(invoice.items[0]?.unit_price || productItem.price).toFixed(2)} €
                 </span>
               </div>
             </div>
@@ -153,7 +312,7 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
           <div className="space-y-2.5 text-xs border-b border-white/5 pb-5">
             <div className="flex justify-between text-zinc-400">
               <span className="font-semibold">Sous-total</span>
-              <span className="font-bold text-white font-mono">{Number(productItem?.price || 0).toFixed(2)} €</span>
+              <span className="font-bold text-white font-mono">{Number(invoice.items[0]?.unit_price || productItem?.price || 0).toFixed(2)} €</span>
             </div>
             <div className="flex justify-between text-zinc-400">
               <span className="font-semibold">Protection Acheteur</span>
@@ -179,8 +338,20 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
           <div className="text-center pt-4">
             <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-[10px] tracking-widest uppercase">
               <Check className="w-3.5 h-3.5 shrink-0" />
-              Séquestre PlayAgain Validé
+              Transaction Validée
             </div>
+          </div>
+
+          {/* Code barre numérique déco pour esthétique "Ticket Premium" */}
+          <div className="pt-5 border-t border-white/5 flex flex-col items-center gap-1.5 opacity-60 print:opacity-100 print:border-black">
+            <div className="flex gap-[2.5px] h-8 items-center justify-center">
+              {[1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3, 1, 2, 4, 1, 3, 1, 2, 1, 3, 2, 1, 4].map((w, idx) => (
+                <div key={idx} className="h-full bg-white print-barcode-bar" style={{ width: `${w}px` }} />
+              ))}
+            </div>
+            <span className="text-[8px] font-mono tracking-[0.25em] text-zinc-500 print:text-zinc-700 uppercase">
+              *PA-INV-{invoice.id.toString().padStart(6, '0')}*
+            </span>
           </div>
         </div>
 
@@ -235,16 +406,37 @@ export function SuccessClient({ invoice }: SuccessClientProps) {
             )
           )}
         </div>
+
+        {/* Mentions Légales C2C (Essentiel à l'impression et discret) */}
+        <div className="border-t border-dashed border-white/5 print:border-black/10 px-8 py-4 space-y-1.5 text-[8px] text-zinc-500 leading-normal print:text-zinc-600">
+          <p>
+            <strong>Statut de la transaction :</strong> Vente de gré à gré entre particuliers (C2C). 
+            Conformément à la législation en vigueur, la TVA n'est pas applicable sur le prix de vente de l'équipement de sport (Article 293 B du CGI).
+          </p>
+          <p>
+            <strong>Rôle de la plateforme :</strong> PlayAgain agit exclusivement en qualité d'intermédiaire technique de mise en relation. La commission perçue correspond aux frais de service pour la sécurisation des transactions, l'hébergement de l'offre et l'accès à la garantie de protection acheteur.
+          </p>
+          <p>
+            <strong>Droit de rétractation :</strong> Le droit de rétractation légal prévu en matière de vente à distance ne s'applique pas aux transactions conclues entre particuliers (Article L. 221-18 du Code de la consommation). L'acheteur dispose de la garantie de conformité PlayAgain pour signaler tout problème sous 48 heures après livraison.
+          </p>
+        </div>
+
+        {/* Pied de page personnalisé pour le PDF (masqué à l'écran, visible au téléchargement) */}
+        <div className="hidden print:flex justify-between items-center text-[7px] font-mono text-zinc-500 uppercase tracking-[0.2em] px-8 pb-5 pt-3 border-t border-dashed border-black">
+          <span suppressHydrationWarning>Facture émise le {invoiceDate}</span>
+          <span className="text-brand-primary">playagain.fr</span>
+        </div>
       </div>
 
-      {/* 4. Actions retour / Messagerie / Boutique */}
-      <div className="flex flex-col sm:flex-row gap-4 relative z-10">
-        <Link href="/messages" className="flex-1">
-          <Button className="w-full h-14 rounded-2xl bg-zinc-950 border border-white/10 hover:border-brand-primary/50 text-white text-sm font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
-            <MessageSquare className="w-4 h-4 text-brand-primary" />
-            Accéder à la messagerie
-          </Button>
-        </Link>
+      {/* 4. Actions retour / Téléchargement / Boutique */}
+      <div className="flex flex-col sm:flex-row gap-4 relative z-10 print:hidden">
+        <button 
+          onClick={() => window.print()}
+          className="flex-1 h-14 rounded-2xl bg-zinc-950 border border-white/10 hover:border-brand-primary/50 text-white text-sm font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer hover:bg-zinc-900/60 hover:text-white"
+        >
+          <Download className="w-4 h-4 text-brand-primary" />
+          Télécharger la facture (PDF)
+        </button>
         <Link href="/shop" className="flex-1">
           <Button className="w-full h-14 rounded-2xl bg-brand-primary hover:bg-brand-primary/95 text-white text-sm font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
             <ShoppingBag className="w-4 h-4" />

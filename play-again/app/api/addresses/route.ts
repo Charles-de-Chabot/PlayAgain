@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { street_number, street_name, city, zip_code, country } = body;
+    const { street_number, street_name, city, zip_code, country, is_default } = body;
 
     if (!street_name || !city || !zip_code || !country) {
       return NextResponse.json(
@@ -24,16 +24,49 @@ export async function POST(req: Request) {
       );
     }
 
-    const newAddress = await prisma.address.create({
-      data: {
-        user_id: userId,
-        street_number: street_number || null,
-        street_name,
-        city,
-        zip_code,
-        country,
-      },
+    // Check if this is the user's first address
+    const existingAddressesCount = await prisma.address.count({
+      where: { user_id: userId },
     });
+
+    const isFirstAddress = existingAddressesCount === 0;
+    const shouldBeDefault = isFirstAddress || is_default === true;
+
+    let newAddress;
+
+    if (shouldBeDefault) {
+      // Use transaction to set all other user addresses to is_default = false
+      newAddress = await prisma.$transaction(async (tx) => {
+        await tx.address.updateMany({
+          where: { user_id: userId },
+          data: { is_default: false },
+        });
+
+        return tx.address.create({
+          data: {
+            user_id: userId,
+            street_number: street_number || null,
+            street_name,
+            city,
+            zip_code,
+            country,
+            is_default: true,
+          },
+        });
+      });
+    } else {
+      newAddress = await prisma.address.create({
+        data: {
+          user_id: userId,
+          street_number: street_number || null,
+          street_name,
+          city,
+          zip_code,
+          country,
+          is_default: false,
+        },
+      });
+    }
 
     return NextResponse.json(newAddress);
   } catch (error: any) {

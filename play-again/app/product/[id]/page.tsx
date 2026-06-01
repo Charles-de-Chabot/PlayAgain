@@ -107,6 +107,22 @@ export default async function ProductDetailPage({
 
   // 1. Calcul du matching IA
   const session = await auth();
+
+  // Check if current user is the buyer of this product
+  let userInvoice = null;
+  if (session?.user?.id) {
+    userInvoice = await prisma.invoice.findFirst({
+      where: {
+        user_id: parseInt(session.user.id),
+        status: { in: ["PAID", "COMPLETED", "SHIPPED", "DELIVERED"] },
+        items: {
+          some: {
+            product_id: product.id
+          }
+        }
+      }
+    });
+  }
   let matchData = null;
   let sportProfile = null;
   let isGuest = true;
@@ -523,15 +539,38 @@ export default async function ProductDetailPage({
   // Block 6: Action Achat & Réassurance
   const BuyNowBlock = (
     <div className="space-y-4 pt-4">
-      {!isOwner && (
-        <Link href={`/product/${product.id}/checkout`} className="block w-full">
-          <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
-            Acheter maintenant
-          </Button>
-        </Link>
+      {userInvoice ? (
+        // L'utilisateur connecté est l'acheteur
+        <div className="space-y-3">
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold text-center">
+            🎉 Achat Réussi ! Vous avez acheté cet article.
+          </div>
+          <Link href={`/product/${product.id}/checkout/success?invoice_id=${userInvoice.id}`} className="block w-full">
+            <Button className="w-full h-14 rounded-2xl bg-brand-accent hover:brightness-110 text-black text-xs font-black uppercase tracking-widest transition-all active:scale-95">
+              📄 Voir ma facture
+            </Button>
+          </Link>
+        </div>
+      ) : product.is_sold ? (
+        // Le produit est vendu (à quelqu'un d'autre)
+        <Button disabled className="w-full h-16 rounded-3xl bg-zinc-800 text-zinc-500 text-lg font-black uppercase tracking-[0.2em] cursor-not-allowed">
+          Article Vendu
+        </Button>
+      ) : (
+        // Le produit est en vente
+        <>
+          {!isOwner && (
+            <Link href={`/product/${product.id}/checkout`} className="block w-full">
+              <Button className="w-full h-16 rounded-3xl bg-brand-primary hover:bg-brand-primary/90 text-white text-lg font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-primary/20 transition-all active:scale-95">
+                Acheter maintenant
+              </Button>
+            </Link>
+          )}
+        </>
       )}
 
-      {!isOwner && (
+      {/* Bouton de contact vendeur */}
+      {!isOwner && !userInvoice && !product.is_sold && (
         <form action={async () => {
           "use server";
           const { getOrCreateConversation } = await import("@/app/actions/message");
@@ -550,9 +589,38 @@ export default async function ProductDetailPage({
         }}>
           <Button 
             type="submit" 
-            className="w-full h-14 rounded-2xl bg-zinc-950 border border-white/10 hover:border-brand-accent/50 text-white text-sm font-black uppercase tracking-[0.1em] shadow-lg transition-all active:scale-95"
+            variant="outline"
+            className="w-full h-14 rounded-2xl bg-zinc-950 border border-white/10 hover:border-brand-accent/50 text-white text-sm font-black uppercase tracking-widest shadow-lg transition-all active:scale-95"
           >
             💬 Contacter le vendeur
+          </Button>
+        </form>
+      )}
+
+      {/* Si l'utilisateur a déjà acheté le produit, on lui permet d'accéder directement au chat avec le vendeur */}
+      {userInvoice && (
+        <form action={async () => {
+          "use server";
+          const { getOrCreateConversation } = await import("@/app/actions/message");
+          const { redirect } = await import("next/navigation");
+          let conversationId;
+          try {
+            const res = await getOrCreateConversation(product.id);
+            conversationId = res.conversationId;
+          } catch (err) {
+            console.error(err);
+            return;
+          }
+          if (conversationId) {
+            redirect(`/messages/${conversationId}`);
+          }
+        }}>
+          <Button 
+            type="submit" 
+            variant="outline"
+            className="w-full h-14 rounded-2xl bg-zinc-950 border border-white/10 hover:border-brand-accent/50 text-white text-sm font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 animate-pulse"
+          >
+            💬 Discuter avec le vendeur
           </Button>
         </form>
       )}
@@ -607,7 +675,7 @@ export default async function ProductDetailPage({
         </div>
       </div>
       <Link 
-        href={`/profile/${product.user.username}`} 
+        href={`/profile/${product.user.id}`} 
         className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 text-zinc-400 group-hover:text-brand-accent group-hover:border-brand-accent/50 transition-all"
       >
         <ChevronRight className="w-5 h-5" />
@@ -637,6 +705,33 @@ export default async function ProductDetailPage({
             <BookmarkButtonWrapper productId={product.id} />
           </div>
         </div>
+
+        {userInvoice && (
+          <div className="max-w-6xl mx-auto px-4 pt-4">
+            <div className="w-full p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  🎉
+                </div>
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-white italic">
+                    Achat Réussi !
+                  </h3>
+                  <p className="text-xs text-zinc-400 font-bold">
+                    Vous avez acheté cet article. Accédez à votre reçu ou contactez le vendeur ci-dessous.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 relative z-10">
+                <Link href={`/product/${product.id}/checkout/success?invoice_id=${userInvoice.id}`}>
+                  <button className="px-4 py-2 rounded-xl bg-emerald-500 text-black hover:bg-emerald-400 text-xs font-black uppercase tracking-wider transition-all cursor-pointer">
+                    Reçu & Facture
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="max-w-6xl mx-auto px-4 pt-6 md:pt-0.5">
 
