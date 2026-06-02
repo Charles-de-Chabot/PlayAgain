@@ -234,15 +234,17 @@ export async function deleteNotification(notificationId: number) {
 }
 
 /**
- * Envoie un broadcast global (annonce ou sondage) à tous les utilisateurs actifs.
+ * Envoie un broadcast ciblé (annonce ou sondage) aux utilisateurs actifs correspondants.
  */
 export async function sendGlobalBroadcast({
   type,
   message,
+  targetType = "GLOBAL",
   metadata = {},
 }: {
   type: "POLL" | "ANNOUNCEMENT";
   message: string;
+  targetType?: "GLOBAL" | "SELLERS" | "BUYERS" | "CERTIFIED" | "UNCERTIFIED";
   metadata?: any;
 }) {
   const session = await auth();
@@ -259,23 +261,37 @@ export async function sendGlobalBroadcast({
   const adminEmail = session.user.email || "admin@playagain.fr";
 
   try {
-    // 1. Récupérer tous les utilisateurs actifs
+    // 1. Définir le filtre dynamique selon le type de cible
+    const userWhereClause: any = { is_active: true };
+
+    if (targetType === "SELLERS") {
+      userWhereClause.products = { some: {} };
+    } else if (targetType === "BUYERS") {
+      userWhereClause.invoices = { some: {} };
+    } else if (targetType === "CERTIFIED") {
+      userWhereClause.is_certified = true;
+    } else if (targetType === "UNCERTIFIED") {
+      userWhereClause.is_certified = false;
+    }
+
+    // 2. Récupérer tous les utilisateurs ciblés
     const activeUsers = await prisma.user.findMany({
-      where: { is_active: true },
+      where: userWhereClause,
       select: { id: true },
     });
 
     if (activeUsers.length === 0) {
-      return { success: true, count: 0, message: "Aucun utilisateur actif ciblé." };
+      return { success: false, error: "Aucun utilisateur actif ne correspond à cette cible." };
     }
 
-    // 2. Générer un ID de broadcast unique
+    // 3. Générer un ID de broadcast unique
     const broadcastId = `bc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     // Enrichir le metadata
     const enrichedMetadata = {
       ...metadata,
       broadcastId,
+      targetType,
       createdAt: new Date().toISOString(),
     };
 
@@ -283,7 +299,7 @@ export async function sendGlobalBroadcast({
       enrichedMetadata.userVote = null; // Initialement aucun vote
     }
 
-    // 3. Créer une notification par utilisateur actif et la diffuser en direct
+    // 4. Créer une notification par utilisateur ciblé et la diffuser en direct
     const createdNotifications: { userId: number; notification: any }[] = [];
     
     // On effectue une transaction Prisma pour garantir l'intégrité de l'écriture massive
@@ -301,12 +317,12 @@ export async function sendGlobalBroadcast({
       }
     });
 
-    // 4. Déclencher SSE en tâche de fond pour ne pas bloquer l'appel
+    // 5. Déclencher SSE en tâche de fond pour ne pas bloquer l'appel
     createdNotifications.forEach(({ userId, notification }) => {
       notificationRegistry.trigger(userId, notification);
     });
 
-    // 5. Enregistrer l'action dans le journal d'audit interne (AdminLog)
+    // 6. Enregistrer l'action dans le journal d'audit interne (AdminLog)
     await prisma.adminLog.create({
       data: {
         adminId,
@@ -316,6 +332,7 @@ export async function sendGlobalBroadcast({
         metadata: {
           broadcastId,
           message,
+          targetType,
           question: metadata.question || null,
           optionsCount: metadata.options ? metadata.options.length : 0,
           notifiedCount: activeUsers.length,
@@ -333,7 +350,7 @@ export async function sendGlobalBroadcast({
       message: `${type === "POLL" ? "Sondage" : "Annonce"} envoyé avec succès à ${activeUsers.length} utilisateurs.`
     };
   } catch (error) {
-    console.error("❌ Erreur lors du broadcast global:", error);
+    console.error("❌ Erreur lors du broadcast ciblé:", error);
     return { success: false, error: "Impossible d'envoyer le message de masse." };
   }
 }
@@ -451,6 +468,7 @@ export async function getAdminBroadcastHistory() {
       closedAt?: string;
       redirectUrl?: string;
       coverImageUrl?: string;
+      targetType?: string;
     }> = {};
 
     broadcasts.forEach((b) => {
@@ -479,6 +497,7 @@ export async function getAdminBroadcastHistory() {
             notifiedCount: 0,
             isClosed: !!meta.isClosed,
             closedAt: meta.closedAt || null,
+            targetType: meta.targetType || "GLOBAL",
           };
         } else {
           groups[broadcastId] = {
@@ -489,6 +508,7 @@ export async function getAdminBroadcastHistory() {
             notifiedCount: 0,
             redirectUrl: meta.redirectUrl || null,
             coverImageUrl: meta.coverImageUrl || null,
+            targetType: meta.targetType || "GLOBAL",
           };
         }
       }

@@ -15,7 +15,10 @@ import {
   Loader2,
   Link as LinkIcon,
   Image as ImageIcon,
-  Lock
+  Lock,
+  ChevronDown,
+  Check,
+  Users
 } from "lucide-react";
 import { sendGlobalBroadcast, getAdminBroadcastHistory, closePoll } from "@/app/actions/notification";
 import { cn } from "@/lib/utils";
@@ -34,11 +37,14 @@ interface BroadcastSummary {
   closedAt?: string;
   redirectUrl?: string;
   coverImageUrl?: string;
+  targetType?: "GLOBAL" | "SELLERS" | "BUYERS" | "CERTIFIED" | "UNCERTIFIED";
 }
 
 export default function AdminNotificationsPage() {
   // --- ÉTATS ---
   const [broadcastType, setBroadcastType] = useState<"ANNOUNCEMENT" | "POLL">("ANNOUNCEMENT");
+  const [targetType, setTargetType] = useState<"GLOBAL" | "SELLERS" | "BUYERS" | "CERTIFIED" | "UNCERTIFIED">("GLOBAL");
+  const [targetDropdownOpen, setTargetDropdownOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
@@ -72,6 +78,14 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     fetchHistory();
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setTargetDropdownOpen(false);
+    };
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
   // --- GESTION DES OPTIONS SONDAGE ---
@@ -164,6 +178,7 @@ export default function AdminNotificationsPage() {
       const res = await sendGlobalBroadcast({
         type: broadcastType,
         message: payloadMessage,
+        targetType,
         metadata
       });
 
@@ -308,6 +323,63 @@ export default function AdminNotificationsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5 text-xs">
               
+              {/* Sélecteur de Destinataires (Cible) personnalisé sans icône */}
+              <div className="space-y-1.5 relative select-none" onClick={(e) => e.stopPropagation()}>
+                <label className="text-[10px] text-slate-500 font-bold uppercase block">Audience cible (Destinataires)</label>
+                
+                <button
+                  type="button"
+                  onClick={() => setTargetDropdownOpen(!targetDropdownOpen)}
+                  className={`w-full flex items-center justify-between bg-black/40 border ${
+                    targetDropdownOpen ? "border-brand-accent/50 shadow-[0_0_10px_rgba(198,255,52,0.15)] text-white" : "border-white/10 text-slate-350 hover:border-white/20"
+                  } rounded-xl px-4 py-3 text-xs font-semibold cursor-pointer transition-all duration-300`}
+                >
+                  <span>
+                    {targetType === "GLOBAL" && "Globale (Tous les utilisateurs actifs)"}
+                    {targetType === "SELLERS" && "Vendeurs uniquement (Ayant des fiches de vente)"}
+                    {targetType === "BUYERS" && "Acheteurs uniquement (Ayant déjà commandé)"}
+                    {targetType === "CERTIFIED" && "Utilisateurs certifiés uniquement"}
+                    {targetType === "UNCERTIFIED" && "Utilisateurs non certifiés uniquement"}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-550 transition-transform duration-300 ${targetDropdownOpen ? "rotate-180 text-white" : ""}`} />
+                </button>
+
+                {/* Dropdown Menu Overlay */}
+                {targetDropdownOpen && (
+                  <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#0E1322]/95 border border-white/10 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.8)] z-30 overflow-hidden backdrop-blur-xl">
+                    <div className="p-1 space-y-0.5">
+                      {[
+                        { value: "GLOBAL", label: "Globale (Tous les utilisateurs actifs)" },
+                        { value: "SELLERS", label: "Vendeurs uniquement (Ayant des fiches de vente)" },
+                        { value: "BUYERS", label: "Acheteurs uniquement (Ayant déjà commandé)" },
+                        { value: "CERTIFIED", label: "Utilisateurs certifiés uniquement" },
+                        { value: "UNCERTIFIED", label: "Utilisateurs non certifiés uniquement" }
+                      ].map((option) => {
+                        const isSelected = targetType === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setTargetType(option.value as any);
+                              setTargetDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs rounded-lg font-medium transition-all ${
+                              isSelected 
+                                ? "bg-brand-primary/20 text-brand-primary font-bold border border-brand-primary/30" 
+                                : "text-slate-400 hover:text-white hover:bg-white/3"
+                            }`}
+                          >
+                            <span>{option.label}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-brand-primary" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {broadcastType === "ANNOUNCEMENT" ? (
                 <>
                   {/* Corps de l'Annonce */}
@@ -833,6 +905,18 @@ export default function AdminNotificationsPage() {
                                       <div className="flex justify-between items-center text-[10px] font-bold text-zinc-400">
                                         <span>Audience ciblée :</span>
                                         <span className="text-emerald-400 font-extrabold">{item.notifiedCount} membres</span>
+                                      </div>
+
+                                      <div className="flex justify-between items-center text-[10px] font-bold text-zinc-400">
+                                        <span>Groupe de destinataires :</span>
+                                        <span className="text-brand-accent font-extrabold uppercase">
+                                          {item.targetType === "GLOBAL" && "🌎 Globale"}
+                                          {item.targetType === "SELLERS" && "🏷️ Vendeurs"}
+                                          {item.targetType === "BUYERS" && "🛒 Acheteurs"}
+                                          {item.targetType === "CERTIFIED" && "🏅 Certifiés"}
+                                          {item.targetType === "UNCERTIFIED" && "👤 Non certifiés"}
+                                          {!item.targetType && "🌎 Globale"}
+                                        </span>
                                       </div>
 
                                       {isPoll && (
