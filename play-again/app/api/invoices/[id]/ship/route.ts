@@ -21,6 +21,13 @@ export async function POST(
       return NextResponse.json({ error: "ID de facture invalide" }, { status: 400 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const { trackingNumber } = body;
+
+    if (!trackingNumber || !trackingNumber.trim()) {
+      return NextResponse.json({ error: "Le numéro de suivi est requis pour expédier le colis." }, { status: 400 });
+    }
+
     // 1. Récupération de la facture avec les relations
     const invoice = await prisma.invoice.findUnique({
       where: { id: invoiceId },
@@ -62,10 +69,13 @@ export async function POST(
 
     // 3. Validation et transition de statut (PAID -> SHIPPED)
     const result = await prisma.$transaction(async (tx) => {
-      // A. Mettre à jour le statut de la facture à SHIPPED
+      // A. Mettre à jour le statut de la facture à SHIPPED et le numéro de suivi
       await tx.invoice.update({
         where: { id: invoiceId },
-        data: { status: "SHIPPED" },
+        data: { 
+          status: "SHIPPED",
+          tracking_number: trackingNumber.trim()
+        },
       });
 
       // B. Trouver la conversation de transaction
@@ -88,7 +98,7 @@ export async function POST(
       // C. Envoyer un message système pour informer l'acheteur que le colis a été expédié
       await tx.message.create({
         data: {
-          content: `📦 Bonne nouvelle ! Le vendeur a expédié votre colis. Suivez l'envoi de votre article **${item.product.title}**. La discussion est désormais fermée en lecture seule.`,
+          content: `📦 Bonne nouvelle ! Le vendeur a expédié votre colis. Suivez l'envoi de votre article **${item.product.title}** avec le numéro de suivi : **${trackingNumber.trim()}**. La discussion est désormais fermée en lecture seule.`,
           user_id: userId, // Vendeur
           conversation_id: conversation.id,
           metadata: {

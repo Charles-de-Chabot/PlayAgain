@@ -102,9 +102,10 @@ export default async function ConversationPage({
   });
   const userRole = currentUser?.role || "USER";
 
-  // 4. Récupération de la facture associée active
+  // 4. Récupération de la facture associée active (liée à l'acheteur de cette discussion)
   const invoice = conversation.product_id ? await prisma.invoice.findFirst({
     where: {
+      user_id: conversation.user_id, // Filtrer par l'acheteur de cette conversation
       items: {
         some: {
           product_id: conversation.product_id,
@@ -113,6 +114,9 @@ export default async function ConversationPage({
       status: {
         not: "CANCELLED",
       },
+    },
+    orderBy: {
+      id: "desc",
     },
     select: {
       id: true,

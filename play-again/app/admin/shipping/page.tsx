@@ -633,21 +633,27 @@ export default function ShippingSupervisionPage() {
                         <span className={`inline-block self-start text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
                           shipping.carrierCode === "MR" 
                             ? "bg-pink-700/10 border-pink-700/20 text-pink-400 shadow-[0_0_8px_rgba(219,39,119,0.05)]" 
-                            : "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                            : shipping.carrierCode === "CC"
+                            ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                            : "bg-slate-800 border-slate-700 text-slate-400"
                         }`}>
-                          {shipping.carrier}
+                          {shipping.carrier || "À définir"}
                         </span>
                         <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-mono text-slate-300 font-bold">
-                            {shipping.trackingNumber}
+                          <span className={`text-[11px] font-mono font-bold ${
+                            shipping.trackingNumber ? "text-slate-300" : "text-slate-500 italic"
+                          }`}>
+                            {shipping.trackingNumber || "Non renseigné"}
                           </span>
-                          <button 
-                            onClick={() => copyToClipboard(shipping.trackingNumber)}
-                            className="p-1 rounded bg-white/5 hover:bg-white/10 active:scale-90 transition-all text-slate-400 hover:text-white"
-                            title="Copier le n° de suivi"
-                          >
-                            <Copy className="w-2.5 h-2.5" />
-                          </button>
+                          {shipping.trackingNumber && (
+                            <button 
+                              onClick={() => copyToClipboard(shipping.trackingNumber)}
+                              className="p-1 rounded bg-white/5 hover:bg-white/10 active:scale-90 transition-all text-slate-400 hover:text-white"
+                              title="Copier le n° de suivi"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -798,9 +804,11 @@ export default function ShippingSupervisionPage() {
                     <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
                       selectedShipping.carrierCode === "MR" 
                         ? "bg-pink-700/10 border-pink-700/20 text-pink-400" 
-                        : "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                        : selectedShipping.carrierCode === "CC"
+                        ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
+                        : "bg-slate-800 border-slate-700 text-slate-400"
                     }`}>
-                      {selectedShipping.carrier}
+                      {selectedShipping.carrier || "À définir"}
                     </span>
                   </div>
 
@@ -814,6 +822,7 @@ export default function ShippingSupervisionPage() {
                           value={newTracking}
                           onChange={(e) => setNewTracking(e.target.value)}
                           className="bg-black border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
+                          placeholder="Ex: MR-12345A ou CC-54321FR"
                         />
                         <button 
                           onClick={handleUpdateTracking}
@@ -830,8 +839,10 @@ export default function ShippingSupervisionPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 font-mono text-white font-bold">
-                        <span>{selectedShipping.trackingNumber}</span>
+                      <div className="flex items-center gap-2 font-mono font-bold">
+                        <span className={selectedShipping.trackingNumber ? "text-white" : "text-slate-500 italic"}>
+                          {selectedShipping.trackingNumber || "Non renseigné"}
+                        </span>
                         <button 
                           onClick={() => setIsEditingTracking(true)}
                           className="text-slate-500 hover:text-white p-1 rounded hover:bg-white/5 transition-all"

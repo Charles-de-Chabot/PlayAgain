@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -58,9 +60,10 @@ export async function GET(
       orderBy: { created_at: "asc" },
     });
 
-    // 3. Récupération de la facture associée active
+    // 3. Récupération de la facture associée active (liée à l'acheteur de cette discussion)
     const invoice = conversation.product_id ? await prisma.invoice.findFirst({
       where: {
+        user_id: conversation.user_id, // Filtrer par l'acheteur de cette conversation
         items: {
           some: {
             product_id: conversation.product_id,
@@ -69,6 +72,9 @@ export async function GET(
         status: {
           not: "CANCELLED",
         },
+      },
+      orderBy: {
+        id: "desc",
       },
       select: {
         id: true,

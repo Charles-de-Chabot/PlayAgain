@@ -86,12 +86,8 @@ export async function GET() {
       }
 
       if (isAnomaly) {
-        // Simuler un numéro de suivi s'il n'existe pas en BDD pour l'exemple
-        let trackingNumber = invoice.tracking_number;
-        if (!trackingNumber) {
-          const isMR = invoice.id % 2 === 0;
-          trackingNumber = isMR ? `MR-${1000000 + invoice.id}A` : `CC-${2000000 + invoice.id}FR`;
-        }
+        // Utiliser le numéro de suivi réel de la BDD (ou null si non renseigné)
+        const trackingNumber = invoice.tracking_number || null;
 
         anomalies.push({
           invoiceId: invoice.id,

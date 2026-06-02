@@ -66,15 +66,15 @@ export async function GET(req: Request) {
       const invoiceDate = new Date(invoice.invoice_date);
       const daysSincePurchase = Math.floor((now.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Simuler / Déterminer le transporteur
-      let trackingNumber = invoice.tracking_number;
-      if (!trackingNumber) {
-        const isMR = invoice.id % 2 === 0;
-        trackingNumber = isMR ? `MR-${1000000 + invoice.id}A` : `CC-${2000000 + invoice.id}FR`;
+      // Déterminer le transporteur réel ou garder null
+      const trackingNumber = invoice.tracking_number || null;
+      let carrier = "À définir";
+      let carrierCode = "PENDING";
+      
+      if (trackingNumber) {
+        carrier = trackingNumber.startsWith("MR-") ? "Mondial Relay" : "Colissimo";
+        carrierCode = trackingNumber.startsWith("MR-") ? "MR" : "CC";
       }
-
-      const carrier = trackingNumber.startsWith("MR-") ? "Mondial Relay" : "Colissimo";
-      const carrierCode = trackingNumber.startsWith("MR-") ? "MR" : "CC";
 
       // Calcul de l'état logistique réel
       let carrierStatus: "LABEL_PRINTED_NOT_SHIPPED" | "BLOCKED_IN_HUB" | "LOST" | "IN_TRANSIT" | "DELIVERED" | "DISPUTED" = "IN_TRANSIT";
@@ -153,7 +153,7 @@ export async function GET(req: Request) {
       if (search) {
         const query = search.toLowerCase();
         matchesSearch = 
-          trackingNumber.toLowerCase().includes(query) ||
+          (trackingNumber && trackingNumber.toLowerCase().includes(query)) ||
           (seller?.email?.toLowerCase().includes(query)) ||
           (seller?.username?.toLowerCase().includes(query)) ||
           (shippingItem.buyer?.email?.toLowerCase().includes(query)) ||
