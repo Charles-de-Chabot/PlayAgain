@@ -96,7 +96,7 @@ export function CheckoutClient({
   );
   const [email, setEmail] = useState(buyer?.email || "");
   const [phone, setPhone] = useState(buyer?.phone || "");
-  const [saveContactToProfile, setSaveContactToProfile] = useState(false);
+  const [saveContactToProfile, setSaveContactToProfile] = useState(true);
 
   // Formulaire d'adresse
   const [showNewAddressForm, setShowNewAddressForm] = useState<boolean>(
@@ -607,15 +607,86 @@ export function CheckoutClient({
               stripe={getStripePromise(stripePublishableKey)} 
               options={{ 
                 clientSecret,
-                appearance: stripeAppearance as any
-              }}
+                appearance: stripeAppearance as any,
+                defaultValues: {
+                  billingDetails: {
+                    name: fullName || undefined,
+                    email: email || undefined,
+                    phone: phone || undefined,
+                    address: isShipping && selectedAddressId ? (() => {
+                      const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+                      if (!selectedAddress) return undefined;
+                      
+                      // Map common country strings to ISO 3166-1 alpha-2 codes for Stripe
+                      const getCountryCode = (country: string) => {
+                        if (!country) return "FR";
+                        const c = country.toLowerCase().trim();
+                        if (c === "france" || c === "fr") return "FR";
+                        if (c === "belgique" || c === "be") return "BE";
+                        if (c === "suisse" || c === "ch") return "CH";
+                        if (c === "luxembourg" || c === "lu") return "LU";
+                        return "FR";
+                      };
+
+                      return {
+                        line1: [selectedAddress.street_number, selectedAddress.street_name].filter(Boolean).join(" "),
+                        city: selectedAddress.city,
+                        postal_code: selectedAddress.zip_code,
+                        country: getCountryCode(selectedAddress.country),
+                      };
+                    })() : undefined
+                  }
+                }
+              } as any}
             >
               <PaymentForm 
                 totalPrice={totalPrice} 
                 productId={product.id}
                 invoiceId={invoiceId!}
+                fullName={fullName}
+                email={email}
+                phone={phone}
               />
             </Elements>
+
+            {/* Récapitulatif premium des informations de contact et de livraison */}
+            <div className="p-6 rounded-2xl bg-zinc-900/30 border border-white/5 space-y-4 backdrop-blur-md mt-6">
+              <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Informations de facturation & contact</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs pt-3 border-t border-white/5">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Acheteur</span>
+                  <p className="font-bold text-white">{fullName}</p>
+                  <p className="text-zinc-400">{email}</p>
+                  <p className="text-zinc-400">{phone}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Mode & adresse</span>
+                  {isShipping ? (() => {
+                    const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+                    if (selectedAddress) {
+                      return (
+                        <>
+                          <p className="font-bold text-white">
+                            {selectedAddress.street_number ? `${selectedAddress.street_number} ` : ""}{selectedAddress.street_name}
+                          </p>
+                          <p className="text-zinc-400">
+                            {selectedAddress.zip_code} {selectedAddress.city}
+                          </p>
+                          <p className="text-zinc-400">{selectedAddress.country}</p>
+                        </>
+                      );
+                    }
+                    return <p className="text-zinc-400 italic">Aucune adresse sélectionnée</p>;
+                  })() : (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="inline-block px-2.5 py-0.5 rounded-sm bg-brand-accent/10 text-brand-accent font-black text-[9px] uppercase tracking-wider">
+                        Remise en main propre
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -710,9 +781,12 @@ interface PaymentFormProps {
   totalPrice: number;
   productId: number;
   invoiceId: number;
+  fullName: string;
+  email: string;
+  phone: string;
 }
 
-function PaymentForm({ totalPrice, productId, invoiceId }: PaymentFormProps) {
+function PaymentForm({ totalPrice, productId, invoiceId, fullName, email, phone }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -754,7 +828,20 @@ function PaymentForm({ totalPrice, productId, invoiceId }: PaymentFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+      <PaymentElement 
+        options={{
+          defaultValues: {
+            billingDetails: {
+              name: fullName || undefined,
+              email: email || undefined,
+              phone: phone || undefined,
+              address: {
+                country: "FR",
+              }
+            }
+          }
+        }}
+      />
 
       {errorMessage && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold flex items-center gap-2">

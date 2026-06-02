@@ -18,7 +18,9 @@ import {
   ArrowRight,
   HelpCircle,
   TrendingUp,
-  Bookmark
+  Bookmark,
+  ChevronDown,
+  Check
 } from "lucide-react";
 
 interface Brand {
@@ -51,6 +53,7 @@ export default function TaxonomyAdminPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"rules" | "brands">("rules");
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   // Filtres de recherche
   const [ruleSearch, setRuleSearch] = useState("");
@@ -96,6 +99,15 @@ export default function TaxonomyAdminPage() {
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Fermer le dropdown lors d'un clic extérieur
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setActiveDropdown(null);
+    };
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
   // --- TOAST NOTIFICATIONS ---
@@ -413,7 +425,7 @@ export default function TaxonomyAdminPage() {
               
               {/* Formulaire injecteur manuel (2/5) */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-6 shadow-2xl space-y-6 relative overflow-hidden">
+                <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-6 shadow-2xl space-y-6 relative">
                   <div className="absolute top-0 right-0 p-4 opacity-5">
                     <Cpu className="w-32 h-32 text-emerald-400" />
                   </div>
@@ -454,30 +466,109 @@ export default function TaxonomyAdminPage() {
                     {/* Classification forcée */}
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-slate-500 font-bold uppercase">Classification de niveau forcée</label>
-                      <select
-                        value={newRuleLevel}
-                        onChange={(e) => setNewRuleLevel(e.target.value as any)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
-                      >
-                        <option value="BEGINNER">🟢 BEGINNER (Débutant / Loisir)</option>
-                        <option value="INTERMEDIATE">🔵 INTERMEDIATE (Perfectionnement)</option>
-                        <option value="ADVANCED">🟣 ADVANCED (Performant / Confirmé)</option>
-                        <option value="PRO">🔴 PRO (Compétition / Expert)</option>
-                      </select>
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setActiveDropdown(activeDropdown === "newRuleLevel" ? null : "newRuleLevel")}
+                          className={`w-full flex items-center justify-between bg-black/40 border ${
+                            activeDropdown === "newRuleLevel" ? "border-brand-accent/50 shadow-[0_0_10px_rgba(198,255,52,0.15)] text-white" : "border-white/10 text-slate-300 hover:border-white/20"
+                          } rounded-xl px-4 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300`}
+                        >
+                          <span>
+                            {newRuleLevel === "BEGINNER" && "🟢 BEGINNER (Débutant / Loisir)"}
+                            {newRuleLevel === "INTERMEDIATE" && "🔵 INTERMEDIATE (Perfectionnement)"}
+                            {newRuleLevel === "ADVANCED" && "🟣 ADVANCED (Performant / Confirmé)"}
+                            {newRuleLevel === "PRO" && "🔴 PRO (Compétition / Expert)"}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${activeDropdown === "newRuleLevel" ? "rotate-180 text-white" : ""}`} />
+                        </button>
+
+                        {activeDropdown === "newRuleLevel" && (
+                          <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#0E1322]/95 border border-white/10 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.8)] z-30 overflow-hidden backdrop-blur-xl">
+                            <div className="p-1 space-y-0.5">
+                              {[
+                                { value: "BEGINNER", label: "🟢 BEGINNER (Débutant / Loisir)" },
+                                { value: "INTERMEDIATE", label: "🔵 INTERMEDIATE (Perfectionnement)" },
+                                { value: "ADVANCED", label: "🟣 ADVANCED (Performant / Confirmé)" },
+                                { value: "PRO", label: "🔴 PRO (Compétition / Expert)" }
+                              ].map((option) => {
+                                const isSelected = newRuleLevel === option.value;
+                                return (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setNewRuleLevel(option.value as any);
+                                      setActiveDropdown(null);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs rounded-lg font-medium transition-all ${
+                                      isSelected 
+                                        ? "bg-brand-primary/20 text-brand-primary font-bold border border-brand-primary/30" 
+                                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    }`}
+                                  >
+                                    <span>{option.label}</span>
+                                    {isSelected && <Check className="w-3 h-3 text-brand-primary" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Confiance verrouillée */}
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-slate-500 font-bold uppercase">Indice de confiance (Verrou Admin)</label>
-                      <select
-                        value={newRuleConfidence}
-                        onChange={(e) => setNewRuleConfidence(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
-                      >
-                        <option value="1.0">🔒 1.0 — Verrou Administrative Prioritaire</option>
-                        <option value="0.9">⚡ 0.9 — Haute Confiance IA</option>
-                        <option value="0.75">⚙️ 0.75 — Confiance Standard</option>
-                      </select>
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setActiveDropdown(activeDropdown === "newRuleConfidence" ? null : "newRuleConfidence")}
+                          className={`w-full flex items-center justify-between bg-black/40 border ${
+                            activeDropdown === "newRuleConfidence" ? "border-brand-accent/50 shadow-[0_0_10px_rgba(198,255,52,0.15)] text-white" : "border-white/10 text-slate-300 hover:border-white/20"
+                          } rounded-xl px-4 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300`}
+                        >
+                          <span>
+                            {newRuleConfidence === "1.0" && "🔒 1.0 — Verrou Administrative Prioritaire"}
+                            {newRuleConfidence === "0.9" && "⚡ 0.9 — Haute Confiance IA"}
+                            {newRuleConfidence === "0.75" && "⚙️ 0.75 — Confiance Standard"}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${activeDropdown === "newRuleConfidence" ? "rotate-180 text-white" : ""}`} />
+                        </button>
+
+                        {activeDropdown === "newRuleConfidence" && (
+                          <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#0E1322]/95 border border-white/10 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.8)] z-30 overflow-hidden backdrop-blur-xl">
+                            <div className="p-1 space-y-0.5">
+                              {[
+                                { value: "1.0", label: "🔒 1.0 — Verrou Administrative Prioritaire" },
+                                { value: "0.9", label: "⚡ 0.9 — Haute Confiance IA" },
+                                { value: "0.75", label: "⚙️ 0.75 — Confiance Standard" }
+                              ].map((option) => {
+                                const isSelected = newRuleConfidence === option.value;
+                                return (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setNewRuleConfidence(option.value);
+                                      setActiveDropdown(null);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs rounded-lg font-medium transition-all ${
+                                      isSelected 
+                                        ? "bg-brand-primary/20 text-brand-primary font-bold border border-brand-primary/30" 
+                                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    }`}
+                                  >
+                                    <span>{option.label}</span>
+                                    {isSelected && <Check className="w-3 h-3 text-brand-primary" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <button
@@ -956,15 +1047,54 @@ export default function TaxonomyAdminPage() {
 
               <div className="space-y-1.5">
                 <label className="text-[10px] text-slate-500 font-bold uppercase">Positionnement sur le marché</label>
-                <select
-                  value={newBrandPosition}
-                  onChange={(e) => setNewBrandPosition(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-300 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
-                >
-                  <option value="GENERALIST">🌍 GENERALIST (Grand public / Standard)</option>
-                  <option value="TECHNICAL">⚙️ TECHNICAL (Technique / Spécialisé)</option>
-                  <option value="PREMIUM">👑 PREMIUM (Haut de Gamme / Luxe)</option>
-                </select>
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDropdown(activeDropdown === "newBrandPosition" ? null : "newBrandPosition")}
+                    className={`w-full flex items-center justify-between bg-black/40 border ${
+                      activeDropdown === "newBrandPosition" ? "border-brand-accent/50 shadow-[0_0_10px_rgba(198,255,52,0.15)] text-white" : "border-white/10 text-slate-300 hover:border-white/20"
+                    } rounded-xl px-4 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300`}
+                  >
+                    <span>
+                      {newBrandPosition === "GENERALIST" && "🌍 GENERALIST (Grand public / Standard)"}
+                      {newBrandPosition === "TECHNICAL" && "⚙️ TECHNICAL (Technique / Spécialisé)"}
+                      {newBrandPosition === "PREMIUM" && "👑 PREMIUM (Haut de Gamme / Luxe)"}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${activeDropdown === "newBrandPosition" ? "rotate-180 text-white" : ""}`} />
+                  </button>
+
+                  {activeDropdown === "newBrandPosition" && (
+                    <div className="absolute top-[calc(100%+6px)] left-0 w-full bg-[#0E1322]/95 border border-white/10 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.8)] z-30 overflow-hidden backdrop-blur-xl">
+                      <div className="p-1 space-y-0.5">
+                        {[
+                          { value: "GENERALIST", label: "🌍 GENERALIST (Grand public / Standard)" },
+                          { value: "TECHNICAL", label: "⚙️ TECHNICAL (Technique / Spécialisé)" },
+                          { value: "PREMIUM", label: "👑 PREMIUM (Haut de Gamme / Luxe)" }
+                        ].map((option) => {
+                          const isSelected = newBrandPosition === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setNewBrandPosition(option.value);
+                                setActiveDropdown(null);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs rounded-lg font-medium transition-all ${
+                                isSelected 
+                                  ? "bg-brand-primary/20 text-brand-primary font-bold border border-brand-primary/30" 
+                                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                              }`}
+                            >
+                              <span>{option.label}</span>
+                              {isSelected && <Check className="w-3 h-3 text-brand-primary" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 justify-end pt-3">

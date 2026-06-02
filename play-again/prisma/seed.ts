@@ -325,7 +325,11 @@ async function main() {
     const chaussures = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"];
     const skis = ["140cm", "150cm", "160cm", "170cm", "180cm", "190cm"];
     const velos = ["48", "50", "52", "54", "56", "58", "60", "62"];
-    const tennis = ["L0", "L1", "L2", "L3", "L4", "L5"];
+    const tennis = [
+        "L0", "L1", "L2", "L3", "L4", "L5",
+        "50cm", "53cm", "58cm", "63.5cm", "66cm",
+        "68.5cm", "70cm", "71cm"
+    ];
     const ballons = ["T3", "T4", "T5", "T6", "T7"];
     const poids = ["2kg", "5kg", "10kg", "15kg", "20kg"];
     const boxe = ["8oz", "10oz", "12oz", "14oz", "16oz"];
@@ -363,12 +367,12 @@ async function main() {
             sizesToConnect = [...textile];
         } else if (label.includes("chaussures") || label.includes("pointes") || label.includes("chaussons") || label.includes("bottes")) {
             sizesToConnect = [...chaussures];
-        } else if (label.includes("ski") || label.includes("snowboard") || label.includes("raquette")) {
+        } else if (label.includes("raquette") && (type.category_id === 14 || type.category_id === 36)) {
+            sizesToConnect = [...tennis];
+        } else if (label.includes("ski") || label.includes("snowboard") || (label.includes("raquette") && type.category_id === 2)) {
             sizesToConnect = [...skis];
         } else if (label.includes("vtt") || label.includes("vélo")) {
             sizesToConnect = [...velos];
-        } else if (label.includes("raquette") && (type.category_id === 14 || type.category_id === 36)) {
-            sizesToConnect = [...tennis];
         } else if (label.includes("ballon") || label.includes("boule")) {
             sizesToConnect = [...ballons];
         } else if (label.includes("poids") || label.includes("haltère")) {

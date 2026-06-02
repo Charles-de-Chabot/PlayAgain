@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, CircleUserRound, LogOut, ShoppingBag, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "next-auth/react";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { LogoutConfirmModal } from "@/components/ui/LogoutConfirmModal";
 
 export function Header() {
   const { isAuthenticated, user } = useAuth();
   const pathname = usePathname();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Nettoyage intelligent des filtres du shop quand on change d'univers (accueil, profil, etc.)
   useEffect(() => {
@@ -176,13 +178,20 @@ export function Header() {
 
           {/* Bouton déconnexion seulement si connecté */}
           {isAuthenticated && (
-            <button 
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="p-1.5 md:p-2 text-zinc-500 hover:text-red-500 hover:scale-115 transition-all cursor-pointer"
-              title="Déconnexion"
-            >
-              <LogOut className="h-5 w-5 md:h-6 md:w-6 stroke-[1.5]" />
-            </button>
+            <>
+              <button 
+                onClick={() => setShowLogoutModal(true)}
+                className="p-1.5 md:p-2 text-zinc-500 hover:text-red-500 hover:scale-115 transition-all cursor-pointer"
+                title="Déconnexion"
+              >
+                <LogOut className="h-5 w-5 md:h-6 md:w-6 stroke-[1.5]" />
+              </button>
+              <LogoutConfirmModal 
+                isOpen={showLogoutModal} 
+                onClose={() => setShowLogoutModal(false)} 
+                onConfirm={() => signOut({ callbackUrl: "/" })} 
+              />
+            </>
           )}
         </div>
       </div>

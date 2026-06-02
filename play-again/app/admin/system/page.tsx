@@ -263,7 +263,12 @@ export default function SystemAdminPage() {
 
               {/* SVG GAUGE 2 : Volume d'Orphelins (Perte) */}
               <div className="flex flex-col items-center space-y-2 border-t border-white/[0.04] pt-6 w-full">
-                <div className="w-36 h-36 relative flex items-center justify-center">
+                <button 
+                  onClick={fetchStats}
+                  disabled={loading}
+                  className="w-36 h-36 relative flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 group focus:outline-none bg-transparent border-0"
+                  title="Cliquez pour rafraîchir les fichiers orphelins"
+                >
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,0.03)" strokeWidth="8" fill="transparent" />
                     <circle 
@@ -275,14 +280,20 @@ export default function SystemAdminPage() {
                       fill="transparent" 
                       strokeDasharray="264" 
                       strokeDashoffset={stats.orphansCount > 0 ? "230" : "264"} // Décalage dynamique proportionnel
-                      className="transition-all duration-1000"
+                      className="transition-all duration-1000 group-hover:stroke-rose-400"
                     />
                   </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <span className="text-sm font-black text-white">{stats.orphansCount}</span>
-                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Fichiers</span>
+                  <div className="absolute flex flex-col items-center select-none">
+                    {loading ? (
+                      <Loader2 className="w-6 h-6 text-rose-400 animate-spin" />
+                    ) : (
+                      <>
+                        <span className="text-sm font-black text-white group-hover:text-rose-400 transition-colors duration-300">{stats.orphansCount}</span>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider group-hover:text-rose-500 transition-colors duration-300">Fichiers</span>
+                      </>
+                    )}
                   </div>
-                </div>
+                </button>
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Images Orphelines</span>
                 {stats.orphansCount > 0 && (
                   <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full animate-pulse">
@@ -362,14 +373,14 @@ export default function SystemAdminPage() {
           </div>
 
           {/* 🖼️ Section d'Aperçu des images orphelines */}
-          {orphans.length > 0 && (
-            <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-6 shadow-2xl space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3 gap-4">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <HardDrive className="w-4 h-4 text-rose-400 animate-pulse" />
-                  <span>Aperçu des Fichiers Orphelins ({orphans.length})</span>
-                </h3>
-                
+          <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-6 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3 gap-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-rose-400 animate-pulse" />
+                <span>Aperçu des Fichiers Orphelins ({orphans.length})</span>
+              </h3>
+              
+              {orphans.length > 0 && (
                 <div className="flex flex-wrap items-center gap-3">
                   <button 
                     onClick={() => {
@@ -387,8 +398,10 @@ export default function SystemAdminPage() {
                     {formatBytes(orphans.filter(o => selectedUrls.includes(o.url)).reduce((sum, o) => sum + o.size, 0))} Récupérables
                   </span>
                 </div>
-              </div>
+              )}
+            </div>
 
+            {orphans.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/[0.06] scrollbar-track-transparent">
                 {orphans.map((orphan, i) => {
                   const isImage = /\.(jpg|jpeg|png|webp|avif|gif|svg)$/i.test(orphan.url);
@@ -463,8 +476,22 @@ export default function SystemAdminPage() {
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-col items-center justify-center p-12 text-center bg-emerald-500/[0.02] border border-emerald-500/10 rounded-2xl gap-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                  <ShieldCheck className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-black text-white uppercase tracking-widest">
+                    Stockage Sain & Optimisé
+                  </h4>
+                  <p className="text-slate-400 text-[10px] max-w-sm">
+                    Félicitations, aucun fichier média orphelin n'a été détecté. Votre serveur est parfaitement propre !
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
         </div>
       )}

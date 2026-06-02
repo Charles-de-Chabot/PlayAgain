@@ -10,7 +10,9 @@ import {
   Settings,
   Sparkles,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  Check
 } from "lucide-react";
 
 interface SeoConfig {
@@ -29,6 +31,7 @@ export default function SeoAdminPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedPage, setSelectedPage] = useState("home");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Formulaire d'édition
@@ -78,6 +81,15 @@ export default function SeoAdminPage() {
       setKeywords("");
     }
   }, [selectedPage, configs]);
+
+  // Fermer le dropdown lors d'un clic extérieur
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setIsDropdownOpen(false);
+    };
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   // --- ACTIONS ---
   const showNotification = (type: "success" | "error", message: string) => {
@@ -173,16 +185,63 @@ export default function SeoAdminPage() {
               </h2>
 
               {/* Sélecteur de page cible */}
-              <select
-                value={selectedPage}
-                onChange={(e) => setSelectedPage(e.target.value)}
-                className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-slate-400 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer"
-              >
-                <option value="home">Page d'Accueil (Home)</option>
-                <option value="tennis">Catégorie Tennis</option>
-                <option value="padel">Catégorie Padel</option>
-                <option value="golf">Catégorie Golf</option>
-              </select>
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`flex items-center justify-between bg-black/40 border ${
+                    isDropdownOpen ? "border-brand-accent/50 shadow-[0_0_10px_rgba(198,255,52,0.15)] text-white" : "border-white/10 text-slate-300 hover:border-white/20"
+                  } rounded-xl px-4 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-300 min-w-[200px]`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 text-slate-400" />
+                    <span>
+                      {selectedPage === "home" && "Page d'Accueil (Home)"}
+                      {selectedPage === "tennis" && "Catégorie Tennis"}
+                      {selectedPage === "padel" && "Catégorie Padel"}
+                      {selectedPage === "golf" && "Catégorie Golf"}
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? "rotate-180 text-white" : ""}`} />
+                </button>
+
+                {/* Menu Déroulant */}
+                {isDropdownOpen && (
+                  <div className="absolute top-[calc(100%+6px)] right-0 w-full min-w-[200px] bg-[#0E1322]/95 border border-white/10 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.8)] z-30 overflow-hidden backdrop-blur-xl">
+                    <div className="p-1 space-y-0.5">
+                      {[
+                        { value: "home", label: "Page d'Accueil (Home)" },
+                        { value: "tennis", label: "Catégorie Tennis" },
+                        { value: "padel", label: "Catégorie Padel" },
+                        { value: "golf", label: "Catégorie Golf" }
+                      ].map((option) => {
+                        const isSelected = selectedPage === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setSelectedPage(option.value);
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs rounded-lg font-medium transition-all ${
+                              isSelected 
+                                ? "bg-brand-primary/20 text-brand-primary font-bold border border-brand-primary/30" 
+                                : "text-slate-400 hover:text-white hover:bg-white/5"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Globe className={`w-3.5 h-3.5 ${isSelected ? "text-brand-primary" : "text-slate-500"}`} />
+                              <span>{option.label}</span>
+                            </div>
+                            {isSelected && <Check className="w-3 h-3 text-brand-primary" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <form onSubmit={handleSaveSeo} className="space-y-4 text-xs">

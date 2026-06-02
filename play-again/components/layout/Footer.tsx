@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { signOut } from "next-auth/react";
+import { LogoutConfirmModal } from "@/components/ui/LogoutConfirmModal";
 import { 
   Home, 
   ShoppingBag, 
@@ -17,6 +19,7 @@ import {
 export function Footer() {
   const { isAuthenticated, user } = useAuth();
   const pathname = usePathname();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Masquer le footer sur toutes les pages de messagerie
   if (pathname?.startsWith("/messages")) {
@@ -86,7 +89,7 @@ export function Footer() {
                 <Link href="/help" className="text-zinc-500 hover:text-brand-accent transition-all text-[11px] font-bold uppercase cursor-pointer">Aide & FAQ</Link>
               </li>
               <li>
-                <button onClick={() => signOut()} className="text-zinc-500 hover:text-red-500 transition-all text-[11px] font-bold uppercase cursor-pointer">Quitter</button>
+                <button onClick={() => setShowLogoutModal(true)} className="text-zinc-500 hover:text-red-500 transition-all text-[11px] font-bold uppercase cursor-pointer">Déconnexion</button>
               </li>
             </ul>
           </div>
@@ -108,6 +111,11 @@ export function Footer() {
           </div>
         </div>
       </div>
+      <LogoutConfirmModal 
+        isOpen={showLogoutModal} 
+        onClose={() => setShowLogoutModal(false)} 
+        onConfirm={() => signOut({ callbackUrl: "/" })} 
+      />
     </footer>
   );
 }

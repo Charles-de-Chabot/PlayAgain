@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { readdir, stat, unlink } from "fs/promises";
 import { join, relative } from "path";
 
@@ -59,6 +60,15 @@ async function getStorageStats() {
   const dbVerifications = await prisma.verificationRequest.findMany({
     select: { idCardPhoto1Url: true, idCardPhoto2Url: true, selfieUrl: true }
   });
+  const dbMessages = await prisma.message.findMany({
+    where: {
+      OR: [
+        { content: { contains: "/uploads/chat/" } },
+        { metadata: { not: Prisma.JsonNull } }
+      ]
+    },
+    select: { content: true, metadata: true }
+  });
 
   const activeUrls = new Set<string>();
   
@@ -76,6 +86,32 @@ async function getStorageStats() {
     if (v.idCardPhoto1Url) activeUrls.add(v.idCardPhoto1Url);
     if (v.idCardPhoto2Url) activeUrls.add(v.idCardPhoto2Url);
     if (v.selfieUrl) activeUrls.add(v.selfieUrl);
+  });
+
+  // Extraire les images/fichiers actifs de la messagerie
+  dbMessages.forEach(msg => {
+    if (msg.content && msg.content.includes("/uploads/chat/")) {
+      const matches = msg.content.match(/\/uploads\/chat\/[a-zA-Z0-9_\-\.]+/g);
+      if (matches) {
+        matches.forEach(url => activeUrls.add(url));
+      }
+    }
+    if (msg.metadata) {
+      try {
+        const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
+        if (meta && typeof meta === "object") {
+          const keys = ["url", "image", "imageUrl", "file"];
+          keys.forEach(key => {
+            const val = (meta as any)[key];
+            if (val && typeof val === "string" && val.includes("/uploads/chat/")) {
+              activeUrls.add(val);
+            }
+          });
+        }
+      } catch (e) {
+        // Ignorer les métadonnées non valides ou non-JSON
+      }
+    }
   });
 
   let totalStorageUsedBytes = 0;
@@ -118,6 +154,7 @@ export async function GET() {
       totalStorageUsedBytes,
       orphansCount: orphans.length,
       orphansStorageSizeDeltaBytes: orphans.reduce((sum, o) => sum + o.size, 0),
+      orphans: orphans.map(o => ({ url: o.url, size: o.size })),
       dbMediaCount
     });
 
@@ -128,19 +165,27 @@ export async function GET() {
 }
 
 // 🔵 POST : Déclenche le nettoyage différentiel réel des images orphelines
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const adminCheck = await checkAdmin();
     if (adminCheck.error) {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
+    const body = await request.json().catch(() => ({}));
+    const urls = body.urls || [];
+
     const { orphans } = await getStorageStats();
     let bytesFreed = 0;
     const deletedUrls: string[] = [];
 
+    // Ne supprimer que les fichiers ciblés s'ils sont fournis, sinon tout supprimer
+    const targets = urls.length > 0 
+      ? orphans.filter(o => urls.includes(o.url))
+      : orphans;
+
     // Supprimer réellement chaque fichier orphelin du disque dur
-    for (const orphan of orphans) {
+    for (const orphan of targets) {
       try {
         await unlink(orphan.path);
         bytesFreed += orphan.size;

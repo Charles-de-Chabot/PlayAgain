@@ -270,7 +270,11 @@ async function main() {
     const chaussures = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"];
     const skis = ["140cm", "150cm", "160cm", "170cm", "180cm", "190cm"];
     const velos = ["48", "50", "52", "54", "56", "58", "60", "62"];
-    const tennis = ["L0", "L1", "L2", "L3", "L4", "L5"];
+    const tennis = [
+        "L0", "L1", "L2", "L3", "L4", "L5",
+        "50cm", "53cm", "58cm", "63.5cm", "66cm",
+        "68.5cm", "70cm", "71cm"
+    ];
     const ballons = ["T3", "T4", "T5", "T6", "T7"];
     const poids = ["2kg", "5kg", "10kg", "15kg", "20kg"];
     const boxe = ["8oz", "10oz", "12oz", "14oz", "16oz"];
