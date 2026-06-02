@@ -176,7 +176,7 @@ export function NotificationBell() {
                   href={
                     notif.type === "POLL" 
                       ? `/profile/notifications?open=${notif.id}` 
-                      : (notif.metadata?.redirectUrl || "#")
+                      : (notif.metadata?.redirectUrl || "/profile/notifications")
                   }
                   onClick={() => handleMarkAsRead(notif.id, notif)}
                   className={cn(

@@ -382,7 +382,7 @@ export function VerificationClient({ user, defaultAddress, latestRequest }: Veri
 
         <div className="pt-6">
           <Link 
-            href="/profile/addresses" 
+            href="/profile/infos" 
             className="px-8 py-3 rounded-full bg-brand-primary hover:bg-brand-primary-hover text-black transition-all font-black uppercase tracking-widest text-[10px] inline-block shadow-[0_0_20px_rgba(125,56,255,0.3)] hover:shadow-[0_0_25px_rgba(125,56,255,0.5)] duration-300"
           >
             Configurer mon adresse principale

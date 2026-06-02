@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
 import { HelpAccordion } from "@/components/help/HelpAccordion";
 import { 
@@ -6,10 +10,67 @@ import {
   ShieldCheck, 
   Info, 
   Search,
-  MessageSquare
+  MessageSquare,
+  Send,
+  Loader2,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
+import Link from "next/link";
 
 export default function HelpPage() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  
+  const [subject, setSubject] = useState("");
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [createdConvId, setCreatedConvId] = useState<number | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      setError("Vous devez être connecté pour envoyer un message au support.");
+      return;
+    }
+
+    if (!content.trim()) {
+      setError("Veuillez saisir un message.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/support", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subject: subject.trim(),
+          content: content.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Une erreur est survenue lors de l'envoi.");
+      }
+
+      setSuccess(true);
+      setCreatedConvId(data.conversationId);
+      setSubject("");
+      setContent("");
+    } catch (err: any) {
+      setError(err.message || "Impossible de contacter le support.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const sections = [
     {
       title: "Je vends",
@@ -146,19 +207,91 @@ export default function HelpPage() {
                 </p>
               </div>
 
-              <div className="flex-1 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Sujet</label>
-                  <input type="text" className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:border-brand-accent transition-colors outline-none" placeholder="Ex: Problème de livraison" />
+              {success ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-brand-accent/5 border border-brand-accent/20 rounded-3xl backdrop-blur-md">
+                  <CheckCircle2 className="w-16 h-16 text-brand-accent mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">Message envoyé avec succès !</h3>
+                  <p className="text-zinc-400 text-sm max-w-sm mb-6">
+                    Votre demande a bien été réceptionnée sous forme de ticket. Notre équipe de support vous répondra sous 12h.
+                  </p>
+                  <Link 
+                    href={createdConvId ? `/messages/${createdConvId}` : "/messages"}
+                    className="px-6 py-3 bg-brand-accent text-black font-black uppercase tracking-wider text-xs rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_20px_rgba(198,255,52,0.2)] text-center"
+                  >
+                    Suivre la discussion
+                  </Link>
+                  <button 
+                    onClick={() => setSuccess(false)}
+                    className="mt-4 text-xs text-zinc-500 hover:text-zinc-300 transition-colors underline cursor-pointer"
+                  >
+                    Envoyer un autre message
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Message</label>
-                  <textarea rows={4} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:border-brand-accent transition-colors outline-none resize-none" placeholder="Décrivez votre situation..." />
-                </div>
-                <button className="w-full py-4 bg-brand-accent text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(198,255,52,0.1)]">
-                  Envoyer le message
-                </button>
-              </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="flex-1 space-y-4">
+                  {!isAuthenticated && !authLoading && (
+                    <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      <div>
+                        <span>Vous devez être connecté pour envoyer un message. </span>
+                        <Link href="/auth/login" className="underline font-bold hover:text-white transition-colors">
+                          Se connecter
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs">
+                      <AlertCircle className="w-5 h-5 shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Sujet</label>
+                    <input 
+                      type="text" 
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      disabled={isSubmitting || (!isAuthenticated && !authLoading)}
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:border-brand-accent transition-colors outline-none disabled:opacity-50 disabled:cursor-not-allowed" 
+                      placeholder="Ex: Problème de livraison" 
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Message</label>
+                    <textarea 
+                      rows={4} 
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      disabled={isSubmitting || (!isAuthenticated && !authLoading)}
+                      required
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:border-brand-accent transition-colors outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed" 
+                      placeholder="Décrivez votre situation..." 
+                    />
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting || (!isAuthenticated && !authLoading)}
+                    className="w-full py-4 bg-brand-accent text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(198,255,52,0.1)] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Envoi en cours...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Envoyer le message</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

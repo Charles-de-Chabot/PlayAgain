@@ -133,7 +133,7 @@ export default async function ProfilePage() {
     { icon: Heart, label: "Favoris", href: "/profile/favorites", count: defaultFavoritesCount },
     { icon: Bell, label: "Notifications", href: "/profile/notifications", count: unreadNotificationsCount },
     { icon: DollarSign, label: "Mes ventes", href: "/profile/sales" },
-    { icon: MapPin, label: "Mes adresses", href: "/profile/addresses" },
+    { icon: User, label: "Infos profil", href: "/profile/infos" },
     { icon: HelpCircle, label: "Aide", href: "/help" },
   ];
 

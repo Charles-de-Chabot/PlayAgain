@@ -38,6 +38,7 @@ interface SupportTicketAdmin {
     firstname: string | null;
     lastname: string | null;
     email: string;
+    phone: string | null;
     profile_picture: string | null;
   };
   messages: SupportMessageAdmin[];
@@ -327,6 +328,28 @@ export default function SupportAdminPage() {
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* User Metadata / Contact Info Bar */}
+              <div className="px-6 py-3 bg-[#0A0D18]/80 border-b border-white/4 grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+                <div className="flex items-center gap-2 text-slate-400 min-w-0">
+                  <span className="font-mono text-[9px] uppercase text-slate-500 shrink-0">E-mail:</span>
+                  <a href={`mailto:${selectedTicket.user.email}`} className="text-[#10B981] hover:underline text-[11px] font-bold truncate">
+                    {selectedTicket.user.email}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400 min-w-0">
+                  <span className="font-mono text-[9px] uppercase text-slate-500 shrink-0">Téléphone:</span>
+                  <span className="text-slate-200 text-[11px] font-bold truncate">
+                    {selectedTicket.user.phone || "Non renseigné"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400 min-w-0 md:justify-end">
+                  <span className="font-mono text-[9px] uppercase text-slate-500 shrink-0">ID Utilisateur:</span>
+                  <span className="text-slate-200 text-[10px] font-mono font-bold bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                    #{selectedTicket.user.id}
+                  </span>
+                </div>
               </div>
 
               {/* Corps de la conversation historique */}

@@ -47,6 +47,7 @@ export async function GET(req: Request) {
             firstname: true,
             lastname: true,
             email: true,
+            phone: true,
             profile_picture: true
           }
         },
@@ -152,7 +153,11 @@ export async function POST(req: Request) {
           user_id: targetUserId,
           type: "SUPPORT_REPLY",
           message: "Le Support Officiel PlayAgain vous a envoyé un message dans votre boîte de messagerie privée.",
-          is_opened: false
+          is_opened: false,
+          metadata: {
+            conversationId: conversation.id,
+            redirectUrl: `/messages/${conversation.id}`
+          }
         }
       });
     });
