@@ -145,6 +145,10 @@ export async function createProduct(formData: FormData) {
     },
   });
 
+  // Log product creation activity
+  const { logUserActivity } = await import("@/lib/activity");
+  await logUserActivity(userId, "PRODUCT_CREATE");
+
   // 2. Gestion des images locales
   if (images.length > 0) {
     const uploadDir = join(process.cwd(), "public", "uploads", "products");

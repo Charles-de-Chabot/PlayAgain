@@ -95,6 +95,7 @@ model User {
   verificationRequests VerificationRequest[]
   reviewedRequests     VerificationRequest[] @relation("ReviewedRequests")
   supportTickets  SupportTicket[]
+  activityLogs    UserActivityLog[]
 }
 
 model Category {
@@ -500,5 +501,17 @@ model SystemConfig {
   value     String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String   // ex: "LOGIN", "REGISTER", "PRODUCT_CREATE", "CHECKOUT"
+  ipAddress  String   @db.VarChar(45)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([ipAddress])
 }
 

@@ -61,6 +61,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         if (dbUser) {
           token.role = dbUser.role;
+          try {
+            const { logUserActivity } = await import("@/lib/activity");
+            await logUserActivity(dbUser.id, "LOGIN");
+          } catch (e) {
+            console.error("Failed to log login activity:", e);
+          }
         }
       } else if (token.email && !token.role) {
         const dbUser = await prisma.user.findUnique({

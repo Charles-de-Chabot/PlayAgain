@@ -26,13 +26,17 @@ export async function registerUser(prevState: any, formData: FormData) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 3. Créer l'utilisateur dans la base
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         username,
         email,
         password: hashedPassword,
       }
     });
+
+    // Log registration activity
+    const { logUserActivity } = await import("@/lib/activity");
+    await logUserActivity(newUser.id, "REGISTER");
 
     return { success: true, error: null };
   } catch (error) {

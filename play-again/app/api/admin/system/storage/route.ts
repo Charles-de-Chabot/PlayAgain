@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { readdir, stat, unlink } from "fs/promises";
+import { join, relative } from "path";
 
 // Helper de vérification d'accès administrateur
 async function checkAdmin() {
@@ -21,7 +23,87 @@ async function checkAdmin() {
   return { admin: adminUser, id: adminId };
 }
 
-// 🟢 GET : Simule/Calcule l'état du stockage et des images orphelines
+// Fonction récursive pour lister tous les fichiers d'un dossier
+async function getAllFilesRecursive(dirPath: string): Promise<{ path: string; size: number }[]> {
+  const files: { path: string; size: number }[] = [];
+  try {
+    const entries = await readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        const subFiles = await getAllFilesRecursive(fullPath);
+        files.push(...subFiles);
+      } else {
+        const fileStat = await stat(fullPath);
+        files.push({
+          path: fullPath,
+          size: fileStat.size
+        });
+      }
+    }
+  } catch (err) {
+    // Si le dossier n'existe pas encore, on loggue l'erreur mais on ne bloque pas
+    console.error(`Erreur de lecture du dossier ${dirPath}:`, err);
+  }
+  return files;
+}
+
+// Récupère l'ensemble des fichiers sur le disque et identifie les orphelins
+async function getStorageStats() {
+  const uploadsDir = join(process.cwd(), "public", "uploads");
+  const allFiles = await getAllFilesRecursive(uploadsDir);
+
+  // 1. Récupération de tous les médias actifs référencés en BDD
+  const dbMedia = await prisma.media.findMany({ select: { url: true } });
+  const dbUsers = await prisma.user.findMany({ select: { profile_picture: true, image: true } });
+  const dbVerifications = await prisma.verificationRequest.findMany({
+    select: { idCardPhoto1Url: true, idCardPhoto2Url: true, selfieUrl: true }
+  });
+
+  const activeUrls = new Set<string>();
+  
+  // Fichiers système ou par défaut protégés
+  activeUrls.add("/uploads/avatars/default.png");
+  activeUrls.add("/uploads/avatars/default.jpg");
+  activeUrls.add("/uploads/profile/default.png");
+
+  dbMedia.forEach(m => { if (m.url) activeUrls.add(m.url); });
+  dbUsers.forEach(u => {
+    if (u.profile_picture) activeUrls.add(u.profile_picture);
+    if (u.image) activeUrls.add(u.image);
+  });
+  dbVerifications.forEach(v => {
+    if (v.idCardPhoto1Url) activeUrls.add(v.idCardPhoto1Url);
+    if (v.idCardPhoto2Url) activeUrls.add(v.idCardPhoto2Url);
+    if (v.selfieUrl) activeUrls.add(v.selfieUrl);
+  });
+
+  let totalStorageUsedBytes = 0;
+  const orphans: { path: string; url: string; size: number }[] = [];
+
+  for (const file of allFiles) {
+    totalStorageUsedBytes += file.size;
+
+    // Convertir le chemin absolu du fichier en URL relative (ex: /uploads/products/...)
+    const relativePath = "/" + relative(join(process.cwd(), "public"), file.path).replace(/\\/g, "/");
+
+    if (!activeUrls.has(relativePath)) {
+      orphans.push({
+        path: file.path,
+        url: relativePath,
+        size: file.size
+      });
+    }
+  }
+
+  return {
+    totalStorageUsedBytes,
+    orphans,
+    dbMediaCount: dbMedia.length
+  };
+}
+
+// 🟢 GET : Calcule dynamiquement l'état réel du stockage et des images orphelines
 export async function GET() {
   try {
     const adminCheck = await checkAdmin();
@@ -29,23 +111,13 @@ export async function GET() {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
-    // Calculer le nombre d'images enregistrées en BDD
-    const dbMediaCount = await prisma.media.count();
-
-    // Dans un environnement de production réel, on interrogerait l'API Cloudinary / S3.
-    // Ici, nous calculons un volume simulé très propre basé sur le volume d'entrées.
-    const averageImageSizeBytes = 850 * 1024; // 850 Ko en moyenne
-    const totalStorageUsedBytes = dbMediaCount * averageImageSizeBytes + 12.4 * 1024 * 1024 * 1024; // Base de 12.4 Go
-    
-    // Détecter les images orphelines simulées de manière déterministe
-    const orphansCount = Math.max(12, Math.floor(dbMediaCount * 0.08)); // ~8% d'orphelines
-    const orphansStorageSizeDeltaBytes = orphansCount * averageImageSizeBytes;
+    const { totalStorageUsedBytes, orphans, dbMediaCount } = await getStorageStats();
 
     return NextResponse.json({
       success: true,
       totalStorageUsedBytes,
-      orphansCount,
-      orphansStorageSizeDeltaBytes,
+      orphansCount: orphans.length,
+      orphansStorageSizeDeltaBytes: orphans.reduce((sum, o) => sum + o.size, 0),
       dbMediaCount
     });
 
@@ -55,7 +127,7 @@ export async function GET() {
   }
 }
 
-// 🔵 POST : Déclenche le nettoyage différentiel sécurisé des images orphelines
+// 🔵 POST : Déclenche le nettoyage différentiel réel des images orphelines
 export async function POST() {
   try {
     const adminCheck = await checkAdmin();
@@ -63,14 +135,20 @@ export async function POST() {
       return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
     }
 
-    // Récupérer le décompte d'images orphelines avant nettoyage
-    const dbMediaCount = await prisma.media.count();
-    const orphansCount = Math.max(12, Math.floor(dbMediaCount * 0.08));
-    const averageImageSizeBytes = 850 * 1024;
-    const bytesFreed = orphansCount * averageImageSizeBytes;
+    const { orphans } = await getStorageStats();
+    let bytesFreed = 0;
+    const deletedUrls: string[] = [];
 
-    // Simulation de suppression de fichiers orphelins (Logs dans la console modérateur)
-    const deletedUrls = Array.from({ length: orphansCount }).map((_, i) => `/uploads/products/img_orphan_${1040 + i}.jpg`);
+    // Supprimer réellement chaque fichier orphelin du disque dur
+    for (const orphan of orphans) {
+      try {
+        await unlink(orphan.path);
+        bytesFreed += orphan.size;
+        deletedUrls.push(orphan.url);
+      } catch (err) {
+        console.error(`Impossible de supprimer le fichier orphelin ${orphan.path}:`, err);
+      }
+    }
 
     // Enregistrer l'action de purge dans l'audit log
     await prisma.adminLog.create({
@@ -79,19 +157,20 @@ export async function POST() {
         adminEmail: adminCheck.admin!.email,
         action: "STORAGE_ORPHAN_CLEANUP",
         metadata: {
-          deletedFilesCount: orphansCount,
+          deletedFilesCount: deletedUrls.length,
           bytesFreed,
-          systemState: "HEALTHY"
+          systemState: "HEALTHY",
+          deletedUrls
         }
       }
     });
 
     return NextResponse.json({
       success: true,
-      deletedCount: orphansCount,
+      deletedCount: deletedUrls.length,
       bytesFreed,
       deletedUrls,
-      message: `Nettoyage terminé. ${orphansCount} images orphelines supprimées, libérant ${(bytesFreed / (1024 * 1024)).toFixed(2)} Mo.`
+      message: `Nettoyage terminé. ${deletedUrls.length} images orphelines supprimées du serveur, libérant ${(bytesFreed / (1024 * 1024)).toFixed(2)} Mo.`
     });
 
   } catch (error: any) {
