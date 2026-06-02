@@ -51,6 +51,13 @@ export default function FraudDashboard() {
   // Onglet actif : "stripe", "ip", "phone"
   const [activeTab, setActiveTab] = useState<"stripe" | "ip" | "phone">("stripe");
   
+  // Suivi de l'utilisateur survolé dans le visualiseur SVG
+  const [hoveredUser, setHoveredUser] = useState<{
+    user: SuspectUser;
+    x: number;
+    y: number;
+  } | null>(null);
+  
   // Sélection des utilisateurs pour le Mass-Block
   const [selectedUsers, setSelectedUsers] = useState<Record<number, boolean>>({});
   const [blockReason, setBlockReason] = useState("");
@@ -309,7 +316,12 @@ export default function FraudDashboard() {
                             const targetY = centerY + Math.sin(angle) * 60;
                             
                             return (
-                              <g key={`node-${groupIdx}-${idx}`}>
+                              <g 
+                                key={`node-${groupIdx}-${idx}`}
+                                className="cursor-pointer"
+                                onMouseEnter={() => setHoveredUser({ user, x: targetX, y: targetY })}
+                                onMouseLeave={() => setHoveredUser(null)}
+                              >
                                 <circle
                                   cx={targetX}
                                   cy={targetY}
@@ -347,6 +359,31 @@ export default function FraudDashboard() {
                       );
                     })}
                   </svg>
+                )}
+
+                {/* 🚀 Tooltip HTML cyber-glowing absolu z-50 pour survoler les satellites sans collision d'index */}
+                {hoveredUser && (
+                  <div 
+                    className="absolute pointer-events-none z-50 bg-[#0E1322]/95 backdrop-blur-md border border-red-500/30 rounded-xl p-2.5 shadow-[0_0_15px_rgba(239,68,68,0.25)] flex flex-col gap-0.5 text-left select-none transition-all duration-150"
+                    style={{
+                      left: `${(hoveredUser.x / 600) * 100}%`,
+                      top: `${(hoveredUser.y / 300) * 100}%`,
+                      transform: "translate(-50%, -125%)",
+                    }}
+                  >
+                    <span className="text-[8px] uppercase tracking-wider font-extrabold text-red-400">
+                      Signalement Suspect
+                    </span>
+                    <span className="text-[10px] font-bold text-white truncate max-w-[150px]">
+                      {hoveredUser.user.username || "Utilisateur sans nom"}
+                    </span>
+                    <span className="text-[8px] text-slate-400 truncate max-w-[150px]">
+                      Email: {hoveredUser.user.email}
+                    </span>
+                    <span className="text-[8px] text-slate-500 font-mono font-bold">
+                      ID: {hoveredUser.user.id}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

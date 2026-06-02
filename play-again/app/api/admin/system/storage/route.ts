@@ -148,12 +148,20 @@ export async function GET() {
     }
 
     const { totalStorageUsedBytes, orphans, dbMediaCount } = await getStorageStats();
+    const orphansSize = orphans.reduce((sum, o) => sum + o.size, 0);
+
+    // Mettre à jour le cache BDD pour le badge de la barre latérale Next.js
+    await prisma.systemConfig.upsert({
+      where: { key: "orphans_storage_size_bytes" },
+      update: { value: orphansSize.toString() },
+      create: { key: "orphans_storage_size_bytes", value: orphansSize.toString() }
+    });
 
     return NextResponse.json({
       success: true,
       totalStorageUsedBytes,
       orphansCount: orphans.length,
-      orphansStorageSizeDeltaBytes: orphans.reduce((sum, o) => sum + o.size, 0),
+      orphansStorageSizeDeltaBytes: orphansSize,
       orphans: orphans.map(o => ({ url: o.url, size: o.size })),
       dbMediaCount
     });

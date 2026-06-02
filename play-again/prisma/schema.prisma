@@ -120,6 +120,7 @@ model Brand {
   id              Int            @id @default(autoincrement())
   label           String         @db.VarChar(50)
   marketPosition  MarketPosition @default(GENERALIST)
+  createdAt       DateTime       @default(now())
   products        Product[]
 }
 
