@@ -18,6 +18,8 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/Button";
+import { FinanceFeeRules } from "@/lib/systemConfig";
+
 
 // Initialisation de Stripe (Lazy-loaded sur le client)
 const getStripePromise = (key: string) => loadStripe(key);
@@ -60,6 +62,7 @@ interface CheckoutClientProps {
   initialAddresses: Address[];
   buyer: Buyer | null;
   stripePublishableKey: string;
+  feeRules: FinanceFeeRules;
 }
 
 export function CheckoutClient({
@@ -67,9 +70,11 @@ export function CheckoutClient({
   initialAddresses,
   buyer,
   stripePublishableKey,
+  feeRules,
 }: CheckoutClientProps) {
   const router = useRouter();
   const productPrice = Number(product.price);
+
 
   // --- États locaux ---
   const [isShipping, setIsShipping] = useState<boolean>(product.is_shipping);
@@ -111,9 +116,10 @@ export function CheckoutClient({
   const [invoiceId, setInvoiceId] = useState<number | null>(null);
 
   // --- Calculs Financiers Client (pour aperçu avant chargement API) ---
-  const commission = Math.round((0.70 + productPrice * 0.05) * 100) / 100;
+  const commission = Math.round((feeRules.flatFee + productPrice * (feeRules.commissionRate / 100)) * 100) / 100;
   const shippingFee = isShipping ? (productPrice > 100 ? 0 : 4.99) : 0;
   const totalPrice = Math.round((productPrice + commission + shippingFee) * 100) / 100;
+
 
   // --- Configuration du thème Stripe (Theme Night Premium) ---
   const stripeAppearance = {

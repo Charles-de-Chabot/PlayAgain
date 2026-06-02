@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { CheckoutClient } from "./CheckoutClient";
 import { Header } from "@/components/layout/Header";
+import { getSystemConfig, DEFAULT_FINANCE_FEE_RULES, FinanceFeeRules } from "@/lib/systemConfig";
 
 export default async function CheckoutPage({
   params,
@@ -96,6 +97,9 @@ export default async function CheckoutPage({
   const addresses = JSON.parse(JSON.stringify(userAddresses));
   const buyer = rawBuyer ? JSON.parse(JSON.stringify(rawBuyer)) : null;
 
+  // Récupérer les règles de frais en base de données
+  const feeRules = await getSystemConfig<FinanceFeeRules>("FINANCE_FEE_RULES", DEFAULT_FINANCE_FEE_RULES);
+
   return (
     <main className="min-h-screen bg-black text-white pb-24 relative overflow-x-hidden font-sans">
       {/* Background Decor avec Halos Lumineux Figma */}
@@ -120,9 +124,11 @@ export default async function CheckoutPage({
             initialAddresses={addresses}
             buyer={buyer}
             stripePublishableKey={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""}
+            feeRules={feeRules}
           />
         </div>
       </div>
     </main>
   );
+
 }

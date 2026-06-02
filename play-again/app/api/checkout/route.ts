@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Stripe from "stripe";
+import { getSystemConfig, DEFAULT_FINANCE_FEE_RULES, FinanceFeeRules } from "@/lib/systemConfig";
 
 // Initialisation de Stripe avec la clé secrète
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
@@ -127,8 +128,9 @@ export async function POST(req: Request) {
     const productPrice = Number(product.price);
     const priceInCents = Math.round(productPrice * 100);
 
-    // Formule Commission PlayAgain : 0.70 € + 5% du prix
-    const commissionInCents = Math.round(70 + priceInCents * 0.05);
+    // Formule Commission PlayAgain : Frais fixes + Commission (%) dynamically loaded
+    const feeRules = await getSystemConfig<FinanceFeeRules>("FINANCE_FEE_RULES", DEFAULT_FINANCE_FEE_RULES);
+    const commissionInCents = Math.round((feeRules.flatFee * 100) + priceInCents * (feeRules.commissionRate / 100));
     const commission = commissionInCents / 100;
 
     // Formule Livraison : 4.99 € standard, ou offerte si article > 100 €
