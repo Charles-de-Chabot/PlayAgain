@@ -6,3 +6,11 @@ https://www.figma.com/design/zFx0IvlBt4dCRThyxqRyjz/Untitled?node-id=1-62&t=DmEx
 
 Vue Navigateur:
 https://www.figma.com/design/vl6SryBizHaa9y8tf1mXke/Untitled?node-id=2-27&t=LsJ5zhmfJa57afg2-0
+
+
+TODO : faire une verification d'email Google/Yahoo
+TODO : faire le systeme de payement 
+TODO : refactoriser l'application 
+TODO : version mobile
+TODO : Admin
+TODO : notification 
