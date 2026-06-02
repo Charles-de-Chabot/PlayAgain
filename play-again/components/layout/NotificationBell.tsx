@@ -173,7 +173,11 @@ export function NotificationBell() {
               notifications.map((notif) => (
                 <Link
                   key={notif.id}
-                  href={notif.metadata?.redirectUrl || "#"}
+                  href={
+                    notif.type === "POLL" 
+                      ? `/profile/notifications?open=${notif.id}` 
+                      : (notif.metadata?.redirectUrl || "#")
+                  }
                   onClick={() => handleMarkAsRead(notif.id, notif)}
                   className={cn(
                     "flex gap-3 px-5 py-3.5 border-b border-white/5 transition-all relative group cursor-pointer text-left",

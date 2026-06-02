@@ -167,21 +167,25 @@ export async function sendMessage(conversationId: number, content: string, metad
   });
 
   // Déterminer le destinataire
-  const targetUserId = conversation.user_id === senderId ? conversation.product.user_id : conversation.user_id;
+  const targetUserId = conversation.user_id === senderId
+    ? (conversation.product ? conversation.product.user_id : null)
+    : conversation.user_id;
 
   // Déclencher la notification in-app en direct
-  await createNotification({
-    userId: targetUserId,
-    type: "MESSAGE",
-    message: `✉️ Nouveau message de ${sender?.username || "un membre"} : "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`,
-    metadata: {
-      redirectUrl: `/messages?conversationId=${conversationId}`,
-      conversationId,
-      senderName: sender?.username || "un membre",
-      senderAvatarUrl: sender?.profile_picture || null,
-      messageSnippet: content.substring(0, 40) + (content.length > 40 ? '...' : ''),
-    }
-  });
+  if (targetUserId) {
+    await createNotification({
+      userId: targetUserId,
+      type: "MESSAGE",
+      message: `✉️ Nouveau message de ${sender?.username || "un membre"} : "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`,
+      metadata: {
+        redirectUrl: `/messages?conversationId=${conversationId}`,
+        conversationId,
+        senderName: sender?.username || "un membre",
+        senderAvatarUrl: sender?.profile_picture || null,
+        messageSnippet: content.substring(0, 40) + (content.length > 40 ? '...' : ''),
+      }
+    });
+  }
 
   // Revalidation du cache Next.js
   revalidatePath(`/messages/${conversationId}`);

@@ -17,15 +17,20 @@ import {
   Inbox,
   Check,
   AlertTriangle,
-  Loader2
+  Loader2,
+  BarChart2,
+  Lock
 } from "lucide-react";
 import { 
   markAsOpened, 
   markAllAsOpened, 
-  deleteNotification 
+  deleteNotification,
+  voteInPoll,
+  getPollResultsPublic
 } from "@/app/actions/notification";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface NotificationsClientProps {
   initialNotifications: any[];
@@ -42,6 +47,66 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
   const [disputeInvoiceId, setDisputeInvoiceId] = useState<number | null>(null);
   const [disputeNotifId, setDisputeNotifId] = useState<number | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
+  const [votingId, setVotingId] = useState<number | null>(null);
+  const [pollResults, setPollResults] = useState<Record<string, { options: string[], votes: Record<string, number>, totalVotes: number, isClosed: boolean } | null>>({});
+  const [loadingResultsId, setLoadingResultsId] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+
+  // Expansion automatique et défilement fluide depuis le paramètre d'URL 'open'
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (openId) {
+      const idNum = parseInt(openId);
+      if (!isNaN(idNum)) {
+        setExpandedId(idNum);
+        
+        // Défilement fluide une fois le DOM prêt
+        setTimeout(() => {
+          const element = document.getElementById(`notif-card-${idNum}`);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 350);
+      }
+    }
+  }, [searchParams]);
+
+  const loadPollResults = async (broadcastId: string) => {
+    if (pollResults[broadcastId]) return;
+    try {
+      setLoadingResultsId(broadcastId);
+      const res = await getPollResultsPublic(broadcastId);
+      if (res && res.success && res.options) {
+        setPollResults(prev => {
+          const next = { ...prev };
+          next[broadcastId] = {
+            options: res.options || [],
+            votes: (res.votes as Record<string, number>) || {},
+            totalVotes: res.totalVotes || 0,
+            isClosed: !!res.isClosed
+          };
+          return next;
+        });
+      }
+    } catch (e) {
+      console.error("Erreur chargement résultats:", e);
+    } finally {
+      setLoadingResultsId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (expandedId !== null) {
+      const expandedNotif = notifications.find(n => n.id === expandedId);
+      if (expandedNotif && expandedNotif.type === "POLL") {
+        const meta = typeof expandedNotif.metadata === "string" ? JSON.parse(expandedNotif.metadata) : expandedNotif.metadata || {};
+        if (meta.broadcastId) {
+          loadPollResults(meta.broadcastId);
+        }
+      }
+    }
+  }, [expandedId, notifications]);
 
   // 1. S'abonner au flux Server-Sent Events (SSE) pour le temps réel
   useEffect(() => {
@@ -194,6 +259,49 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
     }
   };
 
+  const handleVote = async (notifId: number, option: string) => {
+    setVotingId(notifId);
+    try {
+      const res = await voteInPoll(notifId, option);
+      if (res.success) {
+        setNotifications(prev =>
+          prev.map(n => {
+            if (n.id === notifId) {
+              const meta = typeof n.metadata === "string" ? JSON.parse(n.metadata) : n.metadata || {};
+              const broadcastId = meta.broadcastId;
+              if (broadcastId) {
+                setTimeout(() => {
+                  setPollResults(prevResults => {
+                    const copy = { ...prevResults };
+                    delete copy[broadcastId];
+                    return copy;
+                  });
+                  loadPollResults(broadcastId);
+                }, 100);
+              }
+              return {
+                ...n,
+                metadata: {
+                  ...meta,
+                  userVote: option
+                },
+                is_opened: true
+              };
+            }
+            return n;
+          })
+        );
+      } else {
+        alert(res.error || "Erreur lors du vote");
+      }
+    } catch (err) {
+      console.error("Erreur de vote:", err);
+      alert("Erreur de connexion");
+    } finally {
+      setVotingId(null);
+    }
+  };
+
   // 3. Calculs des compteurs par onglet
   const counts = useMemo(() => {
     return {
@@ -202,6 +310,8 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
       TRANSACTION: notifications.filter(n => n.type === "TRANSACTION").length,
       SYSTEM: notifications.filter(n => n.type === "SYSTEM").length,
       AI_MATCH: notifications.filter(n => n.type === "AI_MATCH").length,
+      ANNOUNCEMENT: notifications.filter(n => n.type === "ANNOUNCEMENT").length,
+      POLL: notifications.filter(n => n.type === "POLL").length,
       UNREAD: notifications.filter(n => !n.is_opened).length,
     };
   }, [notifications]);
@@ -261,6 +371,22 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
           label: "Match IA",
           accentColor: "rgba(92, 225, 230, 0.4)"
         };
+      case "ANNOUNCEMENT":
+        return {
+          icon: Bell,
+          color: "text-amber-400",
+          bg: "bg-amber-500/10 border-amber-500/20",
+          label: "Annonce",
+          accentColor: "rgba(245, 158, 11, 0.4)"
+        };
+      case "POLL":
+        return {
+          icon: BarChart2,
+          color: "text-emerald-400",
+          bg: "bg-emerald-500/10 border-emerald-500/20",
+          label: "Sondage",
+          accentColor: "rgba(16, 185, 129, 0.4)"
+        };
       case "SYSTEM":
       default:
         return {
@@ -278,6 +404,8 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
     { id: "MESSAGE", label: "Messages", count: counts.MESSAGE },
     { id: "TRANSACTION", label: "Transactions", count: counts.TRANSACTION },
     { id: "AI_MATCH", label: "Matchs IA", count: counts.AI_MATCH },
+    { id: "ANNOUNCEMENT", label: "Annonces", count: counts.ANNOUNCEMENT },
+    { id: "POLL", label: "Sondages", count: counts.POLL },
     { id: "SYSTEM", label: "Système", count: counts.SYSTEM },
   ];
 
@@ -405,6 +533,7 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
             return (
               <div
                 key={notif.id}
+                id={`notif-card-${notif.id}`}
                 onClick={() => handleToggleExpand(notif.id, notif.is_opened)}
                 className={cn(
                   "relative overflow-hidden rounded-[28px] border bg-zinc-950/80 backdrop-blur-2xl transition-all duration-300 cursor-pointer text-left flex flex-col group",
@@ -536,6 +665,123 @@ export function NotificationsClient({ initialNotifications }: NotificationsClien
                           {notif.message}
                         </p>
                       </div>
+
+                      {/* Affichage du Sondage */}
+                      {notif.type === "POLL" && (() => {
+                        const meta = typeof notif.metadata === "string" ? JSON.parse(notif.metadata) : notif.metadata || {};
+                        const isPollClosed = !!meta.isClosed || !!pollResults[meta.broadcastId]?.isClosed;
+                        const hasVoted = !!meta.userVote;
+
+                        return (
+                          <div className="space-y-4 p-5 bg-black/40 rounded-2xl border border-white/5 shadow-inner">
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-white/5 pb-3">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                                <span>📊 Sondage : {meta.question || "Votre avis nous intéresse"}</span>
+                              </h4>
+                              {isPollClosed ? (
+                                <span className="text-[9px] font-black uppercase tracking-wider bg-zinc-800 border border-zinc-700 text-zinc-400 px-2 py-0.5 rounded-md flex items-center gap-1 w-fit shadow-inner">
+                                  <Lock className="w-2.5 h-2.5" />
+                                  Clôturé
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md flex items-center gap-1 w-fit animate-pulse">
+                                  <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                                  En Cours
+                                </span>
+                              )}
+                            </div>
+
+                            {isPollClosed || hasVoted ? (
+                              <div className="space-y-4">
+                                <div className="text-xs text-zinc-400 font-bold leading-relaxed mb-2">
+                                  {isPollClosed ? (
+                                    hasVoted ? (
+                                      <p>Ce sondage est clôturé. Merci pour votre vote ! Vous aviez choisi : <span className="text-emerald-400 font-extrabold uppercase tracking-wider">{meta.userVote}</span></p>
+                                    ) : (
+                                      <p className="text-zinc-500">Ce sondage est désormais clôturé. Les votes ne sont plus acceptés.</p>
+                                    )
+                                  ) : (
+                                    <p>Votre vote a bien été pris en compte ! Choix : <span className="text-emerald-400 font-extrabold uppercase tracking-wider">{meta.userVote}</span></p>
+                                  )}
+                                </div>
+
+                                {loadingResultsId === meta.broadcastId ? (
+                                  <div className="flex items-center justify-center py-6 gap-2 bg-white/[0.01] border border-white/5 rounded-xl">
+                                    <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Calcul des résultats en base...</span>
+                                  </div>
+                                ) : pollResults[meta.broadcastId] ? (
+                                  <div className="grid grid-cols-1 gap-3">
+                                    {pollResults[meta.broadcastId]?.options.map((opt: string) => {
+                                      const votesCount = pollResults[meta.broadcastId]?.votes[opt] || 0;
+                                      const totalVotes = pollResults[meta.broadcastId]?.totalVotes || 0;
+                                      const percent = totalVotes > 0 ? Math.round((votesCount / totalVotes) * 100) : 0;
+                                      const isUserChoice = meta.userVote === opt;
+
+                                      return (
+                                        <div key={opt} className="space-y-1.5">
+                                          <div className="flex justify-between text-[11px] font-bold text-zinc-350">
+                                            <span className={cn(isUserChoice && "text-emerald-400 font-extrabold flex items-center gap-1")}>
+                                              {isUserChoice && <Check className="w-3 h-3 text-emerald-400 stroke-3 shrink-0" />}
+                                              {opt}
+                                            </span>
+                                            <span className="text-zinc-400 font-medium">
+                                              {votesCount} votes <span className="text-emerald-400 font-bold">({percent}%)</span>
+                                            </span>
+                                          </div>
+                                          {/* Horizontal cyber progress gauge */}
+                                          <div className="w-full h-2 rounded-full bg-white/5 border border-white/5 overflow-hidden relative shadow-inner p-[1px]">
+                                            <div 
+                                              className={cn(
+                                                "h-full rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.3)]",
+                                                isUserChoice ? "bg-gradient-to-r from-emerald-600 to-cyan-500" : "bg-zinc-700"
+                                              )}
+                                              style={{ width: `${percent}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                    <div className="text-[9px] text-zinc-650 font-bold uppercase text-right tracking-wider pt-1">
+                                      Total participation : {pollResults[meta.broadcastId]?.totalVotes} réponses
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-zinc-550 italic font-bold">
+                                    Aucun résultat cumulé disponible.
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 gap-2">
+                                {votingId === notif.id ? (
+                                  <div className="flex items-center justify-center py-6 gap-2">
+                                    <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                                    <span className="text-xs text-zinc-500 font-bold">Enregistrement de votre vote...</span>
+                                  </div>
+                                ) : (
+                                  meta.options?.map((opt: string) => (
+                                    <button
+                                      key={opt}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleVote(notif.id, opt);
+                                      }}
+                                      className="p-4 rounded-xl border border-white/10 hover:border-emerald-500/30 bg-white/[0.02] hover:bg-emerald-500/5 text-zinc-300 hover:text-white text-xs font-bold transition-all text-left flex items-center justify-between active:scale-[0.99] cursor-pointer group"
+                                    >
+                                      <span>{opt}</span>
+                                      <span className="opacity-0 group-hover:opacity-100 text-[10px] font-black text-emerald-400 uppercase tracking-widest transition-all">
+                                        Voter →
+                                      </span>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Métadonnées additionnelles s'il y en a */}
                       {notif.metadata && Object.keys(notif.metadata).length > 0 && (
