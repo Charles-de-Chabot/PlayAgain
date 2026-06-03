@@ -16,8 +16,19 @@ import {
   DollarSign,
   Bell
 } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
+import { getSeoMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = getSeoMetadata("profile");
+  return {
+    title: seo?.title || "Mon Espace Sportif - PlayAgain",
+    description: seo?.description || "Gérez votre profil sportif, vos annonces, vos achats et vos ventes d'équipements de sport.",
+    keywords: seo?.keywords,
+  };
+}
 
 export default async function ProfilePage() {
   const session = await auth();

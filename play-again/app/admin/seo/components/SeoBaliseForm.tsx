@@ -41,9 +41,10 @@ export default function SeoBaliseForm({
 
   const options = [
     { value: "home", label: "Page d'Accueil (Home)" },
-    { value: "tennis", label: "Catégorie Tennis" },
-    { value: "padel", label: "Catégorie Padel" },
-    { value: "golf", label: "Catégorie Golf" },
+    { value: "shop", label: "Catalogue (Shop)" },
+    { value: "profile", label: "Profil (Profile)" },
+    { value: "login", label: "Connexion (Login)" },
+    { value: "help", label: "Aide & Support (Help)" },
   ];
 
   return (
@@ -69,9 +70,10 @@ export default function SeoBaliseForm({
               <Globe className="w-3.5 h-3.5 text-slate-400" />
               <span>
                 {selectedPage === "home" && "Page d'Accueil (Home)"}
-                {selectedPage === "tennis" && "Catégorie Tennis"}
-                {selectedPage === "padel" && "Catégorie Padel"}
-                {selectedPage === "golf" && "Catégorie Golf"}
+                {selectedPage === "shop" && "Catalogue (Shop)"}
+                {selectedPage === "profile" && "Profil (Profile)"}
+                {selectedPage === "login" && "Connexion (Login)"}
+                {selectedPage === "help" && "Aide & Support (Help)"}
               </span>
             </div>
             <ChevronDown

@@ -4,9 +4,24 @@
     "description": "Achetez et vendez vos raquettes de tennis, clubs de golf, vélos et matériel de sport d'occasion. Certifié par nos experts et IA.",
     "keywords": "sport, occasion, seconde main, tennis, golf, padel, pas cher, reconditionne"
   },
-  "tennis": {
-    "title": "Raquettes de Tennis d'Occasion Expertisées - PlayAgain",
-    "description": "Découvrez notre large sélection de raquettes de tennis Babolat, Wilson, Head de seconde main au meilleur prix. Authentifiées par IA.",
-    "keywords": "tennis, raquette, occasion, babolat, wilson, head, seconde main"
+  "shop": {
+    "title": "Catalogue d'Équipement de Sport d'Occasion - PlayAgain",
+    "description": "Parcourez notre large sélection d'articles de sport d'occasion : tennis, golf, vélos, et bien plus encore.",
+    "keywords": "sport, occasion, catalogue, matériel, seconde main"
+  },
+  "profile": {
+    "title": "Mon Espace Sportif - PlayAgain",
+    "description": "Gérez votre profil sportif, vos annonces, vos achats et vos ventes d'équipements de sport.",
+    "keywords": "profil, compte, ventes, achats, sport, d'occasion"
+  },
+  "login": {
+    "title": "Connexion à votre Compte - PlayAgain",
+    "description": "Connectez-vous à votre espace personnel PlayAgain pour acheter ou vendre du matériel de sport d'occasion.",
+    "keywords": "connexion, login, espace personnel, compte"
+  },
+  "help": {
+    "title": "Centre d'Aide & Support - PlayAgain",
+    "description": "Trouvez des réponses à toutes vos questions sur l'achat, la vente et la sécurité sur PlayAgain.",
+    "keywords": "aide, FAQ, support, service client, questions"
   }
 }

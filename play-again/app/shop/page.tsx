@@ -1,9 +1,20 @@
+import { Metadata } from "next";
 import { Header } from "@/components/layout/Header";
 import { ShopCatalog } from "@/components/shop/ShopCatalog";
 import { getCategories } from "@/app/actions/category";
 import { getBrands, getFilteredProducts } from "@/app/actions/catalog";
+import { getSeoMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = getSeoMetadata("shop");
+  return {
+    title: seo?.title || "Catalogue Produits - Play Again",
+    description: seo?.description || "Parcourez notre catalogue d'articles de sport de seconde main expertisés.",
+    keywords: seo?.keywords,
+  };
+}
 
 export default async function ShopPage({
   searchParams,
