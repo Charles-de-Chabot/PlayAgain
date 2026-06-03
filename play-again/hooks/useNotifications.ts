@@ -6,9 +6,11 @@ import {
   markAsOpened,
   markAllAsOpened,
   deleteNotification,
+} from "@/app/actions/notification";
+import {
   voteInPoll,
   getPollResultsPublic,
-} from "@/app/actions/notification";
+} from "@/app/actions/broadcast";
 
 export interface NotificationItem {
   id: number;

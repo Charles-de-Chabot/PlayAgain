@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { sendGlobalBroadcast, getAdminBroadcastHistory, closePoll } from "@/app/actions/notification";
+import { sendGlobalBroadcast, getAdminBroadcastHistory, closePoll } from "@/app/actions/broadcast";
 
 export interface BroadcastSummary {
   broadcastId: string;
