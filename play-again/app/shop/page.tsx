@@ -1,7 +1,7 @@
 import { Header } from "@/components/layout/Header";
 import { ShopCatalog } from "@/components/shop/ShopCatalog";
 import { getCategories } from "@/app/actions/category";
-import { getBrands, getFilteredProducts } from "@/app/actions/product";
+import { getBrands, getFilteredProducts } from "@/app/actions/catalog";
 
 export const dynamic = "force-dynamic";
 

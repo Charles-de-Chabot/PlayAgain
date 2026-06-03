@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/home/ProductCard";
-import { getRecommendedProducts } from "@/app/actions/product";
+import { getRecommendedProducts } from "@/app/actions/catalog";
 import { getSportProfile } from "@/app/actions/sport-profile";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibleCardsCount } from "@/hooks/useVisibleCardsCount";

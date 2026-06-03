@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition, useCallback } from "react";
-import { getFilteredProducts } from "@/app/actions/product";
+import { getFilteredProducts } from "@/app/actions/catalog";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisibleCardsCount } from "@/hooks/useVisibleCardsCount";
 

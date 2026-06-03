@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useCompareStore, CompareProduct } from "@/store/useCompareStore";
 import { Scale, X } from "lucide-react";
-import { getFilteredProducts } from "@/app/actions/product";
+import { getFilteredProducts } from "@/app/actions/catalog";
 import Image from "next/image";
 
 export function CompareButtonWrapper({ product }: { product: any }) {

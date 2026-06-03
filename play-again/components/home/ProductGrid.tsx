@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ProductCard } from "@/components/home/ProductCard";
-import { getLatestProducts } from "@/app/actions/product";
+import { getLatestProducts } from "@/app/actions/catalog";
 import { useVisibleCardsCount } from "@/hooks/useVisibleCardsCount";
 
 export function ProductGrid() {
