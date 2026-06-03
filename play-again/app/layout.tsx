@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNavbar } from "@/components/layout/MobileNavbar";
 import { GlobalScrollbar } from "@/components/ui/GlobalScrollbar";
@@ -31,15 +32,18 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans bg-black text-white" suppressHydrationWarning>
         <SessionProvider>
-          <GlobalScrollbar />
-          <div className="flex-1 flex flex-col">
-            {children}
-          </div>
-          <Footer />
-          <MobileNavbar />
-          <CompareModal />
+          <ToastProvider>
+            <GlobalScrollbar />
+            <div className="flex-1 flex flex-col">
+              {children}
+            </div>
+            <Footer />
+            <MobileNavbar />
+            <CompareModal />
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>
   );
 }
+

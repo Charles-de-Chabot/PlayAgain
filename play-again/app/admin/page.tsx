@@ -15,8 +15,8 @@ export default async function AdminDashboardPage() {
   // --- 1. Requêtes Base de Données Prisma Synchrone ---
   const totalUsers = await prisma.user.count();
   const totalProducts = await prisma.product.count();
-  const activeProducts = await prisma.product.count({
-    where: { is_sold: false, is_active: true }
+  const activeAndUnsoldProducts = await prisma.product.count({
+    where: { is_active: true, is_sold: false }
   });
 
   // Calcul du GMV et des commissions sur les transactions payées ou livrées
@@ -310,7 +310,7 @@ export default async function AdminDashboardPage() {
             {totalUsers} <span className="text-sm font-normal text-slate-400">membres</span>
           </div>
           <p className="text-[10px] text-slate-500 mt-2">
-            <span className="text-slate-300 font-extrabold">{activeProducts}</span> articles de sport en vente sur {totalProducts}
+            <span className="text-slate-300 font-extrabold">{activeAndUnsoldProducts}</span> articles de sport en vente sur {totalProducts}
           </p>
         </div>
 

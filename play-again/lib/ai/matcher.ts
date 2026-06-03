@@ -22,10 +22,56 @@ const LEVEL_TEMPLATES: Record<string, string> = {
 };
 
 const GENERIC_WORDS = new Set([
+  // Types d'articles de sport
   "CHAUSSURES", "CHAUSSURE", "SKIS", "SKI", "MASQUE", "LUNETTES", "LUNETTE", "CASQUE", 
   "GANTS", "GANT", "PANTALON", "VESTE", "RAQUETTE", "RAQUETTES", "BALLES", "BALLE", 
-  "SAC", "SACS", "VELO", "VÉLO", "COMBINAISON", "DE", "DU", "DES", "LE", "LA", "LES", "POUR", "EN"
+  "SAC", "SACS", "VELO", "VÉLO", "COMBINAISON", "MAILLOT", "SHORT", "COLLANT", 
+  "SWEAT", "T-SHIRT", "TSHIRT", "POLO", "CHAUSSETTES", "CHAUSSETTE", "BONNET", "CASQUETTE",
+  "GILET", "SURVETEMENT", "SURVÊTEMENT", "COUPEVENT", "COUPE-VENT", "BLOUSON", "PARKA", 
+  "ANORAK", "CUISSARD", "LEGGING", "BRASSIERE", "BRASSIÈRE",
+
+  // Catégories / Sports
+  "VTT", "VTC", "ROUTE", "GRAVEL", "VILLE", "COURSE", "ELECTRIQUE", "ÉLECTRIQUE",
+  "TRAIL", "RUNNING", "FITNESS", "RANDO", "RANDONNEE", "RANDONNÉE", "TREKKING", 
+  "ALPIN", "NORDIQUE", "FOND", "SNOWBOARD", "SNOW", "SURF", "TENNIS", "PADEL", 
+  "SQUASH", "BADMINTON", "GOLF", "FOOT", "FOOTBALL", "BASKET", "RUGBY", "YOGA", 
+  "PILATES", "MUSCULATION", "ESCALADE", "VIA-FERRATA", "BOXE", "JOGGING", "ATHLETISME", 
+  "ATHLÉTISME",
+
+  // Pièces de rechange et Équipements de sport spécifiques
+  "BATONS", "BÂTONS", "BATON", "BÂTON", "FIXATIONS", "FIXATION", "FIX", "PEAUX", "PEAU", 
+  "BOOTS", "BOOT", "LUGE", "PALMES", "PALME", "PLAQUETTES", "PLANCHE", "PULLBUOY", "PULL-BUOY", 
+  "FRITE", "PADDLE", "KAYAK", "CANOË", "CANOE", "WAKEBOARD", "BOUEE", "BOUÉE", "SAUVETAGE",
+  "CADRE", "ROUE", "ROUES", "PNEU", "PNEUS", "SELLE", "PEDALES", "PÉDALES", "PEDALE", "PÉDALE", 
+  "GUIDON", "FREIN", "FREINS", "TRANSMISSION", "DERAILLEUR", "DÉRAILLEUR", "CHAIN", "CHAINE", "CHAÎNE",
+  "COMPTEUR", "CADENAS", "POMPE", "CREVAISON", "CHAMBRE", "RAYON", "RAYONS",
+  "TAPIS", "HALTÈRES", "HALTERES", "HALTÈRE", "POIDS", "BARRE", "ELASTIQUE", "ÉLASTIQUE", "DISQUE", 
+  "KETTLEBELL", "MEDICINE-BALL", "STEP", "BALLON", "CORDE", "SAUTER", "TRAMPOLINE",
+  "TENTE", "DUVET", "MATELAS", "LAMPE", "FRONTALE", "BOUSSOLE", "GOURDE", "THERMOS", "RECHAUD", "RÉCHAUD", 
+  "VAISSELLE", "BAUDRIER", "HARNAIS", "MOUSQUETON", "MOUSQUETONS", "PANS", "PRISES", "CHAUSSONS", "CHAUSSON",
+  "FILET", "LICOL", "REINES", "BOMBE", "BOTTES", "BOTTE", "ETRIERS", "ÉTRIERS", "ETRIER", "ÉTRIER", 
+  "AMORTISSEUR", "LONGE", "KIMONO", "CEINTURE", "MITAINES", "MITAINE", "PROTEGE-DENTS", "PROTÈGE-DENTS", 
+  "COQUILLE", "SACOCHE", "SAC DE FRAPPE", "DRIVER", "PUTTER", "FER", "BOIS", "HYBRIDE", "WEDGE", "CHARIOT", 
+  "TEE", "TEES", "GRIP", "OVERGRIP", "SURGRIP", "CORDE", "CORDAGE", "ANTIVIBRATEUR", "HOUSSE", "BOÎTE", 
+  "BOITE", "TUBE",
+
+  // Mots de liaison / Prépositions
+  "DE", "DU", "DES", "LE", "LA", "LES", "POUR", "EN", "WITH", "AND", "OR", "THE",
+
+  // Public cible / Genre
+  "HOMME", "FEMME", "JUNIOR", "JUNIORS", "ENFANT", "ENFANTS", "KIDS", "ADULTE", 
+  "ADULTES", "MIXTE", "UNISEX", "UNISEXE", "GARCON", "GARÇON", "FILLE",
+
+  // Caractéristiques / Tailles / Couleurs / Matières
+  "TAILLE", "SIZE", "T1", "T2", "T3", "T4", "T5", "XS", "S", "M", "L", "XL", "XXL",
+  "ROUGE", "BLEU", "VERT", "JAUNE", "NOIR", "BLANC", "GRIS", "ROSE", "ORANGE", 
+  "VIOLET", "MARRON", "NAVY", "PAIRE", "LOT", "PACK", "SET", "NEOPRENE", "NÉOPRÈNE", 
+  "WETSUIT", "GORETEX", "GORE-TEX",
+
+  // États / Commercial
+  "NEUF", "OCCASION", "BON", "ETAT", "ÉTAT", "TRES", "TRÈS", "SUPER", "PROMO", "SOLDE", "SOLDES"
 ]);
+
 
 /**
  * Extrait le nom exact de la gamme du produit en filtrant la marque et les mots génériques.

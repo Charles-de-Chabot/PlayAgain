@@ -349,6 +349,63 @@ export default function TaxonomyAdminPage() {
     ).slice(0, 5);
   }, [brands, mergeSearchTarget, mergeSourceId]);
 
+  const suggestedExistingBrands = useMemo(() => {
+    const cleanLabel = newBrandLabel.trim().toLowerCase();
+    if (!cleanLabel) return [];
+    return brands.filter(b => 
+      b.label.toLowerCase().includes(cleanLabel)
+    ).slice(0, 10);
+  }, [brands, newBrandLabel]);
+
+  const brandExists = useMemo(() => {
+    const cleanLabel = newBrandLabel.trim().toLowerCase();
+    if (!cleanLabel) return false;
+    return brands.some(b => b.label.toLowerCase() === cleanLabel);
+  }, [brands, newBrandLabel]);
+
+  const ruleBrandSuggestions = useMemo(() => {
+    const cleanLabel = newRuleBrand.trim().toLowerCase();
+    if (!cleanLabel) return [];
+    const exactMatch = brands.some(b => b.label.toLowerCase() === cleanLabel);
+    if (exactMatch) return [];
+    return brands.filter(b => 
+      b.label.toLowerCase().includes(cleanLabel)
+    ).slice(0, 5);
+  }, [brands, newRuleBrand]);
+
+  const ruleRangeSuggestions = useMemo(() => {
+    const cleanRange = newRuleRange.trim().toLowerCase();
+    if (!cleanRange) return [];
+    const cleanBrand = newRuleBrand.trim().toLowerCase();
+    
+    const exactMatch = rules.some(r => r.rangeName.toLowerCase() === cleanRange && (cleanBrand ? r.brandName.toLowerCase() === cleanBrand : true));
+    if (exactMatch) return [];
+
+    const uniqueRanges = Array.from(
+      new Set(
+        rules
+          .filter(r => {
+            if (cleanBrand) {
+              return r.brandName.toLowerCase() === cleanBrand && r.rangeName.toLowerCase().includes(cleanRange);
+            }
+            return r.rangeName.toLowerCase().includes(cleanRange);
+          })
+          .map(r => r.rangeName)
+      )
+    );
+    
+    return uniqueRanges.slice(0, 5);
+  }, [rules, newRuleBrand, newRuleRange]);
+
+  const ruleExists = useMemo(() => {
+    const cleanBrand = newRuleBrand.trim().toLowerCase();
+    const cleanRange = newRuleRange.trim().toLowerCase();
+    if (!cleanBrand || !cleanRange) return false;
+    return rules.some(
+      r => r.brandName.toLowerCase() === cleanBrand && r.rangeName.toLowerCase() === cleanRange
+    );
+  }, [rules, newRuleBrand, newRuleRange]);
+
   return (
     <div className="flex-1 flex flex-col space-y-8 relative">
       
@@ -440,7 +497,7 @@ export default function TaxonomyAdminPage() {
                   <form onSubmit={handleSaveRule} className="space-y-4 text-xs">
                     
                     {/* Marque */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 relative">
                       <label className="text-[10px] text-slate-500 font-bold uppercase">Marque de l'article (ex: Babolat, Salomon)</label>
                       <input
                         type="text"
@@ -449,10 +506,26 @@ export default function TaxonomyAdminPage() {
                         onChange={(e) => setNewRuleBrand(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold uppercase"
                       />
+                      
+                      {/* Suggestions d'autocomplétion pour la marque */}
+                      {ruleBrandSuggestions.length > 0 && (
+                        <div className="absolute z-30 w-full bg-[#111625] border border-white/10 rounded-xl mt-1 shadow-2xl overflow-hidden divide-y divide-white/5 max-h-40 overflow-y-auto">
+                          {ruleBrandSuggestions.map(b => (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => setNewRuleBrand(b.label)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-xs text-slate-300 font-bold uppercase tracking-wider flex items-center justify-between"
+                            >
+                              <span>{b.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Gamme / Modèle */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 relative">
                       <label className="text-[10px] text-slate-500 font-bold uppercase">Mot-clé de Gamme / Modèle exact</label>
                       <input
                         type="text"
@@ -461,7 +534,30 @@ export default function TaxonomyAdminPage() {
                         onChange={(e) => setNewRuleRange(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold uppercase"
                       />
+                      
+                      {/* Suggestions d'autocomplétion pour la gamme */}
+                      {ruleRangeSuggestions.length > 0 && (
+                        <div className="absolute z-30 w-full bg-[#111625] border border-white/10 rounded-xl mt-1 shadow-2xl overflow-hidden divide-y divide-white/5 max-h-40 overflow-y-auto">
+                          {ruleRangeSuggestions.map((range, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setNewRuleRange(range)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-white/5 text-xs text-slate-300 font-bold uppercase tracking-wider flex items-center justify-between"
+                            >
+                              <span>{range}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+
+                    {ruleExists && (
+                      <div className="text-[10px] text-amber-400 font-extrabold flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Cette règle existe déjà et sera mise à jour / écrasée.</span>
+                      </div>
+                    )}
 
                     {/* Classification forcée */}
                     <div className="space-y-1.5">
@@ -573,8 +669,8 @@ export default function TaxonomyAdminPage() {
 
                     <button
                       type="submit"
-                      disabled={actionLoading}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 text-white font-extrabold text-xs py-3 px-4 rounded-xl transition-all shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-2 active:scale-98 cursor-pointer mt-2"
+                      disabled={actionLoading || !newRuleBrand.trim() || !newRuleRange.trim()}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-50 text-white font-extrabold text-xs py-3 px-4 rounded-xl transition-all shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-2 active:scale-98 cursor-pointer mt-2"
                     >
                       {actionLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -1034,16 +1130,54 @@ export default function TaxonomyAdminPage() {
             </h3>
 
             <form onSubmit={handleCreateBrand} className="space-y-4 mt-4 text-xs">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 relative">
                 <label className="text-[10px] text-slate-500 font-bold uppercase">Libellé officiel de la marque</label>
-                <input
-                  type="text"
-                  placeholder="Ex: NIKE, ADIDAS"
-                  value={newBrandLabel}
-                  onChange={(e) => setNewBrandLabel(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold uppercase"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ex: NIKE, ADIDAS"
+                    value={newBrandLabel}
+                    onChange={(e) => setNewBrandLabel(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-all font-semibold uppercase"
+                  />
+                  {brandExists && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-black uppercase">Existe déjà</span>
+                  )}
+                </div>
+
+                {/* Suggestions d'autocomplétion */}
+                {suggestedExistingBrands.length > 0 && (
+                  <div className="bg-black/20 border border-white/5 rounded-xl p-3 space-y-1.5 max-h-32 overflow-y-auto">
+                    <div className="text-[9px] text-slate-500 uppercase font-black">Marques existantes similaires :</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestedExistingBrands.map(b => {
+                        const isExact = b.label.toLowerCase() === newBrandLabel.trim().toLowerCase();
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => setNewBrandLabel(b.label)}
+                            className={`px-2 py-1 rounded border text-[10px] font-extrabold tracking-wider uppercase transition-all cursor-pointer ${
+                              isExact 
+                                ? "bg-red-500/20 border-red-500/30 text-red-400" 
+                                : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            }`}
+                          >
+                            {b.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {brandExists && (
+                <div className="text-[10px] text-red-400 font-extrabold flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Cette marque existe déjà. Impossible de la recréer.</span>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="text-[10px] text-slate-500 font-bold uppercase">Positionnement sur le marché</label>
@@ -1107,8 +1241,8 @@ export default function TaxonomyAdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={actionLoading}
-                  className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-extrabold text-xs py-2.5 px-5 rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
+                  disabled={actionLoading || brandExists || !newBrandLabel.trim()}
+                  className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-50 text-white font-extrabold text-xs py-2.5 px-5 rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
                 >
                   {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Créer la marque</span>}
                 </button>
