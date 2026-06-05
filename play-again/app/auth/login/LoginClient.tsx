@@ -135,8 +135,8 @@ export default function LoginClient() {
 
         <div className="grid grid-cols-2 gap-4">
           <button
-            onClick={() => signIn("google")}
-            className="flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-white/10 hover:border-white/20"
+            onClick={() => signIn("google", { callbackUrl: "/profile" })}
+            className="flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-white/10 hover:border-brand-primary/50 hover:shadow-[0_0_20px_rgba(125,56,255,0.15)] hover:scale-[1.01] active:scale-[0.99]"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -147,10 +147,10 @@ export default function LoginClient() {
             Google
           </button>
           <button
-            onClick={() => signIn("yahoo")}
-            className="flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#410093]/20 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#410093]/40 hover:border-[#7D38FF]/50"
+            onClick={() => signIn("yahoo", { callbackUrl: "/profile" })}
+            className="flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-[#410093]/20 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#410093]/40 hover:border-brand-primary/50"
           >
-            <span className="text-[#7D38FF] font-black text-xl italic leading-none">Y!</span>
+            <span className="text-brand-primary font-black text-xl italic leading-none">Y!</span>
             Yahoo
           </button>
         </div>

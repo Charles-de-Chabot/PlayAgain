@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileNavbar } from "@/components/layout/MobileNavbar";
 import { GlobalScrollbar } from "@/components/ui/GlobalScrollbar";
 import { CompareModal } from "@/components/ui/CompareModal";
+import GoogleOneTap from "@/components/GoogleOneTap";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -32,6 +33,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans bg-black text-white" suppressHydrationWarning>
         <SessionProvider>
+          <GoogleOneTap />
           <ToastProvider>
             <GlobalScrollbar />
             <div className="flex-1 flex flex-col">
