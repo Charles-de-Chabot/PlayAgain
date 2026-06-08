@@ -3,25 +3,29 @@
 import React, { useRef } from "react";
 import { Camera, Plus } from "lucide-react";
 
+export interface PhotoItem {
+  id?: number;
+  url: string;
+  file?: File;
+}
+
 export interface SellPhotoUploaderProps {
-  images: File[];
-  setImages: React.Dispatch<React.SetStateAction<File[]>>;
-  previews: string[];
-  setPreviews: React.Dispatch<React.SetStateAction<string[]>>;
+  photoItems: PhotoItem[];
+  setPhotoItems: React.Dispatch<React.SetStateAction<PhotoItem[]>>;
 }
 
 export default function SellPhotoUploader({
-  images,
-  setImages,
-  previews,
-  setPreviews,
+  photoItems,
+  setPhotoItems,
 }: SellPhotoUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addImages = (files: File[]) => {
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setImages((prev) => [...prev, ...files]);
-    setPreviews((prev) => [...prev, ...newPreviews]);
+    const newItems = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      file,
+    }));
+    setPhotoItems((prev) => [...prev, ...newItems]);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,12 +51,11 @@ export default function SellPhotoUploader({
   };
 
   const handleRemoveImage = (index: number) => {
-    // Revoke the Object URL to avoid memory leaks
-    if (previews[index]) {
-      URL.revokeObjectURL(previews[index]);
+    const item = photoItems[index];
+    if (item.url.startsWith("blob:")) {
+      URL.revokeObjectURL(item.url);
     }
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setPhotoItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -90,9 +93,9 @@ export default function SellPhotoUploader({
         </div>
 
         {/* Display Previews */}
-        {previews.map((preview, index) => (
+        {photoItems.map((item, index) => (
           <div key={index} className="aspect-square bg-zinc-950 border border-white/10 overflow-hidden relative group">
-            <img src={preview} alt="Aperçu" className="w-full h-full object-cover" />
+            <img src={item.url} alt="Aperçu" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
                 type="button"
@@ -106,7 +109,7 @@ export default function SellPhotoUploader({
         ))}
 
         {/* Placeholders if less than 3 photos */}
-        {Array.from({ length: Math.max(0, 3 - previews.length) }).map((_, i) => (
+        {Array.from({ length: Math.max(0, 3 - photoItems.length) }).map((_, i) => (
           <div key={i} className="aspect-square bg-zinc-950/30 border border-white/5 border-dashed" />
         ))}
       </div>

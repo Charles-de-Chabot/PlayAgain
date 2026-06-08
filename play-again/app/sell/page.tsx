@@ -95,6 +95,22 @@ export default async function SellPage({
 
   const userCity = user.addresses[0]?.city || null;
 
+  // Récupération du produit en mode édition
+  let editProduct = null;
+  const editId = resolvedParams.edit ? parseInt(resolvedParams.edit as string) : null;
+  if (editId) {
+    const prod = (await prisma.product.findUnique({
+      where: { id: editId },
+      include: { media: true }
+    })) as any;
+    if (prod && prod.user_id === userId && !prod.is_sold) {
+      editProduct = {
+        ...prod,
+        price: prod.price ? Number(prod.price) : 0,
+      };
+    }
+  }
+
   return (
     <main className="min-h-screen bg-black text-white pb-24 relative overflow-hidden font-sans">
       {/* Background Decor */}
@@ -125,21 +141,27 @@ export default async function SellPage({
           {/* Header Navigation */}
           <div className="mb-12 mt-8  flex items-center justify-between">
             <Link 
-              href="/profile" 
+              href={editProduct ? `/product/${editProduct.id}` : "/profile"} 
               className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group"
             >
               <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-all">
                 <ChevronLeft className="w-5 h-5" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest italic">Retour au profil</span>
+              <span className="text-[10px] font-black uppercase tracking-widest italic">
+                {editProduct ? "Retour au produit" : "Retour au profil"}
+              </span>
             </Link>
             
             <div className="text-right">
               <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white leading-none">
-                Vendre un <span className="text-brand-accent">article</span>
+                {editProduct ? (
+                  <>Modifier mon <span className="text-brand-accent">annonce</span></>
+                ) : (
+                  <>Vendre un <span className="text-brand-accent">article</span></>
+                )}
               </h1>
               <p className="mt-3 text-zinc-500 font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs">
-                Donnez une seconde vie à votre équipement sportif
+                {editProduct ? "Mettez à jour les détails de votre équipement sportif" : "Donnez une seconde vie à votre équipement sportif"}
               </p>
             </div>
           </div>
@@ -150,6 +172,7 @@ export default async function SellPage({
               brands={brands} 
               types={types} 
               userCity={userCity}
+              initialProduct={editProduct}
             />
           </div>
         </div>

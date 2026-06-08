@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Truck, ShieldCheck, Shield } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CompareButtonWrapper } from "@/components/product/CompareButtonWrapper";
+import { DeleteProductButton } from "./DeleteProductButton";
 
 export interface Product {
   id: number;
@@ -125,7 +126,22 @@ export default function ProductPurchaseActions({
         </form>
       )}
 
+      {isOwner && !product.is_sold && (
+        <Link href={`/sell?edit=${product.id}`} className="block w-full">
+          <Button
+            type="button"
+            className="w-full h-14 rounded-2xl bg-brand-accent hover:bg-brand-accent/70 text-black text-sm font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 cursor-pointer"
+          >
+          Modifier l'article
+          </Button>
+        </Link>
+      )}
+
       <CompareButtonWrapper product={product} />
+
+      {isOwner && !product.is_sold && (
+        <DeleteProductButton productId={product.id} />
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         <div className="p-3 rounded-2xl bg-zinc-900/30 border border-white/5 flex flex-col items-center justify-center text-center gap-2">

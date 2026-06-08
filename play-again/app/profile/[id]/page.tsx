@@ -134,7 +134,7 @@ export default async function PublicProfilePage({
                     <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-brand-accent/30 bg-zinc-950/80 hover:bg-zinc-900/50 transition-all select-none group w-fit cursor-default shrink-0 shadow-[0_0_10px_rgba(198,255,52,0.05)] hover:shadow-[0_0_15px_rgba(198,255,52,0.15)] hover:border-brand-accent/50 duration-300">
                       <span className="text-[10px] animate-pulse">⚡</span>
                       <span className="text-[9px] font-black uppercase tracking-[0.2em] italic text-brand-accent">
-                        {soldCount} {soldCount > 1 ? "équipements vendus" : "équipement vendu"}
+                        {soldCount} {soldCount > 1 ? " ventes" : "vente"}
                       </span>
                     </div>
                     
