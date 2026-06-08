@@ -1,9 +1,9 @@
-<p align="center">
-  <img src="conceptionPlayAgain/images/Readme.png" alt="PlayAgain Banner" width="100%" style="border-radius: 8px;" />
-</p>
 
 # PlayAgain 🔄 - Marketplace Éco-Responsable
 
+<p align="center">
+  <img src="conceptionPlayAgain/images/Readme.png" alt="PlayAgain Banner" width="100%" style="border-radius: 8px;" />
+</p>
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-15.0%2B-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
