@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../conceptionPlayAgain/images/Readme.png" alt="PlayAgain Banner" width="100%" style="border-radius: 8px;" />
+  <img src="conceptionPlayAgain/images/Readme.png" alt="PlayAgain Banner" width="100%" style="border-radius: 8px;" />
 </p>
 
 # PlayAgain 🔄 - Marketplace Éco-Responsable
