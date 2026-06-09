@@ -63,39 +63,39 @@ enum stateProduct {
 // --- Modèles ---
 
 model User {
-  id              Int            @id @default(autoincrement())
-  username        String?        @db.VarChar(50)
-  firstname       String?        @db.VarChar(50)
-  lastname        String?        @db.VarChar(50)
-  email           String         @unique @db.VarChar(100)
-  phone           String?        @db.VarChar(20)
+  id              Int       @id @default(autoincrement())
+  username        String?   @db.VarChar(50)
+  firstname       String?   @db.VarChar(50)
+  lastname        String?   @db.VarChar(50)
+  email           String    @unique @db.VarChar(100)
+  phone           String?   @db.VarChar(20)
   emailVerified   DateTime?
-  password        String?        @db.VarChar(255)
-  profile_picture String?        @db.VarChar(255)
-  image           String?        @db.VarChar(255)
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
-  is_active       Boolean        @default(true)
-  is_certified    Boolean        @default(false)
-  role            Role           @default(USER)
-  stripeConnectId String?        @unique
-  
-  sportProfile    SportProfile?
-  accounts        Account[]
-  sessions        Session[]
-  products        Product[]      @relation("UserProducts")
-  addresses       Address[]
-  conversations   Conversation[] @relation("UserConversations")
-  messages        Message[]      @relation("UserMessages")
-  basket          Basket?
-  bookmarks       Bookmark[]
-  invoices        Invoice[]
-  notifications   Notification[]
-  media           Media[]
+  password        String?   @db.VarChar(255)
+  profile_picture String?   @db.VarChar(255)
+  image           String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  is_active       Boolean   @default(true)
+  is_certified    Boolean   @default(false)
+  role            Role      @default(USER)
+  stripeConnectId String?   @unique
+
+  sportProfile         SportProfile?
+  accounts             Account[]
+  sessions             Session[]
+  products             Product[]             @relation("UserProducts")
+  addresses            Address[]
+  conversations        Conversation[]        @relation("UserConversations")
+  messages             Message[]             @relation("UserMessages")
+  basket               Basket?
+  bookmarks            Bookmark[]
+  invoices             Invoice[]
+  notifications        Notification[]
+  media                Media[]
   verificationRequests VerificationRequest[]
   reviewedRequests     VerificationRequest[] @relation("ReviewedRequests")
-  supportTickets  SupportTicket[]
-  activityLogs    UserActivityLog[]
+  supportTickets       SupportTicket[]
+  activityLogs         UserActivityLog[]
 }
 
 model Category {
@@ -117,64 +117,63 @@ model Type {
 }
 
 model Brand {
-  id              Int            @id @default(autoincrement())
-  label           String         @db.VarChar(50)
-  marketPosition  MarketPosition @default(GENERALIST)
-  createdAt       DateTime       @default(now())
-  products        Product[]
+  id             Int            @id @default(autoincrement())
+  label          String         @db.VarChar(50)
+  marketPosition MarketPosition @default(GENERALIST)
+  createdAt      DateTime       @default(now())
+  products       Product[]
 }
 
 model Size {
-  id          Int       @id @default(autoincrement())
-  label       String    @unique @db.VarChar(20)
-  
-  types       Type[]
-  products    Product[]
+  id    Int    @id @default(autoincrement())
+  label String @unique @db.VarChar(20)
+
+  types    Type[]
+  products Product[]
 }
 
 model Product {
-  id             Int          @id @default(autoincrement())
-  title          String       @db.VarChar(100)
-  description    String?      @db.Text
-  category_id    Int
-  type_id        Int
-  brand_id       Int
-  state          stateProduct @default(EXCELLENT)
-  size_id        Int?
-  price          Decimal      @db.Decimal(10, 2)
-  stock_quantity Int
-  user_id        Int
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @updatedAt
-  is_sold        Boolean      @default(false)
-  is_active      Boolean      @default(true)
-  age            Int?         // Année de fabrication
-  accessory_included Boolean  @default(false)
-  is_shipping    Boolean      @default(true)
-  targetGender   Gender       @default(UNISEX)
-  levelCategory  SportLevel   @default(BEGINNER)
+  id                 Int          @id @default(autoincrement())
+  title              String       @db.VarChar(100)
+  description        String?      @db.Text
+  category_id        Int
+  type_id            Int
+  brand_id           Int
+  state              stateProduct @default(EXCELLENT)
+  size_id            Int?
+  price              Decimal      @db.Decimal(10, 2)
+  stock_quantity     Int
+  user_id            Int
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+  is_sold            Boolean      @default(false)
+  is_active          Boolean      @default(true)
+  age                Int? // Année de fabrication
+  accessory_included Boolean      @default(false)
+  is_shipping        Boolean      @default(true)
+  targetGender       Gender       @default(UNISEX)
+  levelCategory      SportLevel   @default(BEGINNER)
 
-  
-  category       Category     @relation(fields: [category_id], references: [id])
-  type           Type         @relation(fields: [type_id], references: [id])
-  brand          Brand        @relation(fields: [brand_id], references: [id])
-  user           User         @relation("UserProducts", fields: [user_id], references: [id])
-  size           Size?        @relation(fields: [size_id], references: [id])
-  basket_items   BasketItem[]
-  fav_items      FavItem[]
-  media          Media[]
-  invoice_items  InvoiceItem[]
-  conversations  Conversation[]
+  category      Category       @relation(fields: [category_id], references: [id])
+  type          Type           @relation(fields: [type_id], references: [id])
+  brand         Brand          @relation(fields: [brand_id], references: [id])
+  user          User           @relation("UserProducts", fields: [user_id], references: [id])
+  size          Size?          @relation(fields: [size_id], references: [id])
+  basket_items  BasketItem[]
+  fav_items     FavItem[]
+  media         Media[]
+  invoice_items InvoiceItem[]
+  conversations Conversation[]
 }
 
 model Media {
-  id         Int      @id @default(autoincrement())
-  url        String   @db.VarChar(255)
+  id         Int    @id @default(autoincrement())
+  url        String @db.VarChar(255)
   product_id Int?
   user_id    Int?
-  
-  product    Product? @relation(fields: [product_id], references: [id])
-  user       User?    @relation(fields: [user_id], references: [id])
+
+  product Product? @relation(fields: [product_id], references: [id])
+  user    User?    @relation(fields: [user_id], references: [id])
 }
 
 model Address {
@@ -188,46 +187,45 @@ model Address {
   is_default    Boolean  @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-  
-  user          User     @relation(fields: [user_id], references: [id])
-  invoices      Invoice[]
+
+  user     User      @relation(fields: [user_id], references: [id])
+  invoices Invoice[]
 }
 
 model Conversation {
-  id              Int       @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   user_id         Int
   product_id      Int?
-  isSupportThread Boolean   @default(false)
+  isSupportThread Boolean  @default(false)
   metadata        Json?
-  created_at      DateTime  @default(now())
-  
-  user       User      @relation("UserConversations", fields: [user_id], references: [id])
-  product    Product?  @relation(fields: [product_id], references: [id])
-  messages   Message[]
+  created_at      DateTime @default(now())
+
+  user     User      @relation("UserConversations", fields: [user_id], references: [id])
+  product  Product?  @relation(fields: [product_id], references: [id])
+  messages Message[]
 }
 
-
 model Message {
-  id              Int          @id @default(autoincrement())
-  content         String       @db.Text
+  id              Int      @id @default(autoincrement())
+  content         String   @db.Text
   user_id         Int
   conversation_id Int
-  created_at      DateTime     @default(now())
-  is_read         Boolean      @default(false)
+  created_at      DateTime @default(now())
+  is_read         Boolean  @default(false)
   metadata        Json?
-  
-  user            User         @relation("UserMessages", fields: [user_id], references: [id])
-  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+
+  user         User         @relation("UserMessages", fields: [user_id], references: [id])
+  conversation Conversation @relation(fields: [conversation_id], references: [id])
 }
 
 model Basket {
-  id         Int          @id @default(autoincrement())
-  user_id    Int          @unique
-  created_at DateTime     @default(now())
-  
-  user       User         @relation(fields: [user_id], references: [id])
-  items      BasketItem[]
-  invoices   Invoice[]
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  created_at DateTime @default(now())
+
+  user     User         @relation(fields: [user_id], references: [id])
+  items    BasketItem[]
+  invoices Invoice[]
 }
 
 model BasketItem {
@@ -236,9 +234,9 @@ model BasketItem {
   product_id Int
   quantity   Int
   unit_price Decimal @db.Decimal(10, 2)
-  
-  basket     Basket  @relation(fields: [basket_id], references: [id])
-  product    Product @relation(fields: [product_id], references: [id])
+
+  basket  Basket  @relation(fields: [basket_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 }
 
 model Invoice {
@@ -256,30 +254,30 @@ model Invoice {
   status              InvoiceStatus @default(PENDING)
   tracking_number     String?       @unique
   delivered_at        DateTime?
-  
-  user                User          @relation(fields: [user_id], references: [id])
-  basket              Basket        @relation(fields: [basket_id], references: [id])
-  address             Address?      @relation(fields: [address_id], references: [id])
-  items               InvoiceItem[]
+
+  user    User          @relation(fields: [user_id], references: [id])
+  basket  Basket        @relation(fields: [basket_id], references: [id])
+  address Address?      @relation(fields: [address_id], references: [id])
+  items   InvoiceItem[]
 }
 
 model InvoiceItem {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   invoice_id Int
   product_id Int
   quantity   Int
-  unit_price Decimal  @db.Decimal(10, 2)
-  
-  invoice    Invoice  @relation(fields: [invoice_id], references: [id])
-  product    Product  @relation(fields: [product_id], references: [id])
+  unit_price Decimal @db.Decimal(10, 2)
+
+  invoice Invoice @relation(fields: [invoice_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 }
 
 model Bookmark {
-  id         Int          @id @default(autoincrement())
-  user_id    Int
-  name       String       @db.VarChar(100) @default("Favoris")
-  user       User         @relation(fields: [user_id], references: [id])
-  items      FavItem[]
+  id      Int       @id @default(autoincrement())
+  user_id Int
+  name    String    @default("Favoris") @db.VarChar(100)
+  user    User      @relation(fields: [user_id], references: [id])
+  items   FavItem[]
 
   @@unique([user_id, name])
 }
@@ -289,9 +287,9 @@ model FavItem {
   bookmark_id Int
   product_id  Int
   created_at  DateTime @default(now())
-  
-  bookmark    Bookmark @relation(fields: [bookmark_id], references: [id])
-  product     Product  @relation(fields: [product_id], references: [id])
+
+  bookmark Bookmark @relation(fields: [bookmark_id], references: [id])
+  product  Product  @relation(fields: [product_id], references: [id])
 
   @@unique([bookmark_id, product_id])
 }
@@ -301,26 +299,26 @@ model Notification {
   user_id    Int
   type       String   @db.VarChar(50)
   message    String   @db.Text
-  is_opened       Boolean      @default(false)
-  metadata        Json?
-  created_at      DateTime     @default(now())
-  
-  user       User     @relation(fields: [user_id], references: [id])
+  is_opened  Boolean  @default(false)
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
 }
 
 model Account {
-  id                 Int     @id @default(autoincrement())
-  userId             Int
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -344,50 +342,50 @@ model VerificationToken {
 }
 
 model SportProfile {
-  id              Int              @id @default(autoincrement())
-  userId          Int              @unique
-  user            User             @relation(fields: [userId], references: [id])
-  
-  gender          Gender?          @default(UNISEX)
-  height          Int?             // Taille en cm
-  weight          Int?             // Poids en kg
-  shoeSize        Float?           // Pointure EU
-  
-  level           SportLevel       @default(BEGINNER)
-  frequency       Int?             // Séances par semaine
-  
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  gender   Gender? @default(UNISEX)
+  height   Int? // Taille en cm
+  weight   Int? // Poids en kg
+  shoeSize Float? // Pointure EU
+
+  level     SportLevel @default(BEGINNER)
+  frequency Int? // Séances par semaine
+
   handOrientation HandOrientation? @default(RIGHT)
   boardStance     BoardStance?     @default(REGULAR)
-  
-  interests       Json?            // ["football", "tennis"]
-  
-  skills          SportSkill[]
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  interests Json? // ["football", "tennis"]
+
+  skills SportSkill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SportSkill {
   id             Int          @id @default(autoincrement())
   sportProfileId Int
   sportProfile   SportProfile @relation(fields: [sportProfileId], references: [id], onDelete: Cascade)
-  
-  sportName      String       @db.VarChar(50)
-  level          SportLevel   @default(BEGINNER)
-  
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+
+  sportName String     @db.VarChar(50)
+  level     SportLevel @default(BEGINNER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([sportProfileId, sportName])
 }
 
 model BrandExpertise {
-  id        Int      @id @default(autoincrement())
-  brandName String   @db.VarChar(50)
-  rangeName String   @db.VarChar(50)
-  level     SportLevel
-  confidence Float   @default(1.0)
-  createdAt DateTime @default(now())
+  id         Int        @id @default(autoincrement())
+  brandName  String     @db.VarChar(50)
+  rangeName  String     @db.VarChar(50)
+  level      SportLevel
+  confidence Float      @default(1.0)
+  createdAt  DateTime   @default(now())
 
   @@unique([brandName, rangeName])
 }
@@ -395,56 +393,56 @@ model BrandExpertise {
 // --- Énumérations de vérification d'identité ---
 
 enum VerificationStatus {
-  PENDING           // En attente de revue administrative
-  PROCESSING_AI     // En cours de traitement par l'IA (pour V2)
-  APPROVED          // Validée avec succès
-  REJECTED          // Refusée
+  PENDING // En attente de revue administrative
+  PROCESSING_AI // En cours de traitement par l'IA (pour V2)
+  APPROVED // Validée avec succès
+  REJECTED // Refusée
 }
 
 enum VerificationMethod {
-  MANUAL            // Revue par un administrateur humain
-  AI                // Revue automatisée par l'intelligence artificielle
+  MANUAL // Revue par un administrateur humain
+  AI // Revue automatisée par l'intelligence artificielle
 }
 
 // --- Modèle de Requête de Vérification d'Identité ---
 
 model VerificationRequest {
-  id                  Int                @id @default(autoincrement())
-  userId              Int
-  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  status              VerificationStatus @default(PENDING)
-  method              VerificationMethod @default(MANUAL)
-  
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status VerificationStatus @default(PENDING)
+  method VerificationMethod @default(MANUAL)
+
   // Coordonnées saisies par l'utilisateur lors du formulaire (pour comparaison de conformité)
-  submittedEmail      String             @db.VarChar(100)
-  submittedPhone      String             @db.VarChar(20)
-  submittedStreetNumber String?          @db.VarChar(10) // Numéro de rue (ex: "12bis", optionnel)
-  submittedStreetName   String             @db.VarChar(255) // Nom de la rue
-  submittedCity       String             @db.VarChar(100)
-  submittedZip        String             @db.VarChar(20)
-  submittedCountry    String             @db.VarChar(100)
-  
+  submittedEmail        String  @db.VarChar(100)
+  submittedPhone        String  @db.VarChar(20)
+  submittedStreetNumber String? @db.VarChar(10) // Numéro de rue (ex: "12bis", optionnel)
+  submittedStreetName   String  @db.VarChar(255) // Nom de la rue
+  submittedCity         String  @db.VarChar(100)
+  submittedZip          String  @db.VarChar(20)
+  submittedCountry      String  @db.VarChar(100)
+
   // URLs des documents stockés (jusqu'à 2 photos maximum autorisées pour l'ID + 1 pour le selfie)
-  idCardPhoto1Url     String             @db.VarChar(255) // Première photo obligatoire (ex: Recto ou Page Passeport)
-  idCardPhoto2Url     String?            @db.VarChar(255) // Deuxième photo optionnelle (ex: Verso s'il existe)
-  selfieUrl           String             @db.VarChar(255) // Selfie avec le mot manuscrit "Play Again" (Strictement obligatoire et unique)
-  
+  idCardPhoto1Url String  @db.VarChar(255) // Première photo obligatoire (ex: Recto ou Page Passeport)
+  idCardPhoto2Url String? @db.VarChar(255) // Deuxième photo optionnelle (ex: Verso s'il existe)
+  selfieUrl       String  @db.VarChar(255) // Selfie avec le mot manuscrit "Play Again" (Strictement obligatoire et unique)
+
   // En cas de refus, l'administrateur (ou l'IA) indique pourquoi pour guider l'utilisateur
-  rejectionReason     String?            @db.Text
-  
+  rejectionReason String? @db.Text
+
   // Qui a traité la demande (utile pour l'audit)
-  reviewedById        Int?
-  reviewedBy          User?              @relation("ReviewedRequests", fields: [reviewedById], references: [id])
-  
+  reviewedById Int?
+  reviewedBy   User? @relation("ReviewedRequests", fields: [reviewedById], references: [id])
+
   // Données techniques de l'IA (scores de confiance, logs d'analyses faciales)
-  aiMetadata          Json?
-  
-  submittedAt         DateTime           @default(now())
-  reviewedAt          DateTime?
-  
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  aiMetadata Json?
+
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -490,9 +488,9 @@ model AdminLog {
   id         Int      @id @default(autoincrement())
   adminId    Int
   adminEmail String
-  action     String   // ex: "USER_SOFT_DELETE", "LITIGE_RESOLVED", "PROMO_CODE_CREATED"
-  targetId   Int?     // ID de l'élément affecté
-  metadata   Json?    // Motif ou variables additionnelles
+  action     String // ex: "USER_SOFT_DELETE", "LITIGE_RESOLVED", "PROMO_CODE_CREATED"
+  targetId   Int? // ID de l'élément affecté
+  metadata   Json? // Motif ou variables additionnelles
   ipAddress  String?
   createdAt  DateTime @default(now())
 }
@@ -505,14 +503,13 @@ model SystemConfig {
 }
 
 model UserActivityLog {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action     String   // ex: "LOGIN", "REGISTER", "PRODUCT_CREATE", "CHECKOUT"
-  ipAddress  String   @db.VarChar(45)
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // ex: "LOGIN", "REGISTER", "PRODUCT_CREATE", "CHECKOUT"
+  ipAddress String   @db.VarChar(45)
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([ipAddress])
 }
-

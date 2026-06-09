@@ -119,7 +119,12 @@ export async function getLatestProducts() {
     products.map(async (p) => {
       let matchScore: number | undefined = undefined;
 
-      if (sportProfile && p.category?.label && interests.includes(p.category.label)) {
+      const productCategory = p.category?.label?.toLowerCase().trim();
+      const cleanInterests = interests.map((i) => i.toLowerCase().trim());
+      const matchesInterest =
+        cleanInterests.length === 0 || (productCategory && cleanInterests.includes(productCategory));
+
+      if (sportProfile && matchesInterest) {
         try {
           const match = await calculateMatch(sportProfile, p);
           matchScore = match.score;
@@ -472,11 +477,19 @@ export async function getFilteredProducts(filters: GetFilteredProductsParams) {
     const averageMap = await getAveragePricesMap(categoryIds, typeIds);
 
     // 5. Calcul des scores de compatibilité IA
+    const userInterests = sportProfile && Array.isArray(sportProfile.interests)
+      ? (sportProfile.interests as string[]).map((i) => i.toLowerCase().trim())
+      : [];
+
     let productsWithScores = await Promise.all(
       products.map(async (p) => {
         let matchScore = 0;
 
-        if (sportProfile) {
+        const productCategory = p.category?.label?.toLowerCase().trim();
+        const matchesInterest =
+          userInterests.length === 0 || (productCategory && userInterests.includes(productCategory));
+
+        if (sportProfile && matchesInterest) {
           try {
             const match = await calculateMatch(sportProfile, p);
             matchScore = match.score;

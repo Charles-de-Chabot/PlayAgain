@@ -94,10 +94,20 @@ export async function POST(req: Request) {
       }
 
       const matchedGear = [];
+      const userInterests = Array.isArray(sportProfile.interests)
+        ? (sportProfile.interests as string[]).map((i) => i.toLowerCase().trim())
+        : [];
 
       // Calculer le match pour chaque produit (en excluant ses propres produits)
       for (const product of activeProducts) {
         if (product.user_id === user.id) continue;
+
+        // Filtrer par centre d'intérêt (comme sur le shop)
+        const productCategory = product.category?.label?.toLowerCase().trim();
+        const matchesInterest =
+          userInterests.length === 0 || (productCategory && userInterests.includes(productCategory));
+
+        if (!matchesInterest) continue;
 
         try {
           const matchResult = await calculateMatch(sportProfile, product);

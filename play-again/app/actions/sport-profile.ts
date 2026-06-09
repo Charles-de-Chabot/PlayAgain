@@ -111,7 +111,18 @@ export async function saveSportProfile(data: any) {
         const { calculateMatch } = await import("@/lib/ai/matcher");
         const { createNotification } = await import("@/app/actions/notification");
 
+        const userInterests = Array.isArray(freshProfile.interests)
+          ? (freshProfile.interests as string[]).map((i) => i.toLowerCase().trim())
+          : [];
+
         for (const product of activeProducts) {
+          // Filtrer par centre d'intérêt (comme sur le shop)
+          const productCategory = product.category?.label?.toLowerCase().trim();
+          const matchesInterest =
+            userInterests.length === 0 || (productCategory && userInterests.includes(productCategory));
+
+          if (!matchesInterest) continue;
+
           const matchResult = await calculateMatch(freshProfile, product);
           if (matchResult.score >= 90) {
             matchedGear.push({
