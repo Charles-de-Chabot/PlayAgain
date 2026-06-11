@@ -78,6 +78,11 @@ export default async function ProfilePage() {
         },
       },
       invoices: {
+        where: {
+          status: {
+            notIn: ["PENDING", "CANCELLED"]
+          }
+        },
         orderBy: {
           invoice_date: "desc",
         },
@@ -118,7 +123,8 @@ export default async function ProfilePage() {
   const purchasedProducts = user.invoices.flatMap(inv => 
     inv.items.map(item => ({
       ...serializeProduct(item.product),
-      invoiceId: inv.id
+      invoiceId: inv.id,
+      invoiceItemId: item.id
     }))
   );
 
@@ -221,9 +227,11 @@ export default async function ProfilePage() {
                 
                 <div className="space-y-2 flex flex-col justify-center">
                   <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight uppercase italic">
-                    {user.firstname && user.lastname 
-                      ? `${user.firstname} ${user.lastname}` 
-                      : user.username || "Utilisateur"}
+                    {user.username 
+                      ? user.username 
+                      : (user.firstname && user.lastname 
+                        ? `${user.firstname} ${user.lastname}` 
+                        : "Utilisateur")}
                   </h1>
                   
                   <p className="text-zinc-400 text-xs md:text-sm font-medium -mt-1">{user.email}</p>

@@ -142,6 +142,51 @@ export function BookmarkSelector({
     }
   };
 
+  // Valider et fermer (crée la liste à la volée si saisie en cours)
+  const handleValiderClick = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const cleanName = newListName.trim();
+    if (showCreateForm && cleanName) {
+      setCreating(true);
+      setError(null);
+      try {
+        const res = await createBookmarkList(cleanName);
+        if (res.success && res.list) {
+          // L'ajouter automatiquement au produit
+          const toggleRes = await toggleProductInList(productId, res.list.id);
+          
+          if (toggleRes.success && toggleRes.listIds) {
+            // Notification globale
+            window.dispatchEvent(new CustomEvent("bookmark-toggle", {
+              detail: { productId, listId: res.list.id, action: toggleRes.action }
+            }));
+
+            if (onStatusChange) {
+              onStatusChange(toggleRes.listIds.length > 0);
+            }
+          }
+          
+          setNewListName("");
+          setShowCreateForm(false);
+          onClose();
+        } else {
+          setError(res.error || "Impossible de créer la liste.");
+        }
+      } catch (err) {
+        console.error("Erreur de création de liste de favoris:", err);
+        setError("Une erreur est survenue.");
+      } finally {
+        setCreating(false);
+      }
+    } else {
+      onClose();
+    }
+  };
+
   if (!mounted) return null;
 
   return createPortal(
@@ -248,7 +293,7 @@ export function BookmarkSelector({
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      handleCreateList();
+                      handleValiderClick();
                     }
                   }}
                   onClick={(e) => {
@@ -272,31 +317,24 @@ export function BookmarkSelector({
                   >
                     Annuler
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleCreateList();
-                    }}
-                    disabled={creating}
-                    className="px-2.5 py-1 rounded-lg bg-brand-primary text-[9px] font-black uppercase tracking-wider text-white hover:bg-brand-primary/80 transition-all cursor-pointer"
-                  >
-                    {creating ? "Création..." : "Créer"}
-                  </button>
                 </div>
               </div>
             )}
 
             {/* Valider Button */}
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onClose();
-              }}
-              className="w-full py-3 rounded-2xl bg-linear-to-r from-brand-primary to-brand-accent hover:opacity-90 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all shadow-[0_0_20px_rgba(125,56,255,0.3)] cursor-pointer text-center mt-1"
+              onClick={handleValiderClick}
+              disabled={creating}
+              className="w-full py-3 rounded-2xl bg-linear-to-r from-brand-primary to-brand-accent hover:opacity-90 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all shadow-[0_0_20px_rgba(125,56,255,0.3)] cursor-pointer text-center mt-1 flex items-center justify-center gap-2"
             >
-              Valider
+              {creating ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Création...
+                </>
+              ) : (
+                showCreateForm && newListName.trim() ? "Créer & Valider" : "Valider"
+              )}
             </button>
           </>
         )}

@@ -69,7 +69,7 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
       {/* Content Area */}
       <div className="animate-in fade-in duration-500">
         {activeTab === "listings" ? (
-          <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center">
+          <div key="listings-grid" className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center">
             {/* Carte "Ajouter une annonce" style ProductCard */}
             <Link 
               href="/sell"
@@ -124,9 +124,9 @@ export function ProfileTabs({ listings, purchases }: ProfileTabsProps) {
           </div>
         ) : (
           purchases.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,220px)] gap-x-8 gap-y-12 mt-12 justify-center">
-              {purchases.map((product) => (
-                <div key={product.id} className="flex flex-col gap-3 group">
+            <div key="purchases-grid" className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,220px)] gap-x-8 gap-y-12 mt-12 justify-center">
+              {purchases.map((product, index) => (
+                <div key={product.invoiceItemId || `${product.id}-${index}`} className="flex flex-col gap-3 group">
                   <ProductCard 
                     id={product.id}
                     title={product.title}

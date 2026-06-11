@@ -69,7 +69,7 @@ export function PublicProfileTabs({ activeListings, soldListings }: PublicProfil
       <div className="animate-in fade-in duration-500">
         {activeTab === "listings" ? (
           activeListings.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center md:justify-start">
+            <div key="active-listings-grid" className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center md:justify-start">
               {activeListings.map((product) => (
                 <ProductCard 
                   key={product.id} 
@@ -91,7 +91,7 @@ export function PublicProfileTabs({ activeListings, soldListings }: PublicProfil
           )
         ) : (
           soldListings.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center md:justify-start">
+            <div key="sold-listings-grid" className="grid grid-cols-[repeat(auto-fill,160px)] md:grid-cols-[repeat(auto-fill,240px)] gap-x-8 gap-y-12 mt-12 justify-center md:justify-start">
               {soldListings.map((product) => (
                 <ProductCard 
                   key={product.id} 

@@ -18,12 +18,15 @@ export default async function ProfileInfosPage() {
     redirect("/auth/login");
   }
 
-  // Fetch user to get current email and phone
+  // Fetch user to get current profile info
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       email: true,
       phone: true,
+      username: true,
+      firstname: true,
+      lastname: true,
     },
   });
 

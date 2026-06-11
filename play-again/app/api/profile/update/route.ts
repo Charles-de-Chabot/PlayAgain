@@ -21,43 +21,62 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { email, phone } = body;
+    const { email, phone, username, firstname, lastname } = body;
 
-    if (!email || !email.trim()) {
-      return NextResponse.json(
-        { error: "L'adresse e-mail est obligatoire." },
-        { status: 400 }
-      );
+    const dataToUpdate: any = {};
+
+    if (email !== undefined) {
+      if (!email || !email.trim()) {
+        return NextResponse.json(
+          { error: "L'adresse e-mail est obligatoire." },
+          { status: 400 }
+        );
+      }
+
+      // Check email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return NextResponse.json(
+          { error: "L'adresse e-mail saisie est invalide." },
+          { status: 400 }
+        );
+      }
+
+      // Check if email is already taken by another user
+      const existingUserWithEmail = await prisma.user.findUnique({
+        where: { email: email.trim().toLowerCase() },
+      });
+
+      if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+        return NextResponse.json(
+          { error: "Cette adresse e-mail est déjà utilisée par un autre compte." },
+          { status: 400 }
+        );
+      }
+
+      dataToUpdate.email = email.trim().toLowerCase();
     }
 
-    // Check email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      return NextResponse.json(
-        { error: "L'adresse e-mail saisie est invalide." },
-        { status: 400 }
-      );
+    if (phone !== undefined) {
+      dataToUpdate.phone = phone ? phone.trim() : null;
     }
 
-    // Check if email is already taken by another user
-    const existingUserWithEmail = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
-    });
-
-    if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
-      return NextResponse.json(
-        { error: "Cette adresse e-mail est déjà utilisée par un autre compte." },
-        { status: 400 }
-      );
+    if (username !== undefined) {
+      dataToUpdate.username = username ? username.trim() : null;
     }
 
-    // Update user contact info
+    if (firstname !== undefined) {
+      dataToUpdate.firstname = firstname ? firstname.trim() : null;
+    }
+
+    if (lastname !== undefined) {
+      dataToUpdate.lastname = lastname ? lastname.trim() : null;
+    }
+
+    // Update user info
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        email: email.trim().toLowerCase(),
-        phone: phone ? phone.trim() : null,
-      },
+      data: dataToUpdate,
       select: {
         id: true,
         email: true,
@@ -73,7 +92,7 @@ export async function PUT(req: Request) {
       user: updatedUser,
     });
   } catch (error: any) {
-    console.error("Erreur lors de la mise à jour des informations de contact:", error);
+    console.error("Erreur lors de la mise à jour du profil:", error);
     return NextResponse.json(
       { error: "Erreur serveur lors de la mise à jour des informations." },
       { status: 500 }
