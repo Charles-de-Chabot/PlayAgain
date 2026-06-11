@@ -132,11 +132,24 @@ export async function sendMessage(conversationId: number, content: string, metad
 
   // Garde-fous de robustesse (Lecture Seule)
   if (conversation.isSupportThread) {
-    const latestTicket = await prisma.supportTicket.findFirst({
-      where: { userId: conversation.user_id },
-      orderBy: { createdAt: "desc" }
-    });
-    if (latestTicket && latestTicket.status === "RESOLVED") {
+    const meta = conversation.metadata as any;
+    const ticketId = meta?.ticketId;
+    let isResolved = false;
+
+    if (ticketId) {
+      const ticket = await prisma.supportTicket.findUnique({
+        where: { id: Number(ticketId) }
+      });
+      isResolved = ticket?.status === "RESOLVED";
+    } else {
+      const latestTicket = await prisma.supportTicket.findFirst({
+        where: { userId: conversation.user_id },
+        orderBy: { createdAt: "desc" }
+      });
+      isResolved = latestTicket?.status === "RESOLVED";
+    }
+
+    if (isResolved) {
       throw new Error("Ce litige a été résolu par l'administration. La discussion est close.");
     }
   }

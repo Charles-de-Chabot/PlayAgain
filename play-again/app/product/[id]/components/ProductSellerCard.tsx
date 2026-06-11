@@ -24,7 +24,10 @@ export interface ProductSellerCardProps {
  */
 export default function ProductSellerCard({ product, sellerLocation }: ProductSellerCardProps) {
   return (
-    <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/10 backdrop-blur-sm flex items-center justify-between group hover:bg-zinc-900/80 transition-all text-left">
+    <Link
+      href={`/profile/${product.user.id}`}
+      className="p-5 rounded-3xl bg-zinc-900/50 border border-white/10 backdrop-blur-sm flex items-center justify-between group hover:bg-zinc-900/80 transition-all text-left cursor-pointer"
+    >
       <div className="flex items-center gap-4">
         <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center border border-white/10 overflow-hidden relative">
           {product.user.profile_picture ? (
@@ -45,12 +48,11 @@ export default function ProductSellerCard({ product, sellerLocation }: ProductSe
           </div>
         </div>
       </div>
-      <Link
-        href={`/profile/${product.user.id}`}
-        className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 text-zinc-400 group-hover:text-brand-accent group-hover:border-brand-accent/50 transition-all cursor-pointer"
+      <div
+        className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 text-zinc-400 group-hover:text-brand-accent group-hover:border-brand-accent/50 transition-all"
       >
         <ChevronRight className="w-5 h-5" />
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }

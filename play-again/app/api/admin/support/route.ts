@@ -113,13 +113,17 @@ export async function POST(req: Request) {
         }
       });
 
-      // C. Trouver ou Créer le fil de discussion "Support PlayAgain" permanent dans la messagerie de l'utilisateur
-      // Le fil n'est lié à aucun produit spécifique (product_id = null/undefined)
-      let conversation = await tx.conversation.findFirst({
+      // C. Trouver le fil de discussion associé à ce ticket dans la messagerie de l'utilisateur
+      const conversations = await tx.conversation.findMany({
         where: {
           user_id: targetUserId,
           isSupportThread: true
         }
+      });
+
+      let conversation = conversations.find(c => {
+        const meta = c.metadata as any;
+        return meta && (meta.ticketId === parsedTicketId || Number(meta.ticketId) === parsedTicketId);
       });
 
       if (!conversation) {
@@ -127,11 +131,10 @@ export async function POST(req: Request) {
           data: {
             user_id: targetUserId,
             isSupportThread: true,
-            // Pour contourner le fait que product_id est requis ou non, on vérifie s'il existe un produit support générique
-            // ou s'il est nullable. Comme il est optionnel (product_id Int?), on peut ne pas l'inclure.
             metadata: {
-              title: "Support PlayAgain",
-              official: true
+              title: `Support: ${ticket.subject || "Sans sujet"}`,
+              official: true,
+              ticketId: parsedTicketId
             }
           }
         });

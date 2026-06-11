@@ -121,26 +121,18 @@ export async function POST(
         }
       });
 
-      // --- CRÉATION/RÉCUPÉRATION DU FIL SUPPORT MESSAGERIE DE L'ACHETEUR ---
-      let supportConv = await tx.conversation.findFirst({
-        where: {
+      // --- CRÉATION D'UN NOUVEAU FIL SUPPORT MESSAGERIE POUR CE LITIGE ---
+      const supportConv = await tx.conversation.create({
+        data: {
           user_id: userId,
-          isSupportThread: true
+          isSupportThread: true,
+          metadata: {
+            title: `Litige: Commande #${invoiceId}`,
+            official: true,
+            ticketId: ticket.id
+          }
         }
       });
-
-      if (!supportConv) {
-        supportConv = await tx.conversation.create({
-          data: {
-            user_id: userId,
-            isSupportThread: true,
-            metadata: {
-              title: "Support PlayAgain",
-              official: true
-            }
-          }
-        });
-      }
 
       supportConversationId = supportConv.id;
 

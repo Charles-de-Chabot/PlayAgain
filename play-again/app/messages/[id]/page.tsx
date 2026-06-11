@@ -149,12 +149,19 @@ export default async function ConversationPage({
 
   let isSupportClosed = false;
   if (conversation.isSupportThread) {
-    const latestTicket = await prisma.supportTicket.findFirst({
-      where: { userId: conversation.user_id },
-      orderBy: { createdAt: "desc" }
-    });
-    if (latestTicket && latestTicket.status === "RESOLVED") {
-      isSupportClosed = true;
+    const meta = conversation.metadata as any;
+    const ticketId = meta?.ticketId;
+    if (ticketId) {
+      const ticket = await prisma.supportTicket.findUnique({
+        where: { id: Number(ticketId) }
+      });
+      isSupportClosed = ticket?.status === "RESOLVED";
+    } else {
+      const latestTicket = await prisma.supportTicket.findFirst({
+        where: { userId: conversation.user_id },
+        orderBy: { createdAt: "desc" }
+      });
+      isSupportClosed = latestTicket?.status === "RESOLVED";
     }
   }
 

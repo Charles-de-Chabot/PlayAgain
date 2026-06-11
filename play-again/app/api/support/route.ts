@@ -54,26 +54,18 @@ export async function POST(req: Request) {
         }
       });
 
-      // 3. Récupération ou création du fil support permanent
-      let supportConv = await tx.conversation.findFirst({
-        where: {
+      // 3. Création d'un nouveau fil de support pour ce ticket
+      const supportConv = await tx.conversation.create({
+        data: {
           user_id: userId,
-          isSupportThread: true
+          isSupportThread: true,
+          metadata: {
+            title: `Support: ${finalSubject}`,
+            official: true,
+            ticketId: ticket.id
+          }
         }
       });
-
-      if (!supportConv) {
-        supportConv = await tx.conversation.create({
-          data: {
-            user_id: userId,
-            isSupportThread: true,
-            metadata: {
-              title: "Support PlayAgain",
-              official: true
-            }
-          }
-        });
-      }
 
       supportConversationId = supportConv.id;
 

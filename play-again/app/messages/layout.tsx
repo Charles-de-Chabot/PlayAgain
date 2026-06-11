@@ -91,33 +91,48 @@ export default async function MessagesLayout({
     orderBy: { created_at: "desc" }
   });
 
-  const latestTicket = await prisma.supportTicket.findFirst({
+  // Charger tous les tickets de support de l'utilisateur pour vérifier leur statut individuellement
+  const userTickets = await prisma.supportTicket.findMany({
     where: { userId: userId },
-    orderBy: { createdAt: "desc" },
-    select: { status: true }
+    select: { id: true, status: true }
   });
-  const isSupportClosed = latestTicket?.status === "RESOLVED";
 
   // Sérialisation des objets Decimal de Prisma pour éviter l'erreur de transfert RSC -> Client Component
-  const serializedConversations = conversations.map((conv) => ({
-    ...conv,
-    isSupportClosed: conv.isSupportThread ? isSupportClosed : false,
-    created_at: conv.created_at.toISOString(),
-    product: conv.product ? {
-      ...conv.product,
-      price: Number(conv.product.price),
-      created_at: conv.product.created_at.toISOString(),
-      updated_at: conv.product.updated_at.toISOString(),
-      invoice_items: (conv.product.invoice_items || []).map((item: any) => ({
-        ...item,
-        unit_price: Number(item.unit_price),
+  const serializedConversations = conversations.map((conv) => {
+    let isClosed = false;
+    if (conv.isSupportThread) {
+      const meta = conv.metadata as any;
+      const ticketId = meta?.ticketId;
+      if (ticketId) {
+        const ticket = userTickets.find(t => t.id === Number(ticketId));
+        isClosed = ticket?.status === "RESOLVED";
+      } else {
+        // Fallback pour les anciens fils de support
+        const latestTicket = [...userTickets].sort((a, b) => b.id - a.id)[0];
+        isClosed = latestTicket?.status === "RESOLVED";
+      }
+    }
+
+    return {
+      ...conv,
+      isSupportClosed: isClosed,
+      created_at: conv.created_at.toISOString(),
+      product: conv.product ? {
+        ...conv.product,
+        price: Number(conv.product.price),
+        created_at: conv.product.created_at.toISOString(),
+        updated_at: conv.product.updated_at.toISOString(),
+        invoice_items: (conv.product.invoice_items || []).map((item: any) => ({
+          ...item,
+          unit_price: Number(item.unit_price),
+        })),
+      } : null,
+      messages: conv.messages.map((msg) => ({
+        ...msg,
+        created_at: msg.created_at.toISOString(),
       })),
-    } : null,
-    messages: conv.messages.map((msg) => ({
-      ...msg,
-      created_at: msg.created_at.toISOString(),
-    })),
-  }));
+    };
+  });
 
   return (
     <main className="h-screen w-screen bg-black text-white relative overflow-hidden font-sans flex flex-col">

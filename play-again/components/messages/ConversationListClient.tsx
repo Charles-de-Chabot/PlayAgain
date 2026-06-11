@@ -76,7 +76,7 @@ export default function ConversationListClient({
     } : (isBuyer && conv.product ? conv.product.user : conv.user);
     
     const partnerName = partner?.username || partner?.firstname || "";
-    const productName = conv.product?.title || "Assistance SAV";
+    const productName = conv.product?.title || (conv.metadata as any)?.title || "Assistance SAV";
     
     const query = search.toLowerCase();
     return (
@@ -215,7 +215,7 @@ export default function ConversationListClient({
 
                     <div className="flex items-center">
                       <span className="text-xs font-semibold text-brand-accent truncate">
-                        {conv.product ? conv.product.title : "Assistance SAV"}
+                        {conv.product ? conv.product.title : ((conv.metadata as any)?.title || "Assistance SAV")}
                       </span>
                     </div>
 
