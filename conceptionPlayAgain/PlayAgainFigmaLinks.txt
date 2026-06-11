@@ -7,9 +7,100 @@ https://www.figma.com/design/zFx0IvlBt4dCRThyxqRyjz/Untitled?node-id=1-62&t=DmEx
 Vue Navigateur:
 https://www.figma.com/design/vl6SryBizHaa9y8tf1mXke/Untitled?node-id=2-27&t=LsJ5zhmfJa57afg2-0
 
-TODO : création compte Google/Yahoo
+
 TODO : faire une verification d'email
 TODO : version mobile
 TODO : CRUD product user
 
+regarde toute les entreprises pour lesquels jai postulé pour des postes (meme celles des messages de hellowork qui me demande de confirmer car j'ai postulé sur le site du recruteur et pas directement sur hellowork)
+créer moi une liste organiser dans ta reponse avec les différents nom des entreprises et le nombre de candidatures que j'ai fait
 
+
+
+
+Alstom
+Crédit Agricole
+Berger Levrault
+CNRS
+Siemens
+Thales x12
+ISCOD
+Akkodis x2
+XEFI x3
+Orange 
+Amiltone
+DGA
+AMIAD
+Groupama
+ITGA
+CARSO
+Avril
+ANSSI
+Dassault Systeme
+Kicklox
+Casino x2
+Capgemini x10
+Artelia
+La Brosse & Dupont
+BPCE x4
+CPAM assurance maladie
+Safran x2
+Aerocontact
+Sanofi
+BNP Paribas x2
+MNT 
+EDF
+Hôpital Américain de Paris
+Davidson Consulting x2
+Canal+ x5
+EXELCIA
+Manitou
+Aeroline
+Graal
+Ascalium
+Atos x6
+Framatome
+EXELCIA
+CMA CGM
+Sopra Steria x2
+Airbus x2
+ALTEN
+Ortec
+Securitas Technology
+Sodebo
+Ambre Raujol
+Wavy Service
+SNCF x13
+Alliance4U
+Reactis Service
+Infotel
+Aquantis
+Logwire Consulting
+Externatic
+Teamis
+Conserto
+Inetum
+CGI France
+Skaelia 
+Brittany Ferries
+Endrix
+Andrice
+CGI
+Fiducial
+Spora Steria
+LFB
+CESI
+W HUB
+ARREKA
+FMS 
+L'Atelier
+Credit Mutuel
+ATS
+Omniciel 
+Sodebo
+Ascalium
+Talan
+MEWO x3 
+ITMA
+BK Consulting Ouest
+SII 16 mars
