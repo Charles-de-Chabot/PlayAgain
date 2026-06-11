@@ -155,7 +155,7 @@ export default function HelpClient() {
         <div className="absolute inset-0 bg-linear-to-b from-black via-zinc-950 to-black" />
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 pt-[64px] md:pt-[81px]">
         <Header />
 
         <div className="max-w-4xl mx-auto px-4 pt-10">
