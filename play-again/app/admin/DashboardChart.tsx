@@ -32,13 +32,16 @@ export default function DashboardChart({ day, week, month, year, overall }: Dash
   // SVG drawing configuration
   const width = 500;
   const height = 150;
-  const padding = 20;
+  const paddingTop = 15;
+  const paddingBottom = 25;
+  const paddingLeft = 55;
+  const paddingRight = 15;
   const maxVal = Math.max(...chartData) * 1.1 || 10;
 
   // Convert points to SVG coordinates
   const points = chartData.map((val, i) => {
-    const x = padding + (i * (width - padding * 2)) / Math.max(1, chartData.length - 1);
-    const y = height - padding - (val * (height - padding * 2)) / maxVal;
+    const x = paddingLeft + (i * (width - paddingLeft - paddingRight)) / Math.max(1, chartData.length - 1);
+    const y = height - paddingBottom - (val * (height - paddingTop - paddingBottom)) / maxVal;
     return { x, y };
   });
 
@@ -54,7 +57,7 @@ export default function DashboardChart({ day, week, month, year, overall }: Dash
   }, "");
 
   // Area under the curve
-  const areaPath = `${linePath} L ${points[points.length - 1]?.x || width} ${height - padding} L ${points[0]?.x || 0} ${height - padding} Z`;
+  const areaPath = `${linePath} L ${points[points.length - 1]?.x || width} ${height - paddingBottom} L ${points[0]?.x || 0} ${height - paddingBottom} Z`;
 
   return (
     <div className="bg-white/2 backdrop-blur-xl border border-white/6 rounded-3xl p-6 shadow-2xl lg:col-span-2 flex flex-col relative">
@@ -100,10 +103,10 @@ export default function DashboardChart({ day, week, month, year, overall }: Dash
       </div>
 
       {/* Tracé du Graphique SVG */}
-      <div className="flex-1 min-h-[160px] relative w-full flex items-center justify-center bg-black/20 rounded-2xl border border-white/2">
+      <div className="flex-1 min-h-[160px] relative w-full flex items-center justify-center bg-black/20 rounded-2xl border border-white/2 p-2">
         <svg 
           viewBox={`0 0 ${width} ${height}`} 
-          className="w-full h-full p-2 overflow-visible"
+          className="w-full h-full overflow-visible"
           preserveAspectRatio="none"
         >
           <defs>
@@ -117,9 +120,35 @@ export default function DashboardChart({ day, week, month, year, overall }: Dash
             </linearGradient>
           </defs>
 
-          {/* Lignes de repère d'arrière-plan */}
-          <line x1={padding} y1={height/2} x2={width-padding} y2={height/2} stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="3" />
-          <line x1={padding} y1={height-padding} x2={width-padding} y2={height-padding} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+          {/* Lignes de repère d'arrière-plan et graduation ordonnées (Y) */}
+          {[
+            { y: paddingTop, value: maxVal },
+            { y: paddingTop + (height - paddingTop - paddingBottom) * 0.33, value: maxVal * 0.66 },
+            { y: paddingTop + (height - paddingTop - paddingBottom) * 0.66, value: maxVal * 0.33 },
+            { y: height - paddingBottom, value: 0 },
+          ].map((tick, i) => (
+            <g key={i}>
+              <line 
+                x1={paddingLeft} 
+                y1={tick.y} 
+                x2={width - paddingRight} 
+                y2={tick.y} 
+                stroke={i === 3 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)"} 
+                strokeWidth="1" 
+                strokeDasharray={i === 3 ? "0" : "3"} 
+              />
+              <text
+                x={paddingLeft - 8}
+                y={tick.y}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fill="rgba(255,255,255,0.4)"
+                className="text-[8px] font-mono font-bold"
+              >
+                {Math.round(tick.value).toLocaleString("fr-FR")} €
+              </text>
+            </g>
+          ))}
 
           {/* Remplissage de zone */}
           {points.length > 0 && <path d={areaPath} fill="url(#areaGradient)" />}
@@ -159,14 +188,24 @@ export default function DashboardChart({ day, week, month, year, overall }: Dash
               </text>
             </g>
           ))}
-        </svg>
-      </div>
 
-      {/* Graduation des jours/intervalles */}
-      <div className="flex justify-between px-6 mt-4 text-[10px] font-mono text-slate-500">
-        {chartDays.map((day, i) => (
-          <span key={i}>{day}</span>
-        ))}
+          {/* Graduation des jours/intervalles (X) */}
+          {chartDays.map((day, i) => {
+            const x = paddingLeft + (i * (width - paddingLeft - paddingRight)) / Math.max(1, chartDays.length - 1);
+            return (
+              <text
+                key={i}
+                x={x}
+                y={height - paddingBottom + 14}
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.4)"
+                className="text-[8px] font-mono font-bold"
+              >
+                {day}
+              </text>
+            );
+          })}
+        </svg>
       </div>
     </div>
   );

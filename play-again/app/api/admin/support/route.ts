@@ -50,15 +50,59 @@ export async function GET(req: Request) {
             phone: true,
             profile_picture: true
           }
-        },
-        messages: {
-          orderBy: { createdAt: "asc" }
         }
       },
       orderBy: { updatedAt: "desc" }
     });
 
-    return NextResponse.json({ tickets });
+    const userIds = Array.from(new Set(tickets.map(t => t.userId)));
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        user_id: { in: userIds },
+        isSupportThread: true
+      },
+      include: {
+        messages: {
+          orderBy: { created_at: "asc" }
+        }
+      }
+    });
+
+    const ticketsWithMessages = tickets.map((ticket) => {
+      const conversation = conversations.find(c => {
+        const meta = c.metadata as any;
+        return meta && (meta.ticketId === ticket.id || Number(meta.ticketId) === ticket.id);
+      });
+
+      let ticketMessages = conversation ? conversation.messages.map(msg => ({
+        id: msg.id,
+        ticketId: ticket.id,
+        senderId: msg.user_id,
+        isAdminReply: msg.user_id !== ticket.userId,
+        content: msg.content,
+        createdAt: msg.created_at
+      })) : [];
+
+      // Si le premier message de la conversation est la confirmation contenant le sujet, ou s'il commence par [SUPPORT - ,
+      // ou s'il est identique au contenu initial du ticket, on le filtre pour éviter les doublons dans l'historique du chat admin.
+      if (ticketMessages.length > 0) {
+        const firstContent = ticketMessages[0].content;
+        if (
+          firstContent === ticket.content || 
+          firstContent.includes(`[SUPPORT - `) || 
+          firstContent.includes(`Litige Colis - Commande #`)
+        ) {
+          ticketMessages = ticketMessages.slice(1);
+        }
+      }
+
+      return {
+        ...ticket,
+        messages: ticketMessages
+      };
+    });
+
+    return NextResponse.json({ tickets: ticketsWithMessages });
   } catch (error: any) {
     console.error("Erreur de récupération des tickets de support :", error);
     return NextResponse.json({ error: "Une erreur interne est survenue." }, { status: 500 });

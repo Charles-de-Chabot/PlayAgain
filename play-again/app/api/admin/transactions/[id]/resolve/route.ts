@@ -125,16 +125,40 @@ export async function POST(
             data: { status: "RESOLVED" }
           });
 
+          const resolutionText = explanation 
+            ? `Arbitrage administratif : Litige résolu en faveur du vendeur.\n\nExplication : ${explanation}`
+            : `Arbitrage administratif : Litige résolu en faveur du vendeur. Les fonds de ${item.unit_price} € ont été débloqués et transférés.`;
+
           await tx.supportMessage.create({
             data: {
               ticketId: ticket.id,
               senderId: adminCheck.id!,
               isAdminReply: true,
-              content: explanation 
-                ? `Arbitrage administratif : Litige résolu en faveur du vendeur.\n\nExplication : ${explanation}`
-                : `Arbitrage administratif : Litige résolu en faveur du vendeur. Les fonds de ${item.unit_price} € ont été débloqués et transférés.`
+              content: resolutionText
             }
           });
+
+          // Envoyer également la réponse dans le chat privé de support de l'acheteur
+          const conversations = await tx.conversation.findMany({
+            where: {
+              user_id: ticket.userId,
+              isSupportThread: true
+            }
+          });
+          const supportConv = conversations.find(c => {
+            const meta = c.metadata as any;
+            return meta && (meta.ticketId === ticket.id || Number(meta.ticketId) === ticket.id);
+          });
+          if (supportConv) {
+            await tx.message.create({
+              data: {
+                conversation_id: supportConv.id,
+                user_id: adminCheck.id!,
+                content: resolutionText,
+                is_read: false
+              }
+            });
+          }
         }
 
         // 4. Message système dans le chat acheteur-vendeur
@@ -262,16 +286,40 @@ export async function POST(
             data: { status: "RESOLVED" }
           });
 
+          const resolutionText = explanation
+            ? `Arbitrage administratif : Litige résolu en faveur de l'acheteur.\n\nExplication : ${explanation}`
+            : `Arbitrage administratif : Litige résolu en faveur de l'acheteur. Un remboursement complet de ${item.unit_price} € a été émis.`;
+
           await tx.supportMessage.create({
             data: {
               ticketId: ticket.id,
               senderId: adminCheck.id!,
               isAdminReply: true,
-              content: explanation
-                ? `Arbitrage administratif : Litige résolu en faveur de l'acheteur.\n\nExplication : ${explanation}`
-                : `Arbitrage administratif : Litige résolu en faveur de l'acheteur. Un remboursement complet de ${item.unit_price} € a été émis.`
+              content: resolutionText
             }
           });
+
+          // Envoyer également la réponse dans le chat privé de support de l'acheteur
+          const conversations = await tx.conversation.findMany({
+            where: {
+              user_id: ticket.userId,
+              isSupportThread: true
+            }
+          });
+          const supportConv = conversations.find(c => {
+            const meta = c.metadata as any;
+            return meta && (meta.ticketId === ticket.id || Number(meta.ticketId) === ticket.id);
+          });
+          if (supportConv) {
+            await tx.message.create({
+              data: {
+                conversation_id: supportConv.id,
+                user_id: adminCheck.id!,
+                content: resolutionText,
+                is_read: false
+              }
+            });
+          }
         }
 
         // 5. Message système dans le chat acheteur-vendeur
